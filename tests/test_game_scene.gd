@@ -96,12 +96,12 @@ func test_game_initialization_and_ui() -> void:
 	assert_true(game.grid != null, "Grid logic initialized")
 	assert_eq(game.current_level_index, 0, "Initial level index is 0")
 	assert_eq(game.level_label.text, "LEVEL 1 / 50", "Level label in EN")
-	assert_true(game.restart_button.text == "Restart ↺", "Restart button localized in EN")
+	assert_true(game.restart_button.text == "Restart", "Restart button localized in EN")
 	assert_true(game.undo_button != null, "Undo button initialized in game")
-	assert_true(game.undo_button.text == "Undo ↶", "Undo button localized in EN")
+	assert_true(game.undo_button.text == "Undo", "Undo button localized in EN")
 	assert_true(game.undo_button.disabled, "Undo button is disabled initially")
 	assert_true(game.hint_button != null, "Hint button initialized in game")
-	assert_true("Hint 💡" in game.hint_button.text, "Hint button localized in EN")
+	assert_true("Hint" in game.hint_button.text, "Hint button localized in EN")
 	assert_true(not game.hint_button.disabled, "Hint button is enabled initially")
 	assert_true(game.prev_button.disabled, "Prev button is disabled on first level")
 
@@ -109,35 +109,37 @@ func test_game_initialization_and_ui() -> void:
 	loc.set_language("fr")
 	game._update_ui()
 	assert_eq(game.level_label.text, "NIVEAU 1 / 50", "Level label in FR")
-	assert_eq(game.restart_button.text, "Recommencer ↺", "Restart button localized in FR")
-	assert_eq(game.undo_button.text, "Annuler ↶", "Undo button localized in FR")
-	assert_true("Indice 💡" in game.hint_button.text, "Hint button localized in FR")
+	assert_eq(game.restart_button.text, "Recommencer", "Restart button localized in FR")
+	assert_eq(game.undo_button.text, "Annuler", "Undo button localized in FR")
+	assert_true("Indice" in game.hint_button.text, "Hint button localized in FR")
 
 	loc.set_language("ar")
 	game._update_ui()
-	assert_true("تلميح 💡" in game.hint_button.text, "Hint button localized in AR")
+	assert_true("تلميح" in game.hint_button.text, "Hint button localized in AR")
 
 	# Test in-game music toggle button
 	assert_true(game.music_button != null, "Music button initialized in game")
-	assert_eq(game.music_button.text, "♪", "Music button default icon is ♪")
+	assert_eq(game.music_button.icon, game.icon_music_on, "Music button default icon is icon_music_on")
+	assert_eq(game.music_button.text, "", "Music button has clean icon with no text overlap")
 	game._on_music_btn_pressed()
 	assert_false(save_mgr.music_enabled, "SaveManager music_enabled toggled to false via game button")
-	assert_eq(game.music_button.text, "♪̸", "Music button shows muted icon ♪̸")
+	assert_eq(game.music_button.icon, game.icon_music_off, "Music button shows muted icon_music_off")
 	game._on_music_btn_pressed()
 	assert_true(save_mgr.music_enabled, "SaveManager music_enabled toggled back to true")
-	assert_eq(game.music_button.text, "♪", "Music button restored to ♪")
+	assert_eq(game.music_button.icon, game.icon_music_on, "Music button restored to icon_music_on")
 
 	# Test in-game control mode & D-Pad overlay
 	assert_true(game.control_button != null, "Control mode button initialized in game")
 	assert_true(game.dpad_overlay != null, "D-Pad overlay initialized in game")
 	assert_false(game.dpad_overlay.visible, "D-Pad overlay hidden in default SWIPE mode")
-	assert_eq(game.control_button.text, "✋", "Control button displays ✋ icon in SWIPE mode")
+	assert_eq(game.control_button.icon, game.icon_control_swipe, "Control button displays swipe icon in SWIPE mode")
+	assert_eq(game.control_button.text, "", "Control button has no text overlap")
 
 	# Cycle to D-PAD mode
 	game._on_control_button_pressed()
 	assert_eq(save_mgr.control_scheme, 1, "Control scheme cycled to 1 (D-PAD)")
 	assert_true(game.dpad_overlay.visible, "D-Pad overlay visible in D-PAD mode")
-	assert_eq(game.control_button.text, "✥", "Control button displays ✥ icon in D-PAD mode")
+	assert_eq(game.control_button.icon, game.icon_control_dpad, "Control button displays dpad icon in D-PAD mode")
 
 	# Test D-Pad directional movement
 	game._on_dpad_down_pressed()
@@ -149,13 +151,13 @@ func test_game_initialization_and_ui() -> void:
 	game._on_control_button_pressed()
 	assert_eq(save_mgr.control_scheme, 2, "Control scheme cycled to 2 (DUAL)")
 	assert_true(game.dpad_overlay.visible, "D-Pad overlay visible in DUAL mode")
-	assert_eq(game.control_button.text, "🎮", "Control button displays 🎮 icon in DUAL mode")
+	assert_eq(game.control_button.icon, game.icon_control_gamepad, "Control button displays gamepad icon in DUAL mode")
 
 	# Cycle back to SWIPE mode
 	game._on_control_button_pressed()
 	assert_eq(save_mgr.control_scheme, 0, "Control scheme cycled back to 0 (SWIPE)")
 	assert_false(game.dpad_overlay.visible, "D-Pad overlay hidden in SWIPE mode")
-	assert_eq(game.control_button.text, "✋", "Control button restores ✋ icon")
+	assert_eq(game.control_button.icon, game.icon_control_swipe, "Control button restores swipe icon")
 
 	game.free()
 	save_mgr.free()
@@ -391,7 +393,7 @@ func test_hint_system_and_solver() -> void:
 
 	assert_true(game.hint_button != null, "Hint button initialized in game")
 	assert_true(not game.hint_button.disabled, "Hint button enabled initially")
-	assert_true("Hint 💡" in game.hint_button.text, "Hint button localized in EN")
+	assert_true("Hint" in game.hint_button.text, "Hint button localized in EN")
 	assert_eq(game.active_hint_dir, Vector2i.ZERO, "No active hint direction initially")
 	assert_eq(game.hint_time_remaining, 0.0, "Hint timer starts at 0")
 
@@ -464,7 +466,7 @@ func test_warehouse_chapter_themes_and_progression() -> void:
 
 	# 2. Level 0 is Chapter 0 (Cargo Bay)
 	assert_eq(game.current_chapter_idx, 0, "Initial chapter index is 0")
-	assert_eq(game.chapter_badge.text, "📦 CH. 1", "Chapter 0 badge displays '📦 CH. 1'")
+	assert_eq(game.chapter_badge.text, "CH. 1", "Chapter 0 badge displays 'CH. 1'")
 	var ch0: Dictionary = game.get_current_chapter_theme()
 	assert_eq(ch0["name"], "Cargo Bay", "Chapter 0 theme name is Cargo Bay")
 	assert_eq(ch0["frame_rim"], Color(0.78, 0.60, 0.22), "Chapter 0 polished brass bevel rim")
@@ -473,7 +475,7 @@ func test_warehouse_chapter_themes_and_progression() -> void:
 	# 3. Chapter 1 (Cold Storage) at Level 15 (Level 16 in UI)
 	game.load_level(15)
 	assert_eq(game.current_chapter_idx, 1, "Level 15 transitions to chapter index 1")
-	assert_eq(game.chapter_badge.text, "❄ CH. 2", "Chapter 1 badge displays '❄ CH. 2'")
+	assert_eq(game.chapter_badge.text, "CH. 2", "Chapter 1 badge displays 'CH. 2'")
 	var ch1: Dictionary = game.get_current_chapter_theme()
 	assert_eq(ch1["name"], "Cold Storage", "Chapter 1 theme name is Cold Storage")
 	assert_eq(ch1["frame_rim"], Color(0.35, 0.82, 1.00), "Chapter 1 cryogenic cyan bevel rim")
@@ -482,7 +484,7 @@ func test_warehouse_chapter_themes_and_progression() -> void:
 	# 4. Chapter 2 (Cyber Depot) at Level 35 (Level 36 in UI)
 	game.load_level(35)
 	assert_eq(game.current_chapter_idx, 2, "Level 35 transitions to chapter index 2")
-	assert_eq(game.chapter_badge.text, "⚡ CH. 3", "Chapter 2 badge displays '⚡ CH. 3'")
+	assert_eq(game.chapter_badge.text, "CH. 3", "Chapter 2 badge displays 'CH. 3'")
 	var ch2: Dictionary = game.get_current_chapter_theme()
 	assert_eq(ch2["name"], "Cyber Depot", "Chapter 2 theme name is Cyber Depot")
 	assert_eq(ch2["frame_rim"], Color(1.00, 0.65, 0.18), "Chapter 2 hazard amber bevel rim")
@@ -556,17 +558,17 @@ func test_porter_locker_cosmetics_in_game() -> void:
 	assert_true(true, "Board redrawn with equipped cosmetics without error")
 
 	# 5. Localization of Locker strings & Cosmetics (EN, FR, AR)
-	assert_eq(loc.tr_text("LOCKER_TITLE"), "🦺 THE PORTER LOCKER 🦺", "EN Locker title is THE PORTER LOCKER")
+	assert_eq(loc.tr_text("LOCKER_TITLE"), "THE PORTER LOCKER", "EN Locker title is THE PORTER LOCKER")
 	assert_eq(loc.tr_text("SKIN_WORKER_SAFETY_VEST"), "Safety Vest", "EN Safety Vest skin name")
 	assert_eq(loc.tr_text("SKIN_CRATE_STEEL_CONTAINER"), "Steel Container", "EN Steel Container skin name")
 
 	loc.current_language = "fr"
-	assert_eq(loc.tr_text("LOCKER_TITLE"), "🦺 VESTIAIRE DU PORTEUR 🦺", "FR Locker title is VESTIAIRE DU PORTEUR")
+	assert_eq(loc.tr_text("LOCKER_TITLE"), "VESTIAIRE DU PORTEUR", "FR Locker title is VESTIAIRE DU PORTEUR")
 	assert_eq(loc.tr_text("SKIN_WORKER_SAFETY_VEST"), "Gilet de Sécurité", "FR Safety Vest skin name")
 	assert_eq(loc.tr_text("SKIN_CRATE_STEEL_CONTAINER"), "Conteneur en Acier", "FR Steel Container skin name")
 
 	loc.current_language = "ar"
-	assert_eq(loc.tr_text("LOCKER_TITLE"), "🦺 خزانة الحمال 🦺", "AR Locker title is خزانة الحمال")
+	assert_eq(loc.tr_text("LOCKER_TITLE"), "خزانة الحمال", "AR Locker title is خزانة الحمال")
 	assert_eq(loc.tr_text("SKIN_WORKER_SAFETY_VEST"), "سترة الأمان", "AR Safety Vest skin name")
 	assert_eq(loc.tr_text("SKIN_CRATE_STEEL_CONTAINER"), "حاوية فولاذية", "AR Steel Container skin name")
 
@@ -602,11 +604,11 @@ func test_rewarded_ad_hint_economy_in_game() -> void:
 	assert_true(not game.ad_reward_modal.visible, "AdRewardModal hidden after reward granted")
 
 	# 5. Localization of rewarded ad modal
-	assert_eq(loc.tr_text("MODAL_REWARD_TITLE"), "NEED A HINT? 💡", "EN modal title localized")
+	assert_eq(loc.tr_text("MODAL_REWARD_TITLE"), "NEED A HINT?", "EN modal title localized")
 	loc.current_language = "fr"
-	assert_eq(loc.tr_text("MODAL_REWARD_TITLE"), "BESOIN D'UN INDICE ? 💡", "FR modal title localized")
+	assert_eq(loc.tr_text("MODAL_REWARD_TITLE"), "BESOIN D'UN INDICE ?", "FR modal title localized")
 	loc.current_language = "ar"
-	assert_eq(loc.tr_text("MODAL_REWARD_TITLE"), "تحتاج مساعدة؟ 💡", "AR modal title localized")
+	assert_eq(loc.tr_text("MODAL_REWARD_TITLE"), "تحتاج مساعدة؟", "AR modal title localized")
 
 	game.free()
 	loc.free()

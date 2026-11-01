@@ -86,21 +86,21 @@ func test_translations_lookup() -> void:
 	# English
 	loc.set_language("en")
 	assert_eq(loc.tr_text("MENU_PLAY"), "PLAY", "EN MENU_PLAY")
-	assert_eq(loc.tr_text("BTN_RESTART"), "Restart ↺", "EN BTN_RESTART")
+	assert_eq(loc.tr_text("BTN_RESTART"), "Restart", "EN BTN_RESTART")
 	assert_eq(loc.tr_text("MENU_CREDITS"), "CREDITS", "EN MENU_CREDITS")
 	assert_eq(loc.tr_text("MENU_HAPTICS", ["ON"]), "HAPTICS: ON", "EN MENU_HAPTICS")
 
 	# French
 	loc.set_language("fr")
 	assert_eq(loc.tr_text("MENU_PLAY"), "JOUER", "FR MENU_PLAY")
-	assert_eq(loc.tr_text("BTN_RESTART"), "Recommencer ↺", "FR BTN_RESTART")
+	assert_eq(loc.tr_text("BTN_RESTART"), "Recommencer", "FR BTN_RESTART")
 	assert_eq(loc.tr_text("MENU_CREDITS"), "CRÉDITS", "FR MENU_CREDITS")
 	assert_eq(loc.tr_text("MENU_HAPTICS", ["OUI"]), "HAPTIQUE : OUI", "FR MENU_HAPTICS")
 
 	# Arabic
 	loc.set_language("ar")
 	assert_eq(loc.tr_text("MENU_PLAY"), "ابدأ", "AR MENU_PLAY")
-	assert_eq(loc.tr_text("BTN_RESTART"), "إعادة ↺", "AR BTN_RESTART")
+	assert_eq(loc.tr_text("BTN_RESTART"), "إعادة", "AR BTN_RESTART")
 	assert_eq(loc.tr_text("MENU_CREDITS"), "حول اللعبة", "AR MENU_CREDITS")
 	assert_eq(loc.tr_text("MENU_HAPTICS", ["مفعّل"]), "الاهتزاز: مفعّل", "AR MENU_HAPTICS")
 

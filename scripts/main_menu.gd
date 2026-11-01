@@ -12,6 +12,15 @@ const AchievementManagerScript = preload("res://scripts/achievement_manager.gd")
 const TOTAL_LEVELS_COUNT: int = 50
 const AVAILABLE_LEVELS_COUNT: int = 50 # All 50 verified solvable levels active
 
+# Enhanced High-Resolution UI Icon Textures
+var icon_trophy: Texture2D = preload("res://assets/icons/icon_trophy.png")
+var icon_settings: Texture2D = preload("res://assets/icons/icon_settings.png")
+var icon_locker: Texture2D = preload("res://assets/icons/icon_locker.png")
+var icon_star_full: Texture2D = preload("res://assets/icons/icon_star_full.png")
+var icon_lock: Texture2D = preload("res://assets/icons/icon_lock.png")
+var icon_play: Texture2D = preload("res://assets/icons/icon_play.png")
+var icon_check: Texture2D = preload("res://assets/icons/icon_check.png")
+
 var save_mgr: Node = null
 var audio_mgr: Node = null
 var loc_mgr: Node = null
@@ -206,6 +215,28 @@ func _ready() -> void:
 		star_progress_btn.pressed.connect(_show_level_select)
 	if quick_lang_btn and not quick_lang_btn.pressed.is_connected(_on_language_pressed):
 		quick_lang_btn.pressed.connect(_on_language_pressed)
+
+	# Enhanced UI Icons on Main Menu
+	if achievements_btn:
+		achievements_btn.icon = icon_trophy
+		achievements_btn.expand_icon = true
+		achievements_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		achievements_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0))
+	if settings_btn:
+		settings_btn.icon = icon_settings
+		settings_btn.expand_icon = true
+		settings_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		settings_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0))
+	if locker_btn:
+		locker_btn.icon = icon_locker
+		locker_btn.expand_icon = true
+		locker_btn.add_theme_constant_override("icon_max_width", 22)
+		locker_btn.add_theme_constant_override("h_separation", 8)
+	if star_progress_btn:
+		star_progress_btn.icon = icon_star_full
+		star_progress_btn.expand_icon = true
+		star_progress_btn.add_theme_constant_override("icon_max_width", 18)
+		star_progress_btn.add_theme_constant_override("h_separation", 6)
 
 	_show_main_view()
 	_update_menu_state()
@@ -417,12 +448,12 @@ func _refresh_locker_ui() -> void:
 
 	var total_stars: int = save_mgr.get_total_stars()
 	if locker_stars_badge:
-		locker_stars_badge.text = loc_mgr.tr_text("LOCKER_STARS_BADGE", [total_stars]) if loc_mgr else ("★ %d / 150 Stars Collected" % total_stars)
+		locker_stars_badge.text = loc_mgr.tr_text("LOCKER_STARS_BADGE", [total_stars]) if loc_mgr else ("%d / 150 Stars Collected" % total_stars)
 
 	if outfits_tab_btn:
-		outfits_tab_btn.text = loc_mgr.tr_text("LOCKER_TAB_OUTFITS") if loc_mgr else "👕 OUTFITS"
+		outfits_tab_btn.text = loc_mgr.tr_text("LOCKER_TAB_OUTFITS") if loc_mgr else "OUTFITS"
 	if crates_tab_btn:
-		crates_tab_btn.text = loc_mgr.tr_text("LOCKER_TAB_CRATES") if loc_mgr else "📦 CRATES"
+		crates_tab_btn.text = loc_mgr.tr_text("LOCKER_TAB_CRATES") if loc_mgr else "CRATES"
 	if close_locker_btn and loc_mgr:
 		close_locker_btn.text = loc_mgr.tr_text("BTN_CLOSE")
 
@@ -501,7 +532,7 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 		desc_lbl.text = desc
 		desc_lbl.add_theme_color_override("font_color", Color(0.65, 0.72, 0.82))
 	else:
-		var req_text: String = loc_mgr.tr_text("LOCKER_LOCKED_STARS", [req_stars]) if loc_mgr else ("★ %d Stars required" % req_stars)
+		var req_text: String = loc_mgr.tr_text("LOCKER_LOCKED_STARS", [req_stars]) if loc_mgr else ("%d Stars required" % req_stars)
 		desc_lbl.text = req_text
 		desc_lbl.add_theme_color_override("font_color", Color(1.0, 0.55, 0.40))
 	desc_lbl.add_theme_font_size_override("font_size", 11)
@@ -513,7 +544,11 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 	act_btn.add_theme_font_size_override("font_size", 13)
 
 	if is_equipped:
-		act_btn.text = loc_mgr.tr_text("LOCKER_EQUIPPED") if loc_mgr else "✓ EQUIPPED"
+		act_btn.text = loc_mgr.tr_text("LOCKER_EQUIPPED") if loc_mgr else "EQUIPPED"
+		act_btn.icon = icon_check
+		act_btn.expand_icon = true
+		act_btn.add_theme_constant_override("icon_max_width", 16)
+		act_btn.add_theme_constant_override("h_separation", 6)
 		act_btn.disabled = true
 		act_btn.theme_type_variation = &"PrimaryButton"
 	elif is_unlocked:
@@ -522,7 +557,11 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 		act_btn.pressed.connect(equip_callable)
 		_attach_spring_physics(act_btn)
 	else:
-		act_btn.text = "🔒 LOCKED"
+		act_btn.text = "LOCKED"
+		act_btn.icon = icon_lock
+		act_btn.expand_icon = true
+		act_btn.add_theme_constant_override("icon_max_width", 16)
+		act_btn.add_theme_constant_override("h_separation", 6)
 		act_btn.disabled = true
 
 	hbox.add_child(act_btn)
@@ -552,10 +591,10 @@ func _refresh_achievements_ui() -> void:
 			unlocked_count += 1
 
 	if achievements_title_label:
-		achievements_title_label.text = loc_mgr.tr_text("ACHIEVEMENTS_TITLE") if loc_mgr else "🏆 WAREHOUSE ACHIEVEMENTS 🏆"
+		achievements_title_label.text = loc_mgr.tr_text("ACHIEVEMENTS_TITLE") if loc_mgr else "WAREHOUSE ACHIEVEMENTS"
 
 	if achievements_counter_badge:
-		achievements_counter_badge.text = loc_mgr.tr_text("ACHIEVEMENTS_COUNTER", [unlocked_count, ach_list.size()]) if loc_mgr else ("🏆 %d / %d Unlocked" % [unlocked_count, ach_list.size()])
+		achievements_counter_badge.text = loc_mgr.tr_text("ACHIEVEMENTS_COUNTER", [unlocked_count, ach_list.size()]) if loc_mgr else ("%d / %d Unlocked" % [unlocked_count, ach_list.size()])
 
 	if close_achievements_btn and loc_mgr:
 		close_achievements_btn.text = loc_mgr.tr_text("BTN_CLOSE")
@@ -584,7 +623,7 @@ func _refresh_achievements_ui() -> void:
 		achievements_items_vbox.add_child(card)
 
 
-func _create_achievement_item_card(_ach_id: String, icon: String, title: String, desc: String, is_unlocked: bool) -> Control:
+func _create_achievement_item_card(_ach_id: String, _icon: String, title: String, desc: String, is_unlocked: bool) -> Control:
 	var panel: PanelContainer = PanelContainer.new()
 	panel.custom_minimum_size = Vector2(0, 64)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -600,10 +639,12 @@ func _create_achievement_item_card(_ach_id: String, icon: String, title: String,
 	hbox.add_theme_constant_override("separation", 12)
 	margin.add_child(hbox)
 
-	var icon_lbl: Label = Label.new()
-	icon_lbl.text = icon if is_unlocked else "🔒"
-	icon_lbl.add_theme_font_size_override("font_size", 26)
-	hbox.add_child(icon_lbl)
+	var icon_rect: TextureRect = TextureRect.new()
+	icon_rect.custom_minimum_size = Vector2(28, 28)
+	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon_rect.texture = icon_trophy if is_unlocked else icon_lock
+	hbox.add_child(icon_rect)
 
 	var info_vbox: VBoxContainer = VBoxContainer.new()
 	info_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -623,11 +664,12 @@ func _create_achievement_item_card(_ach_id: String, icon: String, title: String,
 	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info_vbox.add_child(desc_lbl)
 
-	var status_lbl: Label = Label.new()
-	status_lbl.text = "✓" if is_unlocked else "🔒"
-	status_lbl.add_theme_font_size_override("font_size", 16)
-	status_lbl.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4) if is_unlocked else Color(0.45, 0.50, 0.60))
-	hbox.add_child(status_lbl)
+	var status_rect: TextureRect = TextureRect.new()
+	status_rect.custom_minimum_size = Vector2(18, 18)
+	status_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	status_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	status_rect.texture = icon_check if is_unlocked else icon_lock
+	hbox.add_child(status_rect)
 
 	return panel
 
@@ -666,7 +708,7 @@ func _update_settings_ui() -> void:
 		if loc_mgr:
 			var key: String = "TRACK_LOFI" if track_idx == 0 else "TRACK_INDUSTRIAL"
 			track_name = loc_mgr.tr_text(key)
-		track_cycle_btn.text = "♪ " + track_name + " ▾"
+		track_cycle_btn.text = track_name
 
 	if control_mode_btn:
 		var mode_name: String = save_mgr.get_control_scheme_name() if save_mgr and save_mgr.has_method("get_control_scheme_name") else "SWIPE"
@@ -783,11 +825,11 @@ func _update_menu_state() -> void:
 			continue_btn.visible = false
 			play_btn.text = "PLAY"
 		if settings_btn:
-			settings_btn.text = "SETTINGS ⚙"
+			settings_btn.text = "SETTINGS"
 		if locker_btn:
-			locker_btn.text = "PORTER LOCKER 🦺"
+			locker_btn.text = "PORTER LOCKER"
 		if achievements_btn:
-			achievements_btn.text = "ACHIEVEMENTS 🏆"
+			achievements_btn.text = "ACHIEVEMENTS"
 		if sound_btn:
 			sound_btn.text = "SOUND: %s" % ("ON" if is_sound_on else "OFF")
 		if haptics_btn:
@@ -797,10 +839,10 @@ func _update_menu_state() -> void:
 	var total_stars: int = save_mgr.get_total_stars() if (save_mgr and save_mgr.has_method("get_total_stars")) else 0
 	var sector_num: int = (last_lvl + 1)
 	if star_progress_btn:
-		star_progress_btn.text = "★ %d/150 • Sector %d" % [total_stars, sector_num]
+		star_progress_btn.text = "%d / 150 Stars • Sector %d" % [total_stars, sector_num]
 	if quick_lang_btn:
 		var lang_code: String = loc_mgr.current_language.to_upper() if loc_mgr else "EN"
-		quick_lang_btn.text = "🌐 %s" % lang_code
+		quick_lang_btn.text = lang_code
 
 
 func _on_language_pressed() -> void:
@@ -889,7 +931,7 @@ func _refresh_level_grid_buttons() -> void:
 
 	if has_node("LevelSelectView/TopBar/Margin/HBox/TotalStarsLabel") and save_mgr != null:
 		var stars_lbl = get_node("LevelSelectView/TopBar/Margin/HBox/TotalStarsLabel") as Label
-		stars_lbl.text = "★ %d/150" % total_stars
+		stars_lbl.text = "%d / 150 Stars" % total_stars
 
 	# Update Campaign Banner card if present
 	var pb: ProgressBar = find_child("ProgressBar", true, false) as ProgressBar
@@ -899,7 +941,7 @@ func _refresh_level_grid_buttons() -> void:
 
 	var stars_count_lbl: Label = find_child("StarsCountLabel", true, false) as Label
 	if stars_count_lbl != null:
-		stars_count_lbl.text = "★ %d / 150 Stars Collected" % total_stars
+		stars_count_lbl.text = "%d / 150 Stars Collected" % total_stars
 
 	var completion_lbl: Label = find_child("CompletionLabel", true, false) as Label
 	if completion_lbl != null and save_mgr != null:
@@ -932,19 +974,30 @@ func _refresh_level_grid_buttons() -> void:
 				1: star_str = "★☆☆"
 				_: star_str = "★"
 			child.text = "%d\n%s" % [lvl_idx + 1, star_str]
+			child.icon = null
 			child.disabled = false
 			child.theme_type_variation = &"LevelBtnCompleted"
 			child.modulate = Color(1.0, 1.0, 1.0).lerp(ch_col, 0.28)
 		elif is_unlocked:
-			child.text = "%d\n▶" % [lvl_idx + 1]
+			child.text = "%d" % [lvl_idx + 1]
+			child.icon = icon_play
+			child.expand_icon = true
+			child.add_theme_constant_override("icon_max_width", 14)
+			child.add_theme_constant_override("h_separation", 4)
+			child.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			child.disabled = false
 			child.theme_type_variation = &"LevelBtnCurrent"
 			child.modulate = ch_col
 		else:
+			child.text = "%d" % [lvl_idx + 1]
 			if is_available:
-				child.text = "%d\n🔒" % [lvl_idx + 1]
+				child.icon = icon_lock
+				child.expand_icon = true
+				child.add_theme_constant_override("icon_max_width", 14)
+				child.add_theme_constant_override("h_separation", 4)
+				child.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			else:
-				child.text = "%d\n—" % [lvl_idx + 1]
+				child.icon = null
 			child.disabled = true
 			child.theme_type_variation = &"LevelBtnLocked"
 			child.modulate = Color(0.68, 0.72, 0.82, 0.75).lerp(ch_col, 0.15)

@@ -205,6 +205,21 @@ var tex_player_right: Texture2D = preload("res://assets/player_right.png")
 var tex_player_right_w1: Texture2D = preload("res://assets/player_right_walk1.png")
 var tex_player_right_w2: Texture2D = preload("res://assets/player_right_walk2.png")
 
+# Enhanced High-Resolution UI Icon Textures
+var icon_home: Texture2D = preload("res://assets/icons/icon_home.png")
+var icon_music_on: Texture2D = preload("res://assets/icons/icon_music_on.png")
+var icon_music_off: Texture2D = preload("res://assets/icons/icon_music_off.png")
+var icon_control_swipe: Texture2D = preload("res://assets/icons/icon_control_swipe.png")
+var icon_control_dpad: Texture2D = preload("res://assets/icons/icon_control_dpad.png")
+var icon_control_gamepad: Texture2D = preload("res://assets/icons/icon_control_gamepad.png")
+var icon_dpad_up: Texture2D = preload("res://assets/icons/icon_dpad_up.png")
+var icon_dpad_down: Texture2D = preload("res://assets/icons/icon_dpad_down.png")
+var icon_dpad_left: Texture2D = preload("res://assets/icons/icon_dpad_left.png")
+var icon_dpad_right: Texture2D = preload("res://assets/icons/icon_dpad_right.png")
+var icon_undo: Texture2D = preload("res://assets/icons/icon_undo.png")
+var icon_restart: Texture2D = preload("res://assets/icons/icon_restart.png")
+var icon_hint: Texture2D = preload("res://assets/icons/icon_hint.png")
+
 
 func _initialize_nodes() -> void:
 	if has_node("Background"):
@@ -264,6 +279,57 @@ func _initialize_nodes() -> void:
 		star_1 = win_modal.find_child("Star1", true, false)
 		star_2 = win_modal.find_child("Star2", true, false)
 		star_3 = win_modal.find_child("Star3", true, false)
+
+	# Enhanced UI icons on buttons
+	if menu_button != null:
+		menu_button.icon = icon_home
+		menu_button.text = ""
+		menu_button.expand_icon = true
+		menu_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	if dpad_up != null:
+		dpad_up.icon = icon_dpad_up
+		dpad_up.text = ""
+		dpad_up.expand_icon = true
+		dpad_up.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if dpad_down != null:
+		dpad_down.icon = icon_dpad_down
+		dpad_down.text = ""
+		dpad_down.expand_icon = true
+		dpad_down.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if dpad_left != null:
+		dpad_left.icon = icon_dpad_left
+		dpad_left.text = ""
+		dpad_left.expand_icon = true
+		dpad_left.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if dpad_right != null:
+		dpad_right.icon = icon_dpad_right
+		dpad_right.text = ""
+		dpad_right.expand_icon = true
+		dpad_right.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	if undo_button != null:
+		undo_button.icon = icon_undo
+		undo_button.expand_icon = true
+		undo_button.add_theme_constant_override("icon_max_width", 20)
+		undo_button.add_theme_constant_override("h_separation", 6)
+	if restart_button != null:
+		restart_button.icon = icon_restart
+		restart_button.expand_icon = true
+		restart_button.add_theme_constant_override("icon_max_width", 20)
+		restart_button.add_theme_constant_override("h_separation", 6)
+	if hint_button != null:
+		hint_button.icon = icon_hint
+		hint_button.expand_icon = true
+		hint_button.add_theme_constant_override("icon_max_width", 20)
+		hint_button.add_theme_constant_override("h_separation", 6)
+
+	if win_menu_button != null:
+		win_menu_button.icon = null
+	if win_retry_button != null:
+		win_retry_button.icon = null
+	if next_level_button != null:
+		next_level_button.icon = null
 
 
 func _ready() -> void:
@@ -427,7 +493,7 @@ func announce_chapter(ch_idx: int) -> void:
 	var ch: Dictionary = CHAPTER_THEMES[clampi(ch_idx, 0, CHAPTER_THEMES.size() - 1)]
 	var ch_key: String = "CHAPTER_%d_TITLE" % ch_idx
 	var ch_title: String = loc_mgr.tr_text(ch_key) if loc_mgr else ch["name"]
-	var toast_msg: String = loc_mgr.tr_text("CHAPTER_TOAST", [ch_idx + 1, ch_title]) if loc_mgr else ("★ CHAPTER %d: %s ★" % [ch_idx + 1, ch_title])
+	var toast_msg: String = loc_mgr.tr_text("CHAPTER_TOAST", [ch_idx + 1, ch_title]) if loc_mgr else ("CHAPTER %d: %s" % [ch_idx + 1, ch_title])
 	_show_hint_toast(toast_msg, ch["badge_color"])
 
 
@@ -511,7 +577,7 @@ func _update_ui() -> void:
 
 	if chapter_badge != null:
 		var ch_info: Dictionary = get_current_chapter_theme()
-		chapter_badge.text = "%s CH. %d" % [ch_info["icon"], current_chapter_idx + 1]
+		chapter_badge.text = "CH. %d" % [current_chapter_idx + 1]
 		chapter_badge.modulate = ch_info["badge_color"]
 
 	# Option C: Real-Time Live 3-Star Rating & Target Tracking
@@ -524,10 +590,10 @@ func _update_ui() -> void:
 		var s2: int = targets.get("two_star", targets.get("star_2", 999))
 		if cur_moves <= s3:
 			live_stars = 3
-			star_target_sub = " (★≤%d)" % s3
+			star_target_sub = " (≤%d)" % s3
 		elif cur_moves <= s2:
 			live_stars = 2
-			star_target_sub = " (★≤%d)" % s2
+			star_target_sub = " (≤%d)" % s2
 		else:
 			live_stars = 1
 			star_target_sub = ""
@@ -576,23 +642,23 @@ func _update_ui() -> void:
 		prev_button.text = loc_mgr.tr_text("BTN_PREV")
 		next_button.text = loc_mgr.tr_text("BTN_NEXT")
 		if win_menu_button != null:
-			win_menu_button.text = "⌂ " + loc_mgr.tr_text("WIN_MENU_BTN")
+			win_menu_button.text = loc_mgr.tr_text("WIN_MENU_BTN")
 		if next_level_button != null:
-			next_level_button.text = "▶ " + loc_mgr.tr_text("WIN_NEXT_BTN")
+			next_level_button.text = loc_mgr.tr_text("WIN_NEXT_BTN")
 		if win_retry_button != null:
 			win_retry_button.text = loc_mgr.tr_text("WIN_RETRY_BTN")
 	else:
 		level_label.text = "LEVEL %d / %d" % [current_level_index + 1, level_paths.size()]
 		stats_label.text = "MOVES: %d%s   •   PUSHES: %d%s" % [grid.moves_count, star_target_sub, grid.pushes_count, best_str]
 		if undo_button != null:
-			undo_button.text = "Undo ↶"
+			undo_button.text = "Undo"
 		_update_hint_button_text()
 		if win_menu_button != null:
-			win_menu_button.text = "⌂ MENU"
+			win_menu_button.text = "MENU"
 		if next_level_button != null:
-			next_level_button.text = "▶ NEXT"
+			next_level_button.text = "NEXT"
 		if win_retry_button != null:
-			win_retry_button.text = "↺ RETRY"
+			win_retry_button.text = "RETRY"
 
 	if undo_button != null:
 		undo_button.disabled = (grid == null or not grid.can_undo())
@@ -736,24 +802,24 @@ func _on_level_won() -> void:
 		if time_title_lbl: time_title_lbl.text = loc_mgr.tr_text("STAT_TIME_TITLE")
 		if pushes_title_lbl: pushes_title_lbl.text = loc_mgr.tr_text("STAT_PUSHES_TITLE")
 		if win_title: win_title.text = loc_mgr.tr_text("WIN_BANNER")
-		if win_menu_button: win_menu_button.text = "⌂ " + loc_mgr.tr_text("WIN_MENU_BTN")
+		if win_menu_button: win_menu_button.text = loc_mgr.tr_text("WIN_MENU_BTN")
 		if win_retry_button: win_retry_button.text = loc_mgr.tr_text("WIN_RETRY_BTN")
 		if next_level_button:
 			if current_level_index >= level_paths.size() - 1:
-				next_level_button.text = "★ " + loc_mgr.tr_text("BTN_CAMPAIGN_COMPLETE")
+				next_level_button.text = loc_mgr.tr_text("BTN_CAMPAIGN_COMPLETE")
 			else:
-				next_level_button.text = "▶ " + loc_mgr.tr_text("WIN_NEXT_BTN")
+				next_level_button.text = loc_mgr.tr_text("WIN_NEXT_BTN")
 		if win_stats: win_stats.text = loc_mgr.tr_text("WIN_TARGET_HINT", [three_star_target])
 	else:
 		if win_title: win_title.text = "LEVEL COMPLETED!"
-		if win_menu_button: win_menu_button.text = "⌂ MENU"
-		if win_retry_button: win_retry_button.text = "↺ RETRY"
+		if win_menu_button: win_menu_button.text = "MENU"
+		if win_retry_button: win_retry_button.text = "RETRY"
 		if next_level_button:
 			if current_level_index >= level_paths.size() - 1:
-				next_level_button.text = "★ Finish Campaign"
+				next_level_button.text = "Finish Campaign"
 			else:
-				next_level_button.text = "▶ NEXT"
-		if win_stats: win_stats.text = "3★ Target: ≤ %d moves" % three_star_target
+				next_level_button.text = "NEXT"
+		if win_stats: win_stats.text = "Target: ≤ %d moves" % three_star_target
 
 	# Prepare stars in unlit state
 	var stars: Array = [star_1, star_2, star_3]
@@ -1060,9 +1126,11 @@ func _update_music_button_ui() -> void:
 		is_on = audio_mgr.is_music_enabled()
 	elif save_mgr != null and "music_enabled" in save_mgr:
 		is_on = save_mgr.music_enabled
-	music_button.text = "♪" if is_on else "♪̸"
+	music_button.text = ""
+	music_button.icon = icon_music_on if is_on else icon_music_off
+	music_button.expand_icon = true
+	music_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	music_button.modulate = Color.WHITE
-	music_button.add_theme_color_override("font_color", Color(1.0, 0.85, 0.28, 1.0) if is_on else Color(0.55, 0.62, 0.72, 0.75))
 
 
 func _on_control_button_pressed() -> void:
@@ -1089,16 +1157,16 @@ func _update_control_scheme_ui() -> void:
 		dpad_overlay.visible = show_dpad
 	if control_button:
 		control_button.modulate = Color.WHITE
+		control_button.expand_icon = true
+		control_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		control_button.text = ""
 		match scheme:
 			0:
-				control_button.text = "✋"
-				control_button.add_theme_color_override("font_color", Color(0.80, 0.90, 1.0, 1.0))
+				control_button.icon = icon_control_swipe
 			1:
-				control_button.text = "✥"
-				control_button.add_theme_color_override("font_color", Color(1.0, 0.85, 0.28, 1.0))
+				control_button.icon = icon_control_dpad
 			2:
-				control_button.text = "🎮"
-				control_button.add_theme_color_override("font_color", Color(0.38, 0.95, 0.60, 1.0))
+				control_button.icon = icon_control_gamepad
 
 
 func _on_dpad_up_pressed() -> void:
@@ -1210,9 +1278,9 @@ func _on_hint_pressed() -> void:
 				haptic_mgr.vibrate_bump()
 		add_trauma(0.25)
 		if is_confirmed_deadlock:
-			_show_hint_toast(loc_mgr.tr_text("HINT_DEADLOCK") if loc_mgr else "No solution from here! Tap Undo ↶", Color(1.0, 0.4, 0.4))
+			_show_hint_toast(loc_mgr.tr_text("HINT_DEADLOCK") if loc_mgr else "No solution from here! Tap Undo", Color(1.0, 0.4, 0.4))
 		else:
-			_show_hint_toast(loc_mgr.tr_text("HINT_NO_PATH") if loc_mgr else "No clear path found. Try another move or Undo ↶", Color(1.0, 0.7, 0.4))
+			_show_hint_toast(loc_mgr.tr_text("HINT_NO_PATH") if loc_mgr else "No clear path found. Try another move or Undo", Color(1.0, 0.7, 0.4))
 		# Clear ghost trajectory without hiding the toast message
 		active_hint_dir = Vector2i.ZERO
 		hint_time_remaining = 0.0
@@ -1249,7 +1317,7 @@ func _on_hint_pressed() -> void:
 	elif active_hint_dir == Vector2i.LEFT: dir_key = "LEFT"
 	elif active_hint_dir == Vector2i.RIGHT: dir_key = "RIGHT"
 
-	var toast_msg: String = loc_mgr.tr_text("HINT_STEP_" + dir_key) if loc_mgr else ("💡 Hint: Move " + dir_key)
+	var toast_msg: String = loc_mgr.tr_text("HINT_STEP_" + dir_key) if loc_mgr else ("Hint: Move " + dir_key)
 	_show_hint_toast(toast_msg, Color(1.0, 0.95, 0.6))
 	queue_redraw()
 
@@ -2490,7 +2558,7 @@ func _attach_spring_physics(btn: Button) -> void:
 
 func _update_hint_button_text() -> void:
 	if hint_button != null:
-		var hint_str: String = loc_mgr.tr_text("BTN_HINT") if loc_mgr else "Hint 💡"
+		var hint_str: String = loc_mgr.tr_text("BTN_HINT") if loc_mgr else "Hint"
 		var count: int = save_mgr.get_hints_remaining() if save_mgr else 3
 		hint_button.text = "%s (%d)" % [hint_str, count]
 
@@ -2540,7 +2608,7 @@ func _create_ad_reward_modal() -> PanelContainer:
 	margin.add_child(vbox)
 
 	var title_lbl: Label = Label.new()
-	title_lbl.text = loc_mgr.tr_text("MODAL_REWARD_TITLE") if loc_mgr else "NEED A HINT? 💡"
+	title_lbl.text = loc_mgr.tr_text("MODAL_REWARD_TITLE") if loc_mgr else "NEED A HINT?"
 	title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_lbl.add_theme_font_size_override("font_size", 20)
 	title_lbl.add_theme_color_override("font_color", Color(1.0, 0.88, 0.40))
@@ -2560,7 +2628,7 @@ func _create_ad_reward_modal() -> PanelContainer:
 
 	var watch_btn: Button = Button.new()
 	watch_btn.name = "WatchAdBtn"
-	watch_btn.text = loc_mgr.tr_text("BTN_WATCH_AD") if loc_mgr else "WATCH AD 🎬 (+3 💡)"
+	watch_btn.text = loc_mgr.tr_text("BTN_WATCH_AD") if loc_mgr else "WATCH AD (+3 HINTS)"
 	watch_btn.custom_minimum_size = Vector2(0, 46)
 	watch_btn.theme_type_variation = &"PrimaryButton"
 	watch_btn.pressed.connect(_on_watch_ad_pressed)
@@ -2610,7 +2678,7 @@ func _on_rewarded_hints_earned(reward_type: String, amount: int) -> void:
 			save_mgr.add_hints(amount)
 		_hide_ad_reward_modal()
 		_update_hint_button_text()
-		var msg = loc_mgr.tr_text("TOAST_HINTS_ADDED") if loc_mgr else "+3 Hints Added! 💡"
+		var msg = loc_mgr.tr_text("TOAST_HINTS_ADDED") if loc_mgr else "+3 Hints Added!"
 		_show_hint_toast(msg, Color(0.4, 1.0, 0.6))
 		if audio_mgr:
 			audio_mgr.play_win()
@@ -2629,8 +2697,7 @@ func _check_achievements() -> void:
 
 func _show_achievement_toast(info: Dictionary) -> void:
 	var ach_name: String = loc_mgr.tr_text(info.get("name_key", "")) if loc_mgr else info.get("name", "Achievement")
-	var icon: String = info.get("icon", "🏆")
-	var toast_text: String = "🏆 UNLOCKED: %s %s" % [icon, ach_name]
+	var toast_text: String = "UNLOCKED: %s" % [ach_name]
 	_show_hint_toast(toast_text, Color(1.0, 0.85, 0.25))
 	if audio_mgr:
 		audio_mgr.play_win()

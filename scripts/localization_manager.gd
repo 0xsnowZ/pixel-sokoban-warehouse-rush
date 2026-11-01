@@ -73,14 +73,14 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "اللغة: %s"
 	},
 	"MENU_SETTINGS": {
-		"en": "SETTINGS ⚙",
-		"fr": "PARAMÈTRES ⚙",
-		"ar": "الإعدادات ⚙"
+		"en": "SETTINGS",
+		"fr": "PARAMÈTRES",
+		"ar": "الإعدادات"
 	},
 	"SETTINGS_TITLE": {
-		"en": "⚙ AUDIO & SETTINGS ⚙",
-		"fr": "⚙ AUDIO & PARAMÈTRES ⚙",
-		"ar": "⚙ الصوت والإعدادات ⚙"
+		"en": "AUDIO & SETTINGS",
+		"fr": "AUDIO & PARAMÈTRES",
+		"ar": "الصوت والإعدادات"
 	},
 	"SETTINGS_MUSIC_VOL": {
 		"en": "MUSIC: %d%%",
@@ -93,9 +93,9 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "المؤثرات: %d%%"
 	},
 	"SETTINGS_TRACK": {
-		"en": "♪ TRACK: %s",
-		"fr": "♪ PISTE : %s",
-		"ar": "♪ المقطع: %s"
+		"en": "TRACK: %s",
+		"fr": "PISTE : %s",
+		"ar": "المقطع: %s"
 	},
 	"TRACK_LOFI": {
 		"en": "Warehouse Chill",
@@ -153,34 +153,34 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "المستودع الذكي"
 	},
 	"CHAPTER_TOAST": {
-		"en": "★ CHAPTER %d: %s ★",
-		"fr": "★ CHAPITRE %d : %s ★",
-		"ar": "★ الفصل %d: %s ★"
+		"en": "CHAPTER %d: %s",
+		"fr": "CHAPITRE %d : %s",
+		"ar": "الفصل %d: %s"
 	},
 	"MENU_LOCKER": {
-		"en": "PORTER LOCKER 🦺",
-		"fr": "VESTIAIRE 🦺",
-		"ar": "الخزانة 🦺"
+		"en": "PORTER LOCKER",
+		"fr": "VESTIAIRE",
+		"ar": "الخزانة"
 	},
 	"LOCKER_TITLE": {
-		"en": "🦺 THE PORTER LOCKER 🦺",
-		"fr": "🦺 VESTIAIRE DU PORTEUR 🦺",
-		"ar": "🦺 خزانة الحمال 🦺"
+		"en": "THE PORTER LOCKER",
+		"fr": "VESTIAIRE DU PORTEUR",
+		"ar": "خزانة الحمال"
 	},
 	"LOCKER_STARS_BADGE": {
-		"en": "★ %d / 150 Stars Collected",
-		"fr": "★ %d / 150 Étoiles collectées",
-		"ar": "★ %d / 150 نجمة تم جمعها"
+		"en": "%d / 150 Stars Collected",
+		"fr": "%d / 150 Étoiles collectées",
+		"ar": "%d / 150 نجمة تم جمعها"
 	},
 	"LOCKER_TAB_OUTFITS": {
-		"en": "👕 OUTFITS",
-		"fr": "👕 TENUES",
-		"ar": "👕 الأزياء"
+		"en": "OUTFITS",
+		"fr": "TENUES",
+		"ar": "الأزياء"
 	},
 	"LOCKER_TAB_CRATES": {
-		"en": "📦 CRATES",
-		"fr": "📦 CAISSES",
-		"ar": "📦 الصناديق"
+		"en": "CRATES",
+		"fr": "CAISSES",
+		"ar": "الصناديق"
 	},
 	"LOCKER_EQUIP": {
 		"en": "EQUIP",
@@ -188,14 +188,14 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "تجهيز"
 	},
 	"LOCKER_EQUIPPED": {
-		"en": "✓ EQUIPPED",
-		"fr": "✓ ÉQUIPÉ",
-		"ar": "✓ مُجهّز"
+		"en": "EQUIPPED",
+		"fr": "ÉQUIPÉ",
+		"ar": "مُجهّز"
 	},
 	"LOCKER_LOCKED_STARS": {
-		"en": "★ %d Stars required",
-		"fr": "★ %d Étoiles requises",
-		"ar": "★ %d نجمة مطلوبة"
+		"en": "%d Stars required",
+		"fr": "%d Étoiles requises",
+		"ar": "%d نجمة مطلوبة"
 	},
 	"SKIN_WORKER_CLASSIC": {
 		"en": "Classic Denim",
@@ -288,44 +288,44 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "الأفضل: %d"
 	},
 	"BTN_RESTART": {
-		"en": "Restart ↺",
-		"fr": "Recommencer ↺",
-		"ar": "إعادة ↺"
+		"en": "Restart",
+		"fr": "Recommencer",
+		"ar": "إعادة"
 	},
 	"BTN_UNDO": {
-		"en": "Undo ↶",
-		"fr": "Annuler ↶",
-		"ar": "تراجع ↶"
+		"en": "Undo",
+		"fr": "Annuler",
+		"ar": "تراجع"
 	},
 	"BTN_PREV": {
-		"en": "< Prev",
-		"fr": "< Préc",
-		"ar": "السابق >"
+		"en": "Prev",
+		"fr": "Préc",
+		"ar": "السابق"
 	},
 	"BTN_NEXT": {
-		"en": "Next >",
-		"fr": "Suiv >",
-		"ar": "التالي <"
+		"en": "Next",
+		"fr": "Suiv",
+		"ar": "التالي"
 	},
 	"BTN_BACK": {
-		"en": "← Back",
-		"fr": "← Retour",
-		"ar": "رجوع →"
+		"en": "Back",
+		"fr": "Retour",
+		"ar": "رجوع"
 	},
 	"BTN_HINT": {
-		"en": "Hint 💡",
-		"fr": "Indice 💡",
-		"ar": "تلميح 💡"
+		"en": "Hint",
+		"fr": "Indice",
+		"ar": "تلميح"
 	},
 	"HINT_DEADLOCK": {
-		"en": "No solution from here! Tap Undo ↶",
-		"fr": "Bloqué ! Appuyez sur Annuler ↶",
-		"ar": "طريق مسدود! اضغط تراجع ↶"
+		"en": "No solution from here! Tap Undo",
+		"fr": "Bloqué ! Appuyez sur Annuler",
+		"ar": "طريق مسدود! اضغط تراجع"
 	},
 	"HINT_NO_PATH": {
-		"en": "No clear path found. Try another move or Undo ↶",
-		"fr": "Aucun chemin trouvé. Essayez un autre coup ou Annuler ↶",
-		"ar": "لم يتم العثور على مسار. جرب حركة أخرى أو تراجع ↶"
+		"en": "No clear path found. Try another move or Undo",
+		"fr": "Aucun chemin trouvé. Essayez un autre coup ou Annuler",
+		"ar": "لم يتم العثور على مسار. جرب حركة أخرى أو تراجع"
 	},
 	"HINT_ALREADY_SOLVED": {
 		"en": "Level already completed!",
@@ -333,24 +333,24 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "المستوى مكتمل بالفعل!"
 	},
 	"HINT_STEP_UP": {
-		"en": "💡 Hint: Move UP ↑",
-		"fr": "💡 Indice : Vers le HAUT ↑",
-		"ar": "💡 تلميح: تحرك لأعلى ↑"
+		"en": "Hint: Move UP",
+		"fr": "Indice : Vers le HAUT",
+		"ar": "تلميح: تحرك لأعلى"
 	},
 	"HINT_STEP_DOWN": {
-		"en": "💡 Hint: Move DOWN ↓",
-		"fr": "💡 Indice : Vers le BAS ↓",
-		"ar": "💡 تلميح: تحرك لأسفل ↓"
+		"en": "Hint: Move DOWN",
+		"fr": "Indice : Vers le BAS",
+		"ar": "تلميح: تحرك لأسفل"
 	},
 	"HINT_STEP_LEFT": {
-		"en": "💡 Hint: Move LEFT ←",
-		"fr": "💡 Indice : Vers la GAUCHE ←",
-		"ar": "💡 تلميح: تحرك لليسار ←"
+		"en": "Hint: Move LEFT",
+		"fr": "Indice : Vers la GAUCHE",
+		"ar": "تلميح: تحرك لليسار"
 	},
 	"HINT_STEP_RIGHT": {
-		"en": "💡 Hint: Move RIGHT →",
-		"fr": "💡 Indice : Vers la DROITE →",
-		"ar": "💡 تلميح: تحرك لليمين →"
+		"en": "Hint: Move RIGHT",
+		"fr": "Indice : Vers la DROITE",
+		"ar": "تلميح: تحرك لليمين"
 	},
 	"SPLASH_INIT": {
 		"en": "INITIALIZING SYSTEM...",
@@ -393,14 +393,14 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "دفعات"
 	},
 	"WIN_RETRY_BTN": {
-		"en": "↺ Retry",
-		"fr": "↺ Rejouer",
-		"ar": "إعادة ↺"
+		"en": "Retry",
+		"fr": "Rejouer",
+		"ar": "إعادة"
 	},
 	"WIN_TARGET_HINT": {
-		"en": "3★ Target: ≤ %d moves",
-		"fr": "Objectif 3★ : ≤ %d mouv.",
-		"ar": "هدف 3★: ≤ %d حركة"
+		"en": "Target: ≤ %d moves",
+		"fr": "Objectif : ≤ %d mouv.",
+		"ar": "الهدف: ≤ %d حركة"
 	},
 	"WIN_TITLE": {
 		"en": "LEVEL %d COMPLETED!",
@@ -413,9 +413,9 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "تم الحل في %d حركة (%d دفعة)\nأفضل نتيجة: %d حركة (%d دفعة)"
 	},
 	"WIN_NEXT_BTN": {
-		"en": "Next Level →",
-		"fr": "Niveau Suivant →",
-		"ar": "المستوى التالي ←"
+		"en": "Next Level",
+		"fr": "Niveau Suivant",
+		"ar": "المستوى التالي"
 	},
 	"WIN_MENU_BTN": {
 		"en": "Menu",
@@ -443,9 +443,9 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "إغلاق"
 	},
 	"BTN_CAMPAIGN_COMPLETE": {
-		"en": "Finish Campaign ★",
-		"fr": "Terminer la campagne ★",
-		"ar": "إنهاء الحملة ★"
+		"en": "Finish Campaign",
+		"fr": "Terminer la campagne",
+		"ar": "إنهاء الحملة"
 	},
 	"END_TITLE": {
 		"en": "CAMPAIGN COMPLETED!",
@@ -458,9 +458,9 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "شكراً لك على لعب Pixel Sokoban: Warehouse Rush!\nلقد تمكنت من حل جميع ألغاز المستودع الـ 50."
 	},
 	"END_MORE_LEVELS": {
-		"en": "★ More levels coming soon! ★",
-		"fr": "★ Plus de niveaux bientôt disponibles ! ★",
-		"ar": "★ المزيد من المستويات قريباً! ★"
+		"en": "More levels coming soon!",
+		"fr": "Plus de niveaux bientôt disponibles !",
+		"ar": "المزيد من المستويات قريباً!"
 	},
 	"END_STATS_SUMMARY": {
 		"en": "Levels Solved: %d / 50\nTotal Best Moves: %d\nTotal Best Pushes: %d",
@@ -478,9 +478,9 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "اختيار المستوى"
 	},
 	"MODAL_REWARD_TITLE": {
-		"en": "NEED A HINT? 💡",
-		"fr": "BESOIN D'UN INDICE ? 💡",
-		"ar": "تحتاج مساعدة؟ 💡"
+		"en": "NEED A HINT?",
+		"fr": "BESOIN D'UN INDICE ?",
+		"ar": "تحتاج مساعدة؟"
 	},
 	"MODAL_REWARD_DESC": {
 		"en": "You're out of hints. Watch a sponsor video to receive +3 Free Hints!",
@@ -488,29 +488,29 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "نفدت تلميحاتك. شاهد فيديو للحصول على 3 تلميحات مجانية!"
 	},
 	"BTN_WATCH_AD": {
-		"en": "WATCH AD 🎬 (+3 💡)",
-		"fr": "REGARDER 🎬 (+3 💡)",
-		"ar": "مشاهدة إعلان 🎬 (+3 💡)"
+		"en": "WATCH AD (+3 HINTS)",
+		"fr": "REGARDER (+3 INDICES)",
+		"ar": "مشاهدة إعلان (+3 تلميحات)"
 	},
 	"TOAST_HINTS_ADDED": {
-		"en": "+3 Hints Added! 💡",
-		"fr": "+3 Indices Ajoutés ! 💡",
-		"ar": "تمت إضافة 3 تلميحات! 💡"
+		"en": "+3 Hints Added!",
+		"fr": "+3 Indices Ajoutés !",
+		"ar": "تمت إضافة 3 تلميحات!"
 	},
 	"MENU_ACHIEVEMENTS": {
-		"en": "ACHIEVEMENTS 🏆",
-		"fr": "SUCCÈS 🏆",
-		"ar": "الإنجازات 🏆"
+		"en": "ACHIEVEMENTS",
+		"fr": "SUCCÈS",
+		"ar": "الإنجازات"
 	},
 	"ACHIEVEMENTS_TITLE": {
-		"en": "🏆 WAREHOUSE ACHIEVEMENTS 🏆",
-		"fr": "🏆 SUCCÈS DU PORTEUR 🏆",
-		"ar": "🏆 إنجازات المستودع 🏆"
+		"en": "WAREHOUSE ACHIEVEMENTS",
+		"fr": "SUCCÈS DU PORTEUR",
+		"ar": "إنجازات المستودع"
 	},
 	"ACHIEVEMENTS_COUNTER": {
-		"en": "🏆 %d / 9 Unlocked",
-		"fr": "🏆 %d / 9 Débloqués",
-		"ar": "🏆 %d / 9 تم الفتح"
+		"en": "%d / 9 Unlocked",
+		"fr": "%d / 9 Débloqués",
+		"ar": "%d / 9 تم الفتح"
 	},
 	"ACH_FIRST_SHIFT": {
 		"en": "First Shift",

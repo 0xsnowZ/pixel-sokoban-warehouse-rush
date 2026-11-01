@@ -145,15 +145,15 @@ func test_level_select_grid() -> void:
 
 	var btn1: Button = grid_buttons[1] as Button
 	assert_false(btn1.disabled, "Level 2 button is enabled (current unlocked)")
-	assert_true("▶" in btn1.text, "Level 2 button shows playable arrow indicator")
+	assert_true(btn1.icon != null, "Level 2 button shows playable arrow icon")
 
 	var btn2: Button = grid_buttons[2] as Button
 	assert_true(btn2.disabled, "Level 3 button is locked until level 2 completed")
-	assert_true("🔒" in btn2.text, "Level 3 button shows lock indicator")
+	assert_true(btn2.icon != null, "Level 3 button shows lock icon")
 
 	var btn10: Button = grid_buttons[10] as Button
 	assert_true(btn10.disabled, "Level 11 button is locked until unlocked")
-	assert_true("🔒" in btn10.text, "Level 11 button shows lock indicator")
+	assert_true(btn10.icon != null, "Level 11 button shows lock icon")
 
 	menu.queue_free()
 
@@ -277,7 +277,7 @@ func test_porter_locker_modal() -> void:
 	menu._show_locker()
 	assert_true(menu.locker_modal.visible, "Locker modal opens via _show_locker")
 	assert_equal(menu.current_locker_tab, "outfits", "Default locker tab is outfits")
-	assert_true("★" in menu.locker_stars_badge.text, "Locker stars badge reflects total stars")
+	assert_true("Stars" in menu.locker_stars_badge.text, "Locker stars badge reflects total stars")
 
 	# 3. Items populated for Outfits (4 worker skins)
 	var outfit_cards = menu.locker_items_vbox.get_children()

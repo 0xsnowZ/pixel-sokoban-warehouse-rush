@@ -71,21 +71,21 @@ custom_minimum_size = Vector2(40, 38)
 layout_mode = 2
 theme_type_variation = &"TopBarButton"
 theme_override_font_sizes/font_size = 19
-text = "⌂"
+text = ""
 
 [node name="MusicBtn" type="Button" parent="TopBar/Margin/VBox/NavRow"]
 custom_minimum_size = Vector2(40, 38)
 layout_mode = 2
 theme_type_variation = &"TopBarButton"
 theme_override_font_sizes/font_size = 17
-text = "♪"
+text = ""
 
 [node name="ControlBtn" type="Button" parent="TopBar/Margin/VBox/NavRow"]
 custom_minimum_size = Vector2(40, 38)
 layout_mode = 2
 theme_type_variation = &"TopBarButton"
 theme_override_font_sizes/font_size = 17
-text = "✥"
+text = ""
 
 [node name="Spacer" type="Control" parent="TopBar/Margin/VBox/NavRow"]
 layout_mode = 2
@@ -103,7 +103,7 @@ theme_override_constants/separation = 8
 layout_mode = 2
 theme_override_colors/font_color = Color(0.98, 0.85, 0.28, 1)
 theme_override_font_sizes/font_size = 13
-text = "📦 CH. 1"
+text = "CH. 1"
 
 [node name="Divider" type="Label" parent="TopBar/Margin/VBox/NavRow/StageBadge/BadgeHBox"]
 layout_mode = 2
@@ -172,7 +172,7 @@ theme_override_constants/margin_right = 12
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.95, 0.65, 1)
 theme_override_font_sizes/font_size = 14
-text = "💡 Hint: Move UP ↑"
+text = "Hint: Move UP"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -202,32 +202,38 @@ alignment = 1
 [node name="PrevButton" type="Button" parent="BottomBar/Margin/HBox"]
 custom_minimum_size = Vector2(64, 48)
 layout_mode = 2
-text = "< Prev"
+text = "Prev"
 
 [node name="UndoButton" type="Button" parent="BottomBar/Margin/HBox"]
 custom_minimum_size = Vector2(88, 48)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"InfoButton"
-text = "Undo ↶"
+theme_override_constants/icon_max_width = 20
+theme_override_constants/h_separation = 6
+text = "Undo"
 
 [node name="HintButton" type="Button" parent="BottomBar/Margin/HBox"]
 custom_minimum_size = Vector2(92, 48)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"PrimaryButton"
-text = "Hint 💡"
+theme_override_constants/icon_max_width = 20
+theme_override_constants/h_separation = 6
+text = "Hint"
 
 [node name="RestartButton" type="Button" parent="BottomBar/Margin/HBox"]
 custom_minimum_size = Vector2(80, 48)
 layout_mode = 2
-text = "Restart ↺"
+theme_override_constants/icon_max_width = 20
+theme_override_constants/h_separation = 6
+text = "Restart"
 
 [node name="NextButton" type="Button" parent="BottomBar/Margin/HBox"]
 custom_minimum_size = Vector2(64, 48)
 layout_mode = 2
 theme_type_variation = &"SuccessButton"
-text = "Next >"
+text = "Next"
 
 [node name="DPadOverlay" type="Control" parent="."]
 visible = false
@@ -256,7 +262,7 @@ offset_right = 29.0
 offset_bottom = 48.0
 grow_horizontal = 2
 theme_override_font_sizes/font_size = 22
-text = "▲"
+text = ""
 
 [node name="DPadDown" type="Button" parent="DPadOverlay"]
 custom_minimum_size = Vector2(58, 48)
@@ -273,7 +279,7 @@ offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_font_sizes/font_size = 22
-text = "▼"
+text = ""
 
 [node name="DPadLeft" type="Button" parent="DPadOverlay"]
 custom_minimum_size = Vector2(58, 48)
@@ -287,7 +293,7 @@ offset_right = 60.0
 offset_bottom = 24.0
 grow_vertical = 2
 theme_override_font_sizes/font_size = 22
-text = "◀"
+text = ""
 
 [node name="DPadRight" type="Button" parent="DPadOverlay"]
 custom_minimum_size = Vector2(58, 48)
@@ -304,7 +310,7 @@ offset_bottom = 24.0
 grow_horizontal = 0
 grow_vertical = 2
 theme_override_font_sizes/font_size = 22
-text = "▶"
+text = ""
 
 [node name="RestartConfirmDialog" type="ConfirmationDialog" parent="."]
 title = "Restart Level"
@@ -435,7 +441,7 @@ alignment = 1
 [node name="Icon" type="Label" parent="WinModal/VBox/StatsGrid/MovesCard/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "👟"
+text = ""
 horizontal_alignment = 1
 
 [node name="Title" type="Label" parent="WinModal/VBox/StatsGrid/MovesCard/VBox"]
@@ -465,7 +471,7 @@ alignment = 1
 [node name="Icon" type="Label" parent="WinModal/VBox/StatsGrid/TimeCard/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "⏱"
+text = ""
 horizontal_alignment = 1
 
 [node name="Title" type="Label" parent="WinModal/VBox/StatsGrid/TimeCard/VBox"]
@@ -495,7 +501,7 @@ alignment = 1
 [node name="Icon" type="Label" parent="WinModal/VBox/StatsGrid/PushesCard/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "📦"
+text = ""
 horizontal_alignment = 1
 
 [node name="Title" type="Label" parent="WinModal/VBox/StatsGrid/PushesCard/VBox"]
@@ -516,7 +522,7 @@ horizontal_alignment = 1
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.92, 0.98, 0.9)
 theme_override_font_sizes/font_size = 13
-text = "3★ Target: ≤ 7 moves"
+text = "Target: ≤ 7 moves"
 horizontal_alignment = 1
 
 [node name="WinActions" type="HBoxContainer" parent="WinModal/VBox"]
@@ -528,18 +534,24 @@ alignment = 1
 custom_minimum_size = Vector2(96, 54)
 layout_mode = 2
 theme_type_variation = &"DangerButton"
-text = "⌂ MENU"
+theme_override_constants/icon_max_width = 22
+theme_override_constants/h_separation = 8
+text = "MENU"
 
 [node name="NextLevelBtn" type="Button" parent="WinModal/VBox/WinActions"]
 custom_minimum_size = Vector2(140, 54)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"SuccessButton"
-text = "▶ NEXT"
+theme_override_constants/icon_max_width = 22
+theme_override_constants/h_separation = 8
+text = "NEXT"
 
 [node name="WinRetryBtn" type="Button" parent="WinModal/VBox/WinActions"]
 custom_minimum_size = Vector2(96, 54)
 layout_mode = 2
 theme_type_variation = &"InfoButton"
-text = "↺ RETRY"
+theme_override_constants/icon_max_width = 22
+theme_override_constants/h_separation = 8
+text = "RETRY"
 
