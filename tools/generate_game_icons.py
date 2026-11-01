@@ -510,67 +510,71 @@ def make_locker():
     import shutil
     import io
 
-    svg_depot = """<svg viewBox="-32 -32 576 576" xmlns="http://www.w3.org/2000/svg">
+    svg_depot = """<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <filter id="shadow" x="-20%" y="-20%" width="150%" height="150%">
-      <feDropShadow dx="0" dy="16" stdDeviation="12" flood-color="#000000" flood-opacity="0.5"/>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="16" stdDeviation="12" flood-color="#000000" flood-opacity="0.6"/>
     </filter>
-    <linearGradient id="depotGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#14B8A6"/>
-      <stop offset="50%" stop-color="#0F766E"/>
-      <stop offset="100%" stop-color="#115E59"/>
+    <linearGradient id="crateBody" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24"/>
+      <stop offset="40%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#B45309"/>
     </linearGradient>
-    <linearGradient id="lidGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#2DD4BF"/>
-      <stop offset="100%" stop-color="#0D9488"/>
+    <linearGradient id="steelTrim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FAFC"/>
+      <stop offset="50%" stop-color="#94A3B8"/>
+      <stop offset="100%" stop-color="#475569"/>
     </linearGradient>
-    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FDE047"/>
-      <stop offset="100%" stop-color="#D97706"/>
-    </linearGradient>
-    <linearGradient id="metalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#E2E8F0"/>
-      <stop offset="100%" stop-color="#64748B"/>
+    <linearGradient id="lidBand" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FEF3C7"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
     </linearGradient>
   </defs>
   <g filter="url(#shadow)">
-    <!-- Heavy Duty Handle -->
-    <path d="M 176 110 L 176 60 C 176 44 190 32 206 32 L 306 32 C 322 32 336 44 336 60 L 336 110" fill="none" stroke="url(#metalGrad)" stroke-width="32" stroke-linecap="round"/>
+    <!-- Main Crate Box -->
+    <rect x="56" y="56" width="400" height="400" rx="44" fill="url(#crateBody)" stroke="#0F172A" stroke-width="24"/>
     
-    <!-- Chest Main Body -->
-    <rect x="48" y="100" width="416" height="340" rx="36" fill="url(#depotGrad)" stroke="#0F172A" stroke-width="24"/>
+    <!-- Outer Heavy Steel Rim -->
+    <rect x="76" y="76" width="360" height="360" rx="32" fill="none" stroke="url(#steelTrim)" stroke-width="32"/>
+
+    <!-- Diagonal Steel Cross Braces -->
+    <line x1="92" y1="92" x2="420" y2="420" stroke="#0F172A" stroke-width="38" stroke-linecap="round"/>
+    <line x1="92" y1="92" x2="420" y2="420" stroke="url(#steelTrim)" stroke-width="26" stroke-linecap="round"/>
     
-    <!-- Chest Lid Upper Bevel -->
-    <path d="M 48 180 L 464 180" stroke="#0F172A" stroke-width="20"/>
-    <rect x="48" y="100" width="416" height="80" rx="36" fill="url(#lidGrad)"/>
-    <!-- Lid highlight stripe -->
-    <line x1="72" y1="120" x2="440" y2="120" stroke="#99F6E4" stroke-width="12" stroke-linecap="round" opacity="0.6"/>
+    <line x1="420" y1="92" x2="92" y2="420" stroke="#0F172A" stroke-width="38" stroke-linecap="round"/>
+    <line x1="420" y1="92" x2="92" y2="420" stroke="url(#steelTrim)" stroke-width="26" stroke-linecap="round"/>
 
-    <!-- Left & Right Corner Braces -->
-    <path d="M 48 100 L 120 100 L 120 440 L 48 440 Z" fill="#0D9488" opacity="0.35"/>
-    <path d="M 464 100 L 392 100 L 392 440 L 464 440 Z" fill="#0D9488" opacity="0.35"/>
+    <!-- Center Steel Hub Plate -->
+    <rect x="186" y="186" width="140" height="140" rx="28" fill="url(#steelTrim)" stroke="#0F172A" stroke-width="16"/>
+    <!-- Central Golden Supply Star / Diamond -->
+    <polygon points="256,206 270,242 306,256 270,270 256,306 242,270 206,256 242,242" fill="#FEF08A" stroke="#B45309" stroke-width="6"/>
 
-    <!-- Corner Rivets / Bolts -->
-    <circle cx="84" cy="140" r="12" fill="url(#metalGrad)" stroke="#0F172A" stroke-width="6"/>
-    <circle cx="428" cy="140" r="12" fill="url(#metalGrad)" stroke="#0F172A" stroke-width="6"/>
-    <circle cx="84" cy="400" r="12" fill="url(#metalGrad)" stroke="#0F172A" stroke-width="6"/>
-    <circle cx="428" cy="400" r="12" fill="url(#metalGrad)" stroke="#0F172A" stroke-width="6"/>
+    <!-- 4 Corner Steel Reinforcement Braces with Rivets -->
+    <!-- Top-Left -->
+    <path d="M 56 160 L 56 56 L 160 56 L 160 108 L 108 108 L 108 160 Z" fill="url(#steelTrim)" stroke="#0F172A" stroke-width="14"/>
+    <circle cx="88" cy="88" r="14" fill="#0F172A"/>
+    <circle cx="86" cy="86" r="6" fill="#F8FAFC"/>
 
-    <!-- Center Supply Latch Plate -->
-    <rect x="216" y="150" width="80" height="96" rx="16" fill="url(#metalGrad)" stroke="#0F172A" stroke-width="14"/>
-    <!-- Golden Core Keyway / Emblem -->
-    <circle cx="256" cy="198" r="18" fill="url(#goldGrad)" stroke="#0F172A" stroke-width="8"/>
-    <rect x="252" y="198" width="8" height="20" fill="#0F172A"/>
+    <!-- Top-Right -->
+    <path d="M 456 160 L 456 56 L 352 56 L 352 108 L 404 108 L 404 160 Z" fill="url(#steelTrim)" stroke="#0F172A" stroke-width="14"/>
+    <circle cx="424" cy="88" r="14" fill="#0F172A"/>
+    <circle cx="422" cy="86" r="6" fill="#F8FAFC"/>
 
-    <!-- Horizontal Reinforcement Band -->
-    <line x1="68" y1="310" x2="444" y2="310" stroke="#0F172A" stroke-width="16"/>
-    <line x1="72" y1="306" x2="440" y2="306" stroke="#5EEAD4" stroke-width="6" opacity="0.5"/>
+    <!-- Bottom-Left -->
+    <path d="M 56 352 L 56 456 L 160 456 L 160 404 L 108 404 L 108 352 Z" fill="url(#steelTrim)" stroke="#0F172A" stroke-width="14"/>
+    <circle cx="88" cy="424" r="14" fill="#0F172A"/>
+    <circle cx="86" cy="422" r="6" fill="#F8FAFC"/>
+
+    <!-- Bottom-Right -->
+    <path d="M 456 352 L 456 456 L 352 456 L 352 404 L 404 404 L 404 352 Z" fill="url(#steelTrim)" stroke="#0F172A" stroke-width="14"/>
+    <circle cx="424" cy="424" r="14" fill="#0F172A"/>
+    <circle cx="422" cy="422" r="6" fill="#F8FAFC"/>
   </g>
 </svg>"""
 
     if shutil.which("rsvg-convert"):
         p = subprocess.run(["rsvg-convert", "-w", "64", "-h", "64", "-f", "png", "-o", os.path.join(OUT_DIR, "icon_locker.png")], input=svg_depot.encode("utf-8"), check=True)
-        print("Generated assets/icons/icon_locker.png via rsvg-convert (Supply Depot Trunk)")
+        print("Generated assets/icons/icon_locker.png via rsvg-convert (Supply Depot Crate)")
     else:
         im = new_canvas()
         d = ImageDraw.Draw(im)
