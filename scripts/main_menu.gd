@@ -52,6 +52,8 @@ var achievement_mgr: Node = null
 @onready var language_btn: Button = _find_button("LanguageBtn", "SettingsModal/Margin/VBox/LanguageBtn")
 @onready var credits_btn: Button = _find_button("CreditsBtn", "SettingsModal/Margin/VBox/CreditsBtn")
 @onready var locker_btn: Button = _find_button("LockerBtn", "MainView/BottomMargin/ActionDeck/DualDeck/LockerBtn")
+@onready var locker_btn_label: Label = find_child("LockerBtn", true, false).find_child("Label", true, false) as Label if find_child("LockerBtn", true, false) else null
+@onready var locker_btn_icon: TextureRect = find_child("LockerBtn", true, false).find_child("Icon", true, false) as TextureRect if find_child("LockerBtn", true, false) else null
 @onready var locker_modal: PanelContainer = find_child("LockerModal", true, false) as PanelContainer
 @onready var outfits_tab_btn: Button = _find_button("OutfitsTabBtn", "LockerModal/Margin/VBox/TabsHBox/OutfitsTabBtn")
 @onready var crates_tab_btn: Button = _find_button("CratesTabBtn", "LockerModal/Margin/VBox/TabsHBox/CratesTabBtn")
@@ -128,6 +130,9 @@ func _initialize_nodes() -> void:
 		close_credits_btn = _find_button("CloseCreditsBtn", "CreditsModal/VBox/CloseCreditsBtn")
 		locker_modal = find_child("LockerModal", true, false) as PanelContainer
 		locker_btn = _find_button("LockerBtn", "MainView/BottomMargin/ActionDeck/DualDeck/LockerBtn")
+		if locker_btn != null:
+			locker_btn_label = locker_btn.find_child("Label", true, false) as Label
+			locker_btn_icon = locker_btn.find_child("Icon", true, false) as TextureRect
 		outfits_tab_btn = _find_button("OutfitsTabBtn", "LockerModal/Margin/VBox/TabsHBox/OutfitsTabBtn")
 		crates_tab_btn = _find_button("CratesTabBtn", "LockerModal/Margin/VBox/TabsHBox/CratesTabBtn")
 		close_locker_btn = _find_button("CloseLockerBtn", "LockerModal/Margin/VBox/CloseLockerBtn")
@@ -243,10 +248,15 @@ func _ready() -> void:
 		settings_btn.text = ""
 		settings_btn.add_theme_constant_override("icon_max_width", 24)
 	if locker_btn:
-		locker_btn.icon = icon_locker
-		locker_btn.expand_icon = true
-		locker_btn.add_theme_constant_override("icon_max_width", 22)
-		locker_btn.add_theme_constant_override("h_separation", 8)
+		locker_btn.icon = null
+		locker_btn.text = ""
+		if locker_btn_icon != null:
+			locker_btn_icon.texture = icon_locker
+		if locker_btn_label != null:
+			locker_btn.mouse_entered.connect(func(): locker_btn_label.add_theme_color_override("font_color", Color(1, 1, 1, 1)))
+			locker_btn.mouse_exited.connect(func(): locker_btn_label.add_theme_color_override("font_color", Color(0.94, 0.96, 0.98, 1)))
+			locker_btn.button_down.connect(func(): locker_btn_label.add_theme_color_override("font_color", Color(0.98, 0.82, 0.25, 1)))
+			locker_btn.button_up.connect(func(): locker_btn_label.add_theme_color_override("font_color", Color(1, 1, 1, 1) if locker_btn.is_hovered() else Color(0.94, 0.96, 0.98, 1)))
 	if star_progress_btn:
 		star_progress_btn.icon = icon_star_full
 		star_progress_btn.expand_icon = true
@@ -966,15 +976,19 @@ func _update_menu_state() -> void:
 
 	if loc_mgr:
 		if has_progress:
-			continue_btn.visible = true
-			continue_btn.text = loc_mgr.tr_text("MENU_CONTINUE", [last_lvl + 1])
-			continue_btn.theme_type_variation = &"PrimaryButton"
-			play_btn.text = loc_mgr.tr_text("MENU_NEW_GAME")
-			play_btn.theme_type_variation = &""
+			if continue_btn != null:
+				continue_btn.visible = true
+				continue_btn.text = loc_mgr.tr_text("MENU_CONTINUE", [last_lvl + 1])
+				continue_btn.theme_type_variation = &"PrimaryButton"
+			if play_btn != null:
+				play_btn.text = loc_mgr.tr_text("MENU_NEW_GAME")
+				play_btn.theme_type_variation = &""
 		else:
-			continue_btn.visible = false
-			play_btn.text = loc_mgr.tr_text("MENU_PLAY")
-			play_btn.theme_type_variation = &"PrimaryButton"
+			if continue_btn != null:
+				continue_btn.visible = false
+			if play_btn != null:
+				play_btn.text = loc_mgr.tr_text("MENU_PLAY")
+				play_btn.theme_type_variation = &"PrimaryButton"
 
 		if sound_btn:
 			var sound_status: String = loc_mgr.tr_text("MENU_SOUND_ON" if is_sound_on else "MENU_SOUND_OFF")
@@ -988,34 +1002,57 @@ func _update_menu_state() -> void:
 			settings_btn.text = ""
 			settings_btn.tooltip_text = loc_mgr.tr_text("MENU_SETTINGS")
 		if locker_btn:
-			locker_btn.text = loc_mgr.tr_text("MENU_LOCKER")
+			locker_btn.text = ""
+			locker_btn.tooltip_text = loc_mgr.tr_text("MENU_LOCKER")
+			if locker_btn_label != null:
+				locker_btn_label.text = loc_mgr.tr_text("MENU_LOCKER")
+			else:
+				locker_btn.text = loc_mgr.tr_text("MENU_LOCKER")
 		if achievements_btn:
 			achievements_btn.text = ""
 			achievements_btn.tooltip_text = loc_mgr.tr_text("MENU_ACHIEVEMENTS")
-		language_btn.text = loc_mgr.tr_text("MENU_LANGUAGE", [loc_mgr.get_language_display_name()])
-		level_select_btn.text = loc_mgr.tr_text("MENU_LEVEL_SELECT")
-		credits_btn.text = loc_mgr.tr_text("MENU_CREDITS")
-		back_btn.text = loc_mgr.tr_text("BTN_BACK")
-		$LevelSelectView/TopBar/Margin/HBox/Title.text = loc_mgr.tr_text("LEVEL_SELECT_TITLE")
-		$CreditsModal/VBox/Title.text = loc_mgr.tr_text("CREDITS_TITLE")
-		$CreditsModal/VBox/Description.text = loc_mgr.tr_text("CREDITS_BODY")
-		close_credits_btn.text = loc_mgr.tr_text("BTN_CLOSE")
+		if language_btn != null:
+			language_btn.text = loc_mgr.tr_text("MENU_LANGUAGE", [loc_mgr.get_language_display_name()])
+		if level_select_btn != null:
+			level_select_btn.text = loc_mgr.tr_text("MENU_LEVEL_SELECT")
+		if credits_btn != null:
+			credits_btn.text = loc_mgr.tr_text("MENU_CREDITS")
+		if back_btn != null:
+			back_btn.text = loc_mgr.tr_text("BTN_BACK")
+		var lvl_title = find_child("Title", true, false)
+		if has_node("LevelSelectView/TopBar/Margin/HBox/Title"):
+			$LevelSelectView/TopBar/Margin/HBox/Title.text = loc_mgr.tr_text("LEVEL_SELECT_TITLE")
+		if has_node("CreditsModal/VBox/Title"):
+			$CreditsModal/VBox/Title.text = loc_mgr.tr_text("CREDITS_TITLE")
+		if has_node("CreditsModal/VBox/Description"):
+			$CreditsModal/VBox/Description.text = loc_mgr.tr_text("CREDITS_BODY")
+		if close_credits_btn != null:
+			close_credits_btn.text = loc_mgr.tr_text("BTN_CLOSE")
 	else:
 		if has_progress:
-			continue_btn.visible = true
-			continue_btn.text = "CONTINUE (LEVEL %d)" % (last_lvl + 1)
-			continue_btn.theme_type_variation = &"PrimaryButton"
-			play_btn.text = "NEW GAME"
-			play_btn.theme_type_variation = &""
+			if continue_btn != null:
+				continue_btn.visible = true
+				continue_btn.text = "CONTINUE (LEVEL %d)" % (last_lvl + 1)
+				continue_btn.theme_type_variation = &"PrimaryButton"
+			if play_btn != null:
+				play_btn.text = "NEW GAME"
+				play_btn.theme_type_variation = &""
 		else:
-			continue_btn.visible = false
-			play_btn.text = "PLAY"
-			play_btn.theme_type_variation = &"PrimaryButton"
+			if continue_btn != null:
+				continue_btn.visible = false
+			if play_btn != null:
+				play_btn.text = "PLAY"
+				play_btn.theme_type_variation = &"PrimaryButton"
 		if settings_btn:
 			settings_btn.text = ""
 			settings_btn.tooltip_text = "Settings"
 		if locker_btn:
-			locker_btn.text = "SUPPLY DEPOT"
+			locker_btn.text = ""
+			locker_btn.tooltip_text = "SUPPLY DEPOT"
+			if locker_btn_label != null:
+				locker_btn_label.text = "SUPPLY DEPOT"
+			else:
+				locker_btn.text = "SUPPLY DEPOT"
 		if achievements_btn:
 			achievements_btn.text = ""
 			achievements_btn.tooltip_text = "Achievements"

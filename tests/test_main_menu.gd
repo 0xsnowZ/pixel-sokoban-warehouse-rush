@@ -266,6 +266,11 @@ func test_porter_locker_modal() -> void:
 
 	# 1. Elements exist
 	assert_true(menu.locker_btn != null, "Locker button exists on ConsoleCard")
+	assert_true(menu.locker_btn_label != null, "Locker button child label exists for centered layout")
+	assert_true(menu.locker_btn_icon != null, "Locker button child icon exists for centered layout")
+	assert_true(menu.locker_btn_icon.texture != null, "Locker button child icon has valid texture")
+	assert_equal(menu.locker_btn_label.text, "SUPPLY DEPOT", "Locker button child label displays SUPPLY DEPOT")
+	assert_equal(menu.locker_btn.text, "", "Locker button native text is empty to prevent overlap")
 	assert_true(menu.locker_modal != null, "Locker modal exists")
 	assert_false(menu.locker_modal.visible, "Locker modal is hidden initially")
 	assert_true(menu.locker_stars_badge != null, "Locker stars badge exists")
