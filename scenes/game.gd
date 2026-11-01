@@ -1648,36 +1648,48 @@ func _draw() -> void:
 	var board_pixel_size: Vector2 = Vector2(grid.width * tile_size, grid.height * tile_size)
 	var ch: Dictionary = get_current_chapter_theme()
 
+	var is_non_square: bool = is_level_non_square()
+
 	# 1. Industrial Warehouse Loading Bay Board Framing (PRD Section 4 & Phase 2 Themes)
-	var frame_margin: float = 12.0
-	var frame_rect: Rect2 = Rect2(
-		effective_origin - Vector2(frame_margin, frame_margin),
-		board_pixel_size + Vector2(frame_margin * 2.0, frame_margin * 2.0)
-	)
+	if is_non_square:
+		# Multi-stage silhouette 2.5D drop shadow under the exact non-square shape
+		for y in range(grid.height):
+			for x in range(grid.width):
+				var pos: Vector2i = Vector2i(x, y)
+				if not grid.is_exterior_void(pos):
+					var s_rect: Rect2 = Rect2(effective_origin + Vector2(x, y) * tile_size, Vector2(tile_size, tile_size))
+					draw_rect(Rect2(s_rect.position + Vector2(6, 8), s_rect.size), Color(0.0, 0.0, 0.0, 0.50))
+					draw_rect(Rect2(s_rect.position + Vector2(3, 4), s_rect.size), Color(0.0, 0.0, 0.0, 0.28))
+	else:
+		var frame_margin: float = 12.0
+		var frame_rect: Rect2 = Rect2(
+			effective_origin - Vector2(frame_margin, frame_margin),
+			board_pixel_size + Vector2(frame_margin * 2.0, frame_margin * 2.0)
+		)
 
-	# Multi-stage drop shadow
-	draw_rect(Rect2(frame_rect.position + Vector2(8, 10), frame_rect.size), Color(0.0, 0.0, 0.0, 0.65))
-	draw_rect(Rect2(frame_rect.position + Vector2(4, 5), frame_rect.size), Color(0.0, 0.0, 0.0, 0.40))
+		# Multi-stage drop shadow
+		draw_rect(Rect2(frame_rect.position + Vector2(8, 10), frame_rect.size), Color(0.0, 0.0, 0.0, 0.65))
+		draw_rect(Rect2(frame_rect.position + Vector2(4, 5), frame_rect.size), Color(0.0, 0.0, 0.0, 0.40))
 
-	# Heavy chapter frame base
-	draw_rect(frame_rect, ch["frame_base"])
-	# Polished chapter bevel rim
-	draw_rect(frame_rect, ch["frame_rim"], false, 2.5)
-	# Inner dark groove
-	draw_rect(Rect2(effective_origin - Vector2(2, 2), board_pixel_size + Vector2(4, 4)), ch["frame_groove"], false, 2.0)
+		# Heavy chapter frame base
+		draw_rect(frame_rect, ch["frame_base"])
+		# Polished chapter bevel rim
+		draw_rect(frame_rect, ch["frame_rim"], false, 2.5)
+		# Inner dark groove
+		draw_rect(Rect2(effective_origin - Vector2(2, 2), board_pixel_size + Vector2(4, 4)), ch["frame_groove"], false, 2.0)
 
-	# 4 Corner industrial chapter bolts
-	var corner_offsets: Array[Vector2] = [
-		Vector2(frame_margin * 0.5, frame_margin * 0.5),
-		Vector2(frame_rect.size.x - frame_margin * 0.5, frame_margin * 0.5),
-		Vector2(frame_margin * 0.5, frame_rect.size.y - frame_margin * 0.5),
-		Vector2(frame_rect.size.x - frame_margin * 0.5, frame_rect.size.y - frame_margin * 0.5)
-	]
-	for c_offset in corner_offsets:
-		var bolt_center: Vector2 = frame_rect.position + c_offset
-		draw_circle(bolt_center, 4.5, ch["bolt_dark"])
-		draw_circle(bolt_center, 3.5, ch["bolt_core"])
-		draw_circle(bolt_center - Vector2(1.0, 1.0), 1.2, ch["bolt_specular"])
+		# 4 Corner industrial chapter bolts
+		var corner_offsets: Array[Vector2] = [
+			Vector2(frame_margin * 0.5, frame_margin * 0.5),
+			Vector2(frame_rect.size.x - frame_margin * 0.5, frame_margin * 0.5),
+			Vector2(frame_margin * 0.5, frame_rect.size.y - frame_margin * 0.5),
+			Vector2(frame_rect.size.x - frame_margin * 0.5, frame_rect.size.y - frame_margin * 0.5)
+		]
+		for c_offset in corner_offsets:
+			var bolt_center: Vector2 = frame_rect.position + c_offset
+			draw_circle(bolt_center, 4.5, ch["bolt_dark"])
+			draw_circle(bolt_center, 3.5, ch["bolt_core"])
+			draw_circle(bolt_center - Vector2(1.0, 1.0), 1.2, ch["bolt_specular"])
 
 	# 2. Draw Floor & Walls with 3D Depth & Chapter Tinting
 	for y in range(grid.height):
@@ -1699,11 +1711,17 @@ func _draw() -> void:
 				if x > 0 and grid.is_wall(Vector2i(x - 1, y)):
 					draw_rect(Rect2(rect.position, Vector2(tile_size * 0.14, rect.size.y)), Color(0.0, 0.0, 0.0, 0.25))
 			else:
-				# Exterior void tile decorated with reference-inspired pine trees / chapter foliage
-				_draw_exterior_void_tile(rect, pos, ch)
+				# Exterior void tile: only draw for solid rectangular boards (no empty spaces on irregular levels)
+				if not is_non_square:
+					_draw_exterior_void_tile(rect, pos, ch)
 
-	# 2.5. Board Peripheral Vignette (Option B: Soft atmospheric edge darkening)
-	_draw_board_vignette(effective_origin, board_pixel_size)
+	# 2.2. Slim Level Border along outer perimeter walls (Non-Square Levels)
+	if is_non_square:
+		_draw_slim_level_border(effective_origin, ch)
+
+	# 2.5. Board Peripheral Vignette (Option B: Soft atmospheric edge darkening for solid rectangular boards)
+	if not is_non_square:
+		_draw_board_vignette(effective_origin, board_pixel_size)
 
 	# 3. Draw Goals with Chapter Pressure Plate, Hazard Markings & Pulsing Aura (Option B)
 	var time_sec: float = float(Time.get_ticks_msec()) / 1000.0
@@ -1902,6 +1920,97 @@ func _draw_wall(rect: Rect2, pos: Vector2i = Vector2i.ZERO) -> void:
 		draw_line(rect.position + Vector2(0.0, rect.size.y - 1.0), rect.end - Vector2(0.0, 1.0), Color(0.0, 0.0, 0.0, 0.48), 2.5)
 
 
+## Returns true if the level has exterior void tiles outside its walls (irregular / non-square shape).
+func is_level_non_square() -> bool:
+	if grid == null or grid.width == 0 or grid.height == 0:
+		return false
+	if grid.interior_floor.is_empty():
+		return false
+	for y in range(grid.height):
+		for x in range(grid.width):
+			if grid.is_exterior_void(Vector2i(x, y)):
+				return true
+	return false
+
+
+## Returns true if the position is an exterior tile (out of bounds or marked as exterior void).
+func is_exterior_tile(pos: Vector2i) -> bool:
+	if grid == null:
+		return true
+	if not grid.is_in_bounds(pos):
+		return true
+	return grid.is_exterior_void(pos)
+
+
+## Draws a slim, snug chapter border directly along the outer perimeter walls for non-square levels,
+## eliminating empty corner voids while preserving polished industrial styling.
+func _draw_slim_level_border(effective_origin: Vector2, ch: Dictionary) -> void:
+	if grid == null:
+		return
+
+	var rim_col: Color = ch["frame_rim"]
+	var groove_col: Color = ch["frame_groove"]
+	var bolt_dark: Color = ch["bolt_dark"]
+	var bolt_core: Color = ch["bolt_core"]
+	var bolt_spec: Color = ch["bolt_specular"]
+
+	for wall_pos in grid.walls.keys():
+		var rect: Rect2 = Rect2(effective_origin + Vector2(wall_pos) * tile_size, Vector2(tile_size, tile_size))
+
+		var ext_u: bool = is_exterior_tile(wall_pos + Vector2i.UP)
+		var ext_d: bool = is_exterior_tile(wall_pos + Vector2i.DOWN)
+		var ext_l: bool = is_exterior_tile(wall_pos + Vector2i.LEFT)
+		var ext_r: bool = is_exterior_tile(wall_pos + Vector2i.RIGHT)
+
+		# Top outer edge
+		if ext_u:
+			draw_line(rect.position, rect.position + Vector2(rect.size.x, 0.0), rim_col, 2.5)
+			draw_line(rect.position + Vector2(0.0, 1.0), rect.position + Vector2(rect.size.x, 1.0), Color(1.0, 1.0, 1.0, 0.38), 1.0)
+			draw_line(rect.position + Vector2(0.0, 2.5), rect.position + Vector2(rect.size.x, 2.5), groove_col, 1.5)
+
+		# Left outer edge
+		if ext_l:
+			draw_line(rect.position, rect.position + Vector2(0.0, rect.size.y), rim_col, 2.5)
+			draw_line(rect.position + Vector2(1.0, 0.0), rect.position + Vector2(1.0, rect.size.y), Color(1.0, 1.0, 1.0, 0.30), 1.0)
+			draw_line(rect.position + Vector2(2.5, 0.0), rect.position + Vector2(2.5, rect.size.y), groove_col, 1.5)
+
+		# Bottom outer edge
+		if ext_d:
+			draw_line(rect.position + Vector2(0.0, rect.size.y + 1.2), rect.end + Vector2(0.0, 1.2), Color(0.0, 0.0, 0.0, 0.45), 2.0)
+			draw_line(rect.position + Vector2(0.0, rect.size.y), rect.end, rim_col, 2.5)
+			draw_line(rect.position + Vector2(0.0, rect.size.y - 1.5), rect.end - Vector2(0.0, 1.5), groove_col, 1.5)
+
+		# Right outer edge
+		if ext_r:
+			draw_line(rect.position + Vector2(rect.size.x + 1.2, 0.0), rect.end + Vector2(1.2, 0.0), Color(0.0, 0.0, 0.0, 0.42), 2.0)
+			draw_line(rect.position + Vector2(rect.size.x, 0.0), rect.end, rim_col, 2.5)
+			draw_line(rect.position + Vector2(rect.size.x - 1.5, 0.0), rect.end - Vector2(1.5, 0.0), groove_col, 1.5)
+
+		# Outer convex corners: decorative industrial chapter bolts
+		if ext_u and ext_l:
+			draw_circle(rect.position, 3.2, bolt_dark)
+			draw_circle(rect.position, 2.2, bolt_core)
+			draw_circle(rect.position - Vector2(0.6, 0.6), 0.8, bolt_spec)
+
+		if ext_u and ext_r:
+			var c_tr: Vector2 = rect.position + Vector2(rect.size.x, 0.0)
+			draw_circle(c_tr, 3.2, bolt_dark)
+			draw_circle(c_tr, 2.2, bolt_core)
+			draw_circle(c_tr + Vector2(-0.6, 0.6), 0.8, bolt_spec)
+
+		if ext_d and ext_l:
+			var c_bl: Vector2 = rect.position + Vector2(0.0, rect.size.y)
+			draw_circle(c_bl, 3.2, bolt_dark)
+			draw_circle(c_bl, 2.2, bolt_core)
+			draw_circle(c_bl + Vector2(0.6, -0.6), 0.8, bolt_spec)
+
+		if ext_d and ext_r:
+			var c_br: Vector2 = rect.end
+			draw_circle(c_br, 3.2, bolt_dark)
+			draw_circle(c_br, 2.2, bolt_core)
+			draw_circle(c_br - Vector2(0.6, 0.6), 0.8, bolt_spec)
+
+
 func _draw_board_vignette(effective_origin: Vector2, board_pixel_size: Vector2) -> void:
 	var v_thick: float = minf(tile_size * 0.45, 36.0)
 	var board_rect: Rect2 = Rect2(effective_origin, board_pixel_size)
@@ -1981,8 +2090,14 @@ func _draw_player_headlamp(effective_origin: Vector2) -> void:
 
 
 func _draw_ambient_motes(effective_origin: Vector2, board_pixel_size: Vector2, _ch: Dictionary) -> void:
+	var is_non_sq: bool = is_level_non_square()
 	for mote in ambient_motes:
 		var norm: Vector2 = mote.get("pos_norm", Vector2.ZERO)
+		if is_non_sq and grid != null and grid.width > 0 and grid.height > 0:
+			var gx: int = clampi(int(floor(norm.x * float(grid.width))), 0, grid.width - 1)
+			var gy: int = clampi(int(floor(norm.y * float(grid.height))), 0, grid.height - 1)
+			if grid.is_exterior_void(Vector2i(gx, gy)):
+				continue
 		var m_pos: Vector2 = effective_origin + Vector2(norm.x * board_pixel_size.x, norm.y * board_pixel_size.y)
 		var phase: float = mote.get("phase", 0.0)
 		var sz: float = mote.get("size", 2.0)
