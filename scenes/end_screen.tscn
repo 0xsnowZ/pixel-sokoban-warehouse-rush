@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://dlfupfmhg42vp"]
+[gd_scene load_steps=4 format=3 uid="uid://dlfupfmhg42vp"]
 
 [ext_resource type="Script" path="res://scenes/end_screen.gd" id="1_end"]
 [ext_resource type="Texture2D" path="res://assets/warehouse_bg.jpg" id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/trophy_grand.png" id="3_trophy"]
 
 [node name="EndScreen" type="Control"]
 layout_mode = 3
@@ -48,42 +49,46 @@ theme_override_constants/margin_bottom = 40
 
 [node name="VBox" type="VBoxContainer" parent="Margin"]
 layout_mode = 2
-theme_override_constants/separation = 20
+theme_override_constants/separation = 16
 alignment = 1
 
-[node name="TrophyIcon" type="Label" parent="Margin/VBox"]
+[node name="TrophyIcon" type="TextureRect" parent="Margin/VBox"]
+custom_minimum_size = Vector2(110, 110)
 layout_mode = 2
-theme_override_font_sizes/font_size = 56
-text = "🏆 ★ 🏆"
-horizontal_alignment = 1
+size_flags_horizontal = 4
+texture = ExtResource("3_trophy")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="Title" type="Label" parent="Margin/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.98, 0.82, 0.22, 1)
-theme_override_font_sizes/font_size = 28
+theme_override_font_sizes/font_size = 26
 text = "CAMPAIGN COMPLETED!"
 horizontal_alignment = 1
 
 [node name="StatsPanel" type="PanelContainer" parent="Margin/VBox"]
 layout_mode = 2
 size_flags_horizontal = 4
+theme_type_variation = &"WinModalPanel"
 
 [node name="PanelMargin" type="MarginContainer" parent="Margin/VBox/StatsPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 20
-theme_override_constants/margin_right = 20
-theme_override_constants/margin_bottom = 20
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_bottom = 18
 
 [node name="PanelVBox" type="VBoxContainer" parent="Margin/VBox/StatsPanel/PanelMargin"]
 custom_minimum_size = Vector2(340, 0)
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 12
 alignment = 1
 
 [node name="ThanksLabel" type="Label" parent="Margin/VBox/StatsPanel/PanelMargin/PanelVBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(0.92, 0.95, 0.99, 1)
+theme_override_font_sizes/font_size = 14
 text = "Thank you for playing Pixel Sokoban: Warehouse Rush!
 You have mastered all 50 warehouse puzzles."
 horizontal_alignment = 1
@@ -94,6 +99,7 @@ layout_mode = 2
 
 [node name="SummaryStatsLabel" type="Label" parent="Margin/VBox/StatsPanel/PanelMargin/PanelVBox"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.97, 1, 1)
 theme_override_font_sizes/font_size = 15
 text = "Levels Solved: 50 / 50
 Total Best Moves: 628
@@ -103,14 +109,14 @@ horizontal_alignment = 1
 [node name="StarsSummaryLabel" type="Label" parent="Margin/VBox/StatsPanel/PanelMargin/PanelVBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.85, 0.22, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 17
 text = "★ Total Stars: 150 / 150 ★"
 horizontal_alignment = 1
 
 [node name="MoreLevelsLabel" type="Label" parent="Margin/VBox/StatsPanel/PanelMargin/PanelVBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.35, 0.9, 0.5, 1)
-theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.35, 0.92, 0.55, 1)
+theme_override_font_sizes/font_size = 15
 text = "★ More levels coming soon! ★"
 horizontal_alignment = 1
 
@@ -131,5 +137,6 @@ text = "Level Select"
 custom_minimum_size = Vector2(260, 52)
 layout_mode = 2
 size_flags_horizontal = 4
+theme_type_variation = &"TopBarButton"
 theme_override_font_sizes/font_size = 18
 text = "Main Menu"

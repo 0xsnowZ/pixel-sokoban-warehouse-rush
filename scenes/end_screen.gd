@@ -84,7 +84,7 @@ func _ready() -> void:
 
 	if has_node("Margin/VBox/TrophyIcon"):
 		var trophy = $Margin/VBox/TrophyIcon
-		trophy.pivot_offset = trophy.size / 2.0
+		trophy.pivot_offset = trophy.custom_minimum_size / 2.0 if trophy.size == Vector2.ZERO else trophy.size / 2.0
 		var tw: Tween = create_tween().set_loops()
 		tw.tween_property(trophy, "scale", Vector2(1.08, 1.08), 1.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		tw.tween_property(trophy, "scale", Vector2.ONE, 1.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
@@ -139,24 +139,26 @@ func _spawn_initial_confetti() -> void:
 	rng.randomize()
 
 	var palette: Array[Color] = [
-		Color(1.0, 0.84, 0.2), # Gold
-		Color(0.2, 0.88, 0.4), # Emerald
-		Color(0.95, 0.25, 0.3), # Ruby
-		Color(0.3, 0.75, 1.0), # Sky
-		Color(1.0, 0.95, 0.85) # Pearl
+		Color(1.0, 0.84, 0.20), # Gold
+		Color(0.25, 0.88, 0.45), # Emerald
+		Color(0.95, 0.28, 0.35), # Ruby
+		Color(0.35, 0.78, 1.0), # Sky
+		Color(1.0, 0.96, 0.88) # Pearl
 	]
 
-	for i in range(50):
-		var p_pos: Vector2 = Vector2(rng.randf_range(40, viewport_sz.x - 40), rng.randf_range(100, viewport_sz.y * 0.7))
+	for i in range(60):
+		var p_pos: Vector2 = Vector2(rng.randf_range(40, viewport_sz.x - 40), rng.randf_range(80, viewport_sz.y * 0.75))
 		var angle: float = rng.randf_range(-PI, PI)
 		var speed: float = rng.randf_range(80.0, 260.0)
-		var life: float = rng.randf_range(1.5, 3.0)
+		var life: float = rng.randf_range(1.8, 3.5)
+		var p_type: String = "star" if (i % 4 == 0) else "ribbon"
 
 		celebration_particles.append({
+			"type": p_type,
 			"pos": p_pos,
 			"vel": Vector2(cos(angle), sin(angle)) * speed,
 			"color": palette[rng.randi() % palette.size()],
-			"size": rng.randf_range(6.0, 11.0),
+			"size": rng.randf_range(7.0, 12.0),
 			"life": life,
 			"max_life": life,
 			"rot": rng.randf_range(0.0, TAU),
@@ -167,23 +169,25 @@ func _spawn_initial_confetti() -> void:
 func _process(delta: float) -> void:
 	particle_spawn_timer += delta
 	# Continuous slow celebratory confetti shower
-	if particle_spawn_timer >= 0.2:
+	if particle_spawn_timer >= 0.18:
 		particle_spawn_timer = 0.0
 		var viewport_sz: Vector2 = size if size != Vector2.ZERO else Vector2(540, 960)
 		var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 		var palette: Array[Color] = [
-			Color(1.0, 0.84, 0.2),
-			Color(0.2, 0.88, 0.4),
-			Color(0.95, 0.25, 0.3),
-			Color(0.3, 0.75, 1.0)
+			Color(1.0, 0.84, 0.20),
+			Color(0.25, 0.88, 0.45),
+			Color(0.95, 0.28, 0.35),
+			Color(0.35, 0.78, 1.0)
 		]
+		var p_type: String = "star" if (rng.randf() < 0.25) else "ribbon"
 		celebration_particles.append({
+			"type": p_type,
 			"pos": Vector2(rng.randf_range(20, viewport_sz.x - 20), -10),
 			"vel": Vector2(rng.randf_range(-40, 40), rng.randf_range(80, 160)),
 			"color": palette[rng.randi() % palette.size()],
-			"size": rng.randf_range(6.0, 10.0),
-			"life": 3.0,
-			"max_life": 3.0,
+			"size": rng.randf_range(7.0, 11.0),
+			"life": 3.2,
+			"max_life": 3.2,
 			"rot": rng.randf_range(0.0, TAU),
 			"vrot": rng.randf_range(-4.0, 4.0)
 		})
@@ -203,19 +207,37 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
+func _draw_star_shape(center: Vector2, radius: float, color: Color) -> void:
+	var pts: PackedVector2Array = []
+	for i in range(10):
+		var r: float = radius if (i % 2 == 0) else (radius * 0.45)
+		var a: float = i * (TAU / 10.0) - (PI / 2.0)
+		pts.append(center + Vector2(cos(a), sin(a)) * r)
+	draw_colored_polygon(pts, color)
+
+
 func _draw() -> void:
 	for p in celebration_particles:
 		var alpha: float = clampf(p["life"] / p["max_life"], 0.0, 1.0)
 		var p_col: Color = p["color"]
 		p_col.a = alpha
 		var half_sz: float = p["size"] * 0.5
-		var pts: PackedVector2Array = [
-			p["pos"] + Vector2(-half_sz, -half_sz).rotated(p["rot"]),
-			p["pos"] + Vector2(half_sz, -half_sz).rotated(p["rot"]),
-			p["pos"] + Vector2(half_sz, half_sz).rotated(p["rot"]),
-			p["pos"] + Vector2(-half_sz, half_sz).rotated(p["rot"])
-		]
-		draw_colored_polygon(pts, p_col)
+		var p_type: String = p.get("type", "ribbon")
+
+		if p_type == "star":
+			_draw_star_shape(p["pos"], p["size"] * 0.85, p_col)
+		else:
+			# 3D perspective tumbling ribbon based on rotation
+			var cos_r: float = cos(p["rot"])
+			var rib_w: float = half_sz * 1.5
+			var rib_h: float = half_sz * 0.65 * abs(cos_r) + 1.5
+			var pts: PackedVector2Array = [
+				p["pos"] + Vector2(-rib_w, -rib_h).rotated(p["rot"]),
+				p["pos"] + Vector2(rib_w, -rib_h).rotated(p["rot"]),
+				p["pos"] + Vector2(rib_w, rib_h).rotated(p["rot"]),
+				p["pos"] + Vector2(-rib_w, rib_h).rotated(p["rot"])
+			]
+			draw_colored_polygon(pts, p_col)
 
 
 func _on_level_select_pressed() -> void:
