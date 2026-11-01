@@ -115,8 +115,14 @@ func test_vibration_patterns_and_tracking() -> void:
 	assert_eq(haptics.last_vibration_type, "click", "Recorded vibration type: click")
 	assert_eq(haptics.last_vibration_duration, 15, "Click vibration duration is 15ms")
 
+	# 6. Deadlock / Heavy impact
+	var impact_res: bool = haptics.vibrate_impact()
+	assert_true(impact_res, "vibrate_impact succeeded")
+	assert_eq(haptics.last_vibration_type, "impact", "Recorded vibration type: impact")
+	assert_eq(haptics.last_vibration_duration, 55, "Impact vibration duration is 55ms")
+
 	# Total vibrations counter
-	assert_eq(haptics.total_vibrations_triggered, 5, "Total vibrations triggered is 5")
+	assert_eq(haptics.total_vibrations_triggered, 6, "Total vibrations triggered is 6")
 
 	haptics.queue_free()
 
@@ -212,6 +218,16 @@ func test_game_scene_haptic_integration() -> void:
 	# 3. Moving LEFT again into wall '#' at (0, 4) triggers bump
 	game.try_move(Vector2i.LEFT)
 	assert_eq(haptics.last_vibration_type, "bump", "Bumping into wall triggered bump vibration")
+
+	# 4. Requesting a Hint on a deadlocked board triggers impact vibration without crashing
+	game.grid.crates.clear()
+	game.grid.crates[Vector2i(1, 1)] = true # Corner deadlock in Level 1
+	game._on_hint_pressed()
+	assert_eq(haptics.last_vibration_type, "impact", "Deadlock hint triggered impact vibration")
+	assert_eq(haptics.last_vibration_duration, 55, "Impact vibration duration is 55ms")
+	if game.hint_toast != null:
+		assert_true(game.hint_toast.visible, "Hint toast visible with deadlock warning")
+		assert_true(game.hint_toast_label.text.contains("Undo"), "Deadlock toast warns player to Undo")
 
 	game.queue_free()
 	haptics.queue_free()

@@ -1199,15 +1199,25 @@ func _on_hint_pressed() -> void:
 	if move_char.is_empty():
 		# Deadlock or search limit reached
 		if audio_mgr:
-			audio_mgr.play_deadlock()
+			if audio_mgr.has_method("play_deadlock"):
+				audio_mgr.play_deadlock()
+			elif audio_mgr.has_method("play_bump"):
+				audio_mgr.play_bump()
 		if haptic_mgr:
-			haptic_mgr.vibrate_impact()
+			if haptic_mgr.has_method("vibrate_impact"):
+				haptic_mgr.vibrate_impact()
+			elif haptic_mgr.has_method("vibrate_bump"):
+				haptic_mgr.vibrate_bump()
 		add_trauma(0.25)
 		if is_confirmed_deadlock:
 			_show_hint_toast(loc_mgr.tr_text("HINT_DEADLOCK") if loc_mgr else "No solution from here! Tap Undo ↶", Color(1.0, 0.4, 0.4))
 		else:
 			_show_hint_toast(loc_mgr.tr_text("HINT_NO_PATH") if loc_mgr else "No clear path found. Try another move or Undo ↶", Color(1.0, 0.7, 0.4))
-		clear_hint()
+		# Clear ghost trajectory without hiding the toast message
+		active_hint_dir = Vector2i.ZERO
+		hint_time_remaining = 0.0
+		hint_has_crate = false
+		queue_redraw()
 		return
 
 	# Deduct 1 hint from inventory only when solution step was found
@@ -1806,6 +1816,8 @@ func _draw() -> void:
 
 
 func _draw_star_shape(center: Vector2, radius: float, color: Color) -> void:
+	if radius < 1.0:
+		return
 	var pts: PackedVector2Array = []
 	for i in range(8):
 		var a: float = i * (TAU / 8.0) - PI * 0.5

@@ -14,6 +14,7 @@ const DURATION_TARGET: int = 45
 const DURATION_WIN: int = 140
 const DURATION_BUMP: int = 20
 const DURATION_CLICK: int = 15
+const DURATION_IMPACT: int = 55
 
 # Vibration amplitudes (normalized 0.0 to 1.0, or -1.0 for system default)
 const AMP_PUSH: float = 0.4
@@ -21,6 +22,7 @@ const AMP_TARGET: float = 0.6
 const AMP_WIN: float = 0.8
 const AMP_BUMP: float = 0.3
 const AMP_CLICK: float = 0.2
+const AMP_IMPACT: float = 0.70
 
 var save_mgr: Node = null
 var _local_enabled: bool = true
@@ -103,6 +105,11 @@ func vibrate_win() -> bool:
 ## Subtle tactile bump when colliding with a wall or unmovable object.
 func vibrate_bump() -> bool:
 	return _vibrate(DURATION_BUMP, AMP_BUMP, "bump")
+
+
+## Pronounced tactile vibration for deadlocks or heavy obstacle impacts.
+func vibrate_impact() -> bool:
+	return _vibrate(DURATION_IMPACT, AMP_IMPACT, "impact")
 
 
 ## Micro-tap vibration for UI interactions and button presses.
