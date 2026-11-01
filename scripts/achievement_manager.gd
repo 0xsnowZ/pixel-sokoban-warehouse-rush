@@ -68,7 +68,7 @@ const ACHIEVEMENTS: Array[Dictionary] = [
 		"icon": "🦺",
 		"name": "Stylin' Porter",
 		"name_key": "ACH_STYLIN_PORTER",
-		"desc": "Equip any unlockable cosmetic from The Porter Locker.",
+		"desc": "Equip any unlockable cosmetic from the Supply Depot.",
 		"desc_key": "ACH_STYLIN_PORTER_DESC"
 	},
 	{

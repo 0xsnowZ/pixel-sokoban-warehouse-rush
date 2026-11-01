@@ -158,14 +158,14 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "الفصل %d: %s"
 	},
 	"MENU_LOCKER": {
-		"en": "PORTER LOCKER",
-		"fr": "VESTIAIRE",
-		"ar": "الخزانة"
+		"en": "SUPPLY DEPOT",
+		"fr": "DÉPÔT CENTRAL",
+		"ar": "مستودع الإمدادات"
 	},
 	"LOCKER_TITLE": {
-		"en": "THE PORTER LOCKER",
-		"fr": "VESTIAIRE DU PORTEUR",
-		"ar": "خزانة الحمال"
+		"en": "SUPPLY DEPOT",
+		"fr": "DÉPÔT CENTRAL",
+		"ar": "مستودع الإمدادات"
 	},
 	"LOCKER_STARS_BADGE": {
 		"en": "%d / 150 Stars Collected",
@@ -588,9 +588,9 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "حمال أنيق"
 	},
 	"ACH_STYLIN_PORTER_DESC": {
-		"en": "Equip any unlockable cosmetic from The Porter Locker.",
-		"fr": "Équipez une tenue ou caisse du Vestiaire.",
-		"ar": "ارتدِ أي زي تجميلي من خزانة الحمال."
+		"en": "Equip any unlockable cosmetic from the Supply Depot.",
+		"fr": "Équipez une tenue ou caisse du Dépôt Central.",
+		"ar": "جهّز أي عنصر من مستودع الإمدادات."
 	},
 	"ACH_HEAVY_LIFTER": {
 		"en": "Heavy Lifter",

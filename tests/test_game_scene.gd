@@ -559,17 +559,17 @@ func test_porter_locker_cosmetics_in_game() -> void:
 	assert_true(true, "Board redrawn with equipped cosmetics without error")
 
 	# 5. Localization of Locker strings & Cosmetics (EN, FR, AR)
-	assert_eq(loc.tr_text("LOCKER_TITLE"), "THE PORTER LOCKER", "EN Locker title is THE PORTER LOCKER")
+	assert_eq(loc.tr_text("LOCKER_TITLE"), "SUPPLY DEPOT", "EN Locker title is SUPPLY DEPOT")
 	assert_eq(loc.tr_text("SKIN_WORKER_SAFETY_VEST"), "Safety Vest", "EN Safety Vest skin name")
 	assert_eq(loc.tr_text("SKIN_CRATE_STEEL_CONTAINER"), "Steel Container", "EN Steel Container skin name")
 
 	loc.current_language = "fr"
-	assert_eq(loc.tr_text("LOCKER_TITLE"), "VESTIAIRE DU PORTEUR", "FR Locker title is VESTIAIRE DU PORTEUR")
+	assert_eq(loc.tr_text("LOCKER_TITLE"), "DÉPÔT CENTRAL", "FR Locker title is DÉPÔT CENTRAL")
 	assert_eq(loc.tr_text("SKIN_WORKER_SAFETY_VEST"), "Gilet de Sécurité", "FR Safety Vest skin name")
 	assert_eq(loc.tr_text("SKIN_CRATE_STEEL_CONTAINER"), "Conteneur en Acier", "FR Steel Container skin name")
 
 	loc.current_language = "ar"
-	assert_eq(loc.tr_text("LOCKER_TITLE"), "خزانة الحمال", "AR Locker title is خزانة الحمال")
+	assert_eq(loc.tr_text("LOCKER_TITLE"), "مستودع الإمدادات", "AR Locker title is مستودع الإمدادات")
 	assert_eq(loc.tr_text("SKIN_WORKER_SAFETY_VEST"), "سترة الأمان", "AR Safety Vest skin name")
 	assert_eq(loc.tr_text("SKIN_CRATE_STEEL_CONTAINER"), "حاوية فولاذية", "AR Steel Container skin name")
 

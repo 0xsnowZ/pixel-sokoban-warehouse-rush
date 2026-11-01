@@ -506,25 +506,76 @@ def make_settings():
     save_icon(im, "icon_settings.png")
 
 def make_locker():
-    im = new_canvas()
-    d = ImageDraw.Draw(im)
+    import subprocess
+    import shutil
+    import io
 
-    # Locker Cabinet
-    d.rounded_rectangle([68, 36, 188, 226], radius=14, fill=(13, 148, 136, 255), outline=(15, 23, 42, 255), width=6)
-    d.rounded_rectangle([76, 44, 180, 218], radius=10, fill=(20, 184, 166, 255))
-    d.line([(76, 44), (180, 44)], fill=(153, 246, 228, 255), width=4)
+    svg_depot = """<svg viewBox="-32 -32 576 576" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="16" stdDeviation="12" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+    <linearGradient id="depotGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#14B8A6"/>
+      <stop offset="50%" stop-color="#0F766E"/>
+      <stop offset="100%" stop-color="#115E59"/>
+    </linearGradient>
+    <linearGradient id="lidGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2DD4BF"/>
+      <stop offset="100%" stop-color="#0D9488"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE047"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+    <linearGradient id="metalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E2E8F0"/>
+      <stop offset="100%" stop-color="#64748B"/>
+    </linearGradient>
+  </defs>
+  <g filter="url(#shadow)">
+    <!-- Heavy Duty Handle -->
+    <path d="M 176 110 L 176 60 C 176 44 190 32 206 32 L 306 32 C 322 32 336 44 336 60 L 336 110" fill="none" stroke="url(#metalGrad)" stroke-width="32" stroke-linecap="round"/>
+    
+    <!-- Chest Main Body -->
+    <rect x="48" y="100" width="416" height="340" rx="36" fill="url(#depotGrad)" stroke="#0F172A" stroke-width="24"/>
+    
+    <!-- Chest Lid Upper Bevel -->
+    <path d="M 48 180 L 464 180" stroke="#0F172A" stroke-width="20"/>
+    <rect x="48" y="100" width="416" height="80" rx="36" fill="url(#lidGrad)"/>
+    <!-- Lid highlight stripe -->
+    <line x1="72" y1="120" x2="440" y2="120" stroke="#99F6E4" stroke-width="12" stroke-linecap="round" opacity="0.6"/>
 
-    # Ventilation Louvers
-    for y in [64, 76, 88]:
-        d.rounded_rectangle([92, y, 164, y+5], radius=2, fill=(15, 118, 110, 255))
+    <!-- Left & Right Corner Braces -->
+    <path d="M 48 100 L 120 100 L 120 440 L 48 440 Z" fill="#0D9488" opacity="0.35"/>
+    <path d="M 464 100 L 392 100 L 392 440 L 464 440 Z" fill="#0D9488" opacity="0.35"/>
 
-    # Combination Dial / Lock
-    d.ellipse([140, 126, 164, 150], fill=(245, 158, 11, 255), outline=(180, 100, 10, 255), width=4)
-    d.ellipse([148, 134, 156, 142], fill=(15, 23, 42, 255))
-    # Handle
-    d.rounded_rectangle([146, 158, 158, 188], radius=4, fill=(203, 213, 225, 255), outline=(71, 85, 105, 255), width=3)
+    <!-- Corner Rivets / Bolts -->
+    <circle cx="84" cy="140" r="12" fill="url(#metalGrad)" stroke="#0F172A" stroke-width="6"/>
+    <circle cx="428" cy="140" r="12" fill="url(#metalGrad)" stroke="#0F172A" stroke-width="6"/>
+    <circle cx="84" cy="400" r="12" fill="url(#metalGrad)" stroke="#0F172A" stroke-width="6"/>
+    <circle cx="428" cy="400" r="12" fill="url(#metalGrad)" stroke="#0F172A" stroke-width="6"/>
 
-    save_icon(im, "icon_locker.png")
+    <!-- Center Supply Latch Plate -->
+    <rect x="216" y="150" width="80" height="96" rx="16" fill="url(#metalGrad)" stroke="#0F172A" stroke-width="14"/>
+    <!-- Golden Core Keyway / Emblem -->
+    <circle cx="256" cy="198" r="18" fill="url(#goldGrad)" stroke="#0F172A" stroke-width="8"/>
+    <rect x="252" y="198" width="8" height="20" fill="#0F172A"/>
+
+    <!-- Horizontal Reinforcement Band -->
+    <line x1="68" y1="310" x2="444" y2="310" stroke="#0F172A" stroke-width="16"/>
+    <line x1="72" y1="306" x2="440" y2="306" stroke="#5EEAD4" stroke-width="6" opacity="0.5"/>
+  </g>
+</svg>"""
+
+    if shutil.which("rsvg-convert"):
+        p = subprocess.run(["rsvg-convert", "-w", "64", "-h", "64", "-f", "png", "-o", os.path.join(OUT_DIR, "icon_locker.png")], input=svg_depot.encode("utf-8"), check=True)
+        print("Generated assets/icons/icon_locker.png via rsvg-convert (Supply Depot Trunk)")
+    else:
+        im = new_canvas()
+        d = ImageDraw.Draw(im)
+        d.rounded_rectangle([48, 80, 208, 220], radius=16, fill=(13, 148, 136, 255), outline=(15, 23, 42, 255), width=6)
+        save_icon(im, "icon_locker.png")
 
 # ==========================================
 # 19. icon_lock.png (Industrial Padlock)

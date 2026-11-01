@@ -463,6 +463,8 @@ func _refresh_locker_ui() -> void:
 		return
 
 	var total_stars: int = save_mgr.get_total_stars()
+	if locker_title_label:
+		locker_title_label.text = loc_mgr.tr_text("LOCKER_TITLE") if loc_mgr else "SUPPLY DEPOT"
 	if locker_stars_badge:
 		locker_stars_badge.text = loc_mgr.tr_text("LOCKER_STARS_BADGE", [total_stars]) if loc_mgr else ("%d / 150 Stars Collected" % total_stars)
 
@@ -871,7 +873,7 @@ func _update_menu_state() -> void:
 			settings_btn.text = ""
 			settings_btn.tooltip_text = "Settings"
 		if locker_btn:
-			locker_btn.text = "PORTER LOCKER"
+			locker_btn.text = "SUPPLY DEPOT"
 		if achievements_btn:
 			achievements_btn.text = ""
 			achievements_btn.tooltip_text = "Achievements"
