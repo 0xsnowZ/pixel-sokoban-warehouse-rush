@@ -70,10 +70,15 @@ static func get_path_states(level_index: int, level_path: String) -> Array:
 
 	var states: Array = []
 	for i in range(sol_str.length()):
-		var enc: String = encode_state(sim_grid.player_pos, sim_grid.get_crates())
+		var cr: Array[Vector2i] = sim_grid.get_crates()
+		var enc: String = encode_state(sim_grid.player_pos, cr)
+		var c_enc: String = encode_crates(cr)
 		var ch: String = sol_str.substr(i, 1)
 		states.append({
 			"enc": enc,
+			"crate_enc": c_enc,
+			"player_pos": sim_grid.player_pos,
+			"step_idx": i,
 			"move": ch
 		})
 		var dir: Vector2i = Vector2i.ZERO
@@ -88,7 +93,40 @@ static func get_path_states(level_index: int, level_path: String) -> Array:
 	return states
 
 
-## Instantly returns the next optimal hint move character ("u", "d", "l", "r") if on the solution path, or "" otherwise.
+## Finds the next single walk move ('u', 'd', 'l', 'r') to walk from start_pos to target_pos without pushing any crates.
+## Uses a lightweight 1-agent BFS on floor tiles (< 0.05ms).
+static func find_player_walk_step(start_pos: Vector2i, target_pos: Vector2i, grid: GridLogic) -> String:
+	if start_pos == target_pos:
+		return ""
+	var queue: Array[Vector2i] = [start_pos]
+	var visited: Dictionary = { start_pos: "" }
+	var head: int = 0
+	var dirs: Array[Dictionary] = [
+		{"d": Vector2i.UP, "ch": "u"},
+		{"d": Vector2i.DOWN, "ch": "d"},
+		{"d": Vector2i.LEFT, "ch": "l"},
+		{"d": Vector2i.RIGHT, "ch": "r"}
+	]
+	var crates_map: Dictionary = grid.crates
+	while head < queue.size():
+		var cur: Vector2i = queue[head]
+		head += 1
+		for d in dirs:
+			var np: Vector2i = cur + d["d"]
+			if not grid.is_in_bounds(np) or grid.is_wall(np) or grid.is_exterior_void(np) or crates_map.has(np):
+				continue
+			if not visited.has(np):
+				var first_move: String = visited[cur]
+				if first_move.is_empty():
+					first_move = d["ch"]
+				visited[np] = first_move
+				if np == target_pos:
+					return first_move
+				queue.append(np)
+	return ""
+
+
+## Instantly returns the next optimal hint move character ("u", "d", "l", "r") if on the solution path or reachable from it, or "" otherwise.
 static func get_next_hint(grid: GridLogic, level_index: int, level_path: String = "") -> String:
 	if grid == null or grid.is_won():
 		return ""
@@ -100,10 +138,26 @@ static func get_next_hint(grid: GridLogic, level_index: int, level_path: String 
 	if path_states.is_empty():
 		return ""
 
-	var current_enc: String = encode_state(grid.player_pos, grid.get_crates())
+	var current_crates: Array[Vector2i] = grid.get_crates()
+	var current_enc: String = encode_state(grid.player_pos, current_crates)
+
+	# 1. Exact match on optimal state sequence (instant 0ms lookup)
 	for item in path_states:
 		if item["enc"] == current_enc:
 			return item["move"]
+
+	# 2. Player Reachability Snap:
+	# If the crate layout matches a state on the optimal path and the player merely walked to another tile,
+	# guide the player via shortest walk path directly to the push position in < 0.05ms!
+	var cur_crate_enc: String = encode_crates(current_crates)
+	for item in path_states:
+		if item.get("crate_enc", "") == cur_crate_enc:
+			var target_pos: Vector2i = item["player_pos"]
+			if grid.player_pos == target_pos:
+				return item["move"]
+			var walk_step: String = find_player_walk_step(grid.player_pos, target_pos, grid)
+			if not walk_step.is_empty():
+				return walk_step
 
 	return ""
 
@@ -195,8 +249,8 @@ static func is_2x2_deadlock(pos: Vector2i, grid_or_walls: Variant, moving_from_o
 	return false
 
 
-## Encodes a state (player_pos and crates list) into a unique string key.
-static func encode_state(player_pos: Vector2i, crates: Array[Vector2i]) -> String:
+## Encodes a list of crate positions into an order-independent canonical string key.
+static func encode_crates(crates: Array[Vector2i]) -> String:
 	var sorted_crates: Array[Vector2i] = crates.duplicate()
 	sorted_crates.sort_custom(func(a: Vector2i, b: Vector2i):
 		if a.y == b.y: return a.x < b.x
@@ -205,7 +259,12 @@ static func encode_state(player_pos: Vector2i, crates: Array[Vector2i]) -> Strin
 	var crate_parts: PackedStringArray = []
 	for c in sorted_crates:
 		crate_parts.append("%d,%d" % [c.x, c.y])
-	return "%d,%d|%s" % [player_pos.x, player_pos.y, ";".join(crate_parts)]
+	return ";".join(crate_parts)
+
+
+## Encodes a state (player_pos and crates list) into a unique string key.
+static func encode_state(player_pos: Vector2i, crates: Array[Vector2i]) -> String:
+	return "%d,%d|%s" % [player_pos.x, player_pos.y, encode_crates(crates)]
 
 
 ## Solves a Sokoban level using optimized Breadth-First Search (BFS) to guarantee the shortest move sequence.

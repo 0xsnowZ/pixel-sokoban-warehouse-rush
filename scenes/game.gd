@@ -36,6 +36,21 @@ var player_celebration_hop: float = 0.0
 var victory_radiance_rings: Array[Dictionary] = []
 var star_burst_particles: Array[Dictionary] = []
 
+# Game Feel & Tactility (Option A)
+var is_undo_held: bool = false
+var undo_hold_time: float = 0.0
+var undo_step_timer: float = 0.0
+var bump_offset: Vector2 = Vector2.ZERO
+
+# Visual Atmosphere & Polish (Option B)
+var ambient_motes: Array[Dictionary] = []
+
+# Live HUD 3-Star Tracker & Worker Micro-Interactions (Option C)
+var player_idle_time: float = 0.0
+var consecutive_wall_bumps: int = 0
+var sweat_drop_timer: float = 0.0
+var _prev_live_stars: int = 3
+
 # 3 Logistics Chapters & Visual Progression (PRD Phase 2)
 # Ch 0: Cargo Bay (Levels 1–15, idx 0–14)
 # Ch 1: Cold Storage (Levels 16–35, idx 15–34)
@@ -145,6 +160,7 @@ var ad_reward_modal: PanelContainer = null
 @onready var dpad_left: Button = find_child("DPadLeft", true, false) as Button
 @onready var dpad_right: Button = find_child("DPadRight", true, false) as Button
 @onready var level_label: Label = find_child("LevelLabel", true, false) as Label
+@onready var star_gauge: Label = find_child("StarGauge", true, false) as Label
 @onready var stats_label: Label = find_child("StatsLabel", true, false) as Label
 @onready var prev_button: Button = $BottomBar/Margin/HBox/PrevButton
 @onready var undo_button: Button = $BottomBar/Margin/HBox/UndoButton if has_node("BottomBar/Margin/HBox/UndoButton") else null
@@ -208,6 +224,8 @@ func _initialize_nodes() -> void:
 		chapter_badge = find_child("ChapterBadge", true, false) as Label
 	if level_label == null:
 		level_label = find_child("LevelLabel", true, false) as Label
+	if star_gauge == null:
+		star_gauge = find_child("StarGauge", true, false) as Label
 	if stats_label == null:
 		stats_label = find_child("StatsLabel", true, false) as Label
 	if dpad_overlay == null:
@@ -295,8 +313,13 @@ func _ready() -> void:
 		menu_button.pressed.connect(_on_menu_pressed)
 	if not win_menu_button.pressed.is_connected(_on_menu_pressed):
 		win_menu_button.pressed.connect(_on_menu_pressed)
-	if undo_button != null and not undo_button.pressed.is_connected(_on_undo_pressed):
-		undo_button.pressed.connect(_on_undo_pressed)
+	if undo_button != null:
+		if not undo_button.pressed.is_connected(_on_undo_pressed):
+			undo_button.pressed.connect(_on_undo_pressed)
+		if not undo_button.button_down.is_connected(_on_undo_button_down):
+			undo_button.button_down.connect(_on_undo_button_down)
+		if not undo_button.button_up.is_connected(_on_undo_button_up):
+			undo_button.button_up.connect(_on_undo_button_up)
 	if hint_button != null and not hint_button.pressed.is_connected(_on_hint_pressed):
 		hint_button.pressed.connect(_on_hint_pressed)
 	if not restart_button.pressed.is_connected(_on_restart_pressed):
@@ -469,6 +492,11 @@ func load_level(index: int) -> void:
 	dust_particles.clear()
 	goal_effects.clear()
 	crate_squash.clear()
+	_init_ambient_motes()
+	player_idle_time = 0.0
+	consecutive_wall_bumps = 0
+	sweat_drop_timer = 0.0
+	_prev_live_stars = 3
 
 	_update_ui()
 	queue_redraw()
@@ -486,10 +514,58 @@ func _update_ui() -> void:
 		chapter_badge.text = "%s CH. %d" % [ch_info["icon"], current_chapter_idx + 1]
 		chapter_badge.modulate = ch_info["badge_color"]
 
+	# Option C: Real-Time Live 3-Star Rating & Target Tracking
+	var live_stars: int = 3
+	var star_target_sub: String = ""
+	if save_mgr and save_mgr.has_method("get_star_targets"):
+		var targets: Dictionary = save_mgr.get_star_targets(current_level_index)
+		var cur_moves: int = grid.moves_count if grid != null else 0
+		var s3: int = targets.get("three_star", targets.get("star_3", 999))
+		var s2: int = targets.get("two_star", targets.get("star_2", 999))
+		if cur_moves <= s3:
+			live_stars = 3
+			star_target_sub = " (★≤%d)" % s3
+		elif cur_moves <= s2:
+			live_stars = 2
+			star_target_sub = " (★≤%d)" % s2
+		else:
+			live_stars = 1
+			star_target_sub = ""
+
+	if star_gauge != null:
+		match live_stars:
+			3:
+				star_gauge.text = "★★★"
+				star_gauge.modulate = Color(1.0, 0.85, 0.25)
+			2:
+				star_gauge.text = "★★☆"
+				star_gauge.modulate = Color(0.95, 0.72, 0.20)
+			_:
+				star_gauge.text = "★☆☆"
+				star_gauge.modulate = Color(0.85, 0.65, 0.35)
+
+		# Star change juicing animation
+		if live_stars < _prev_live_stars and star_gauge.is_inside_tree():
+			star_gauge.pivot_offset = star_gauge.size / 2.0
+			var tw_sg: Tween = create_tween().set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+			star_gauge.scale = Vector2(1.35, 1.35)
+			tw_sg.tween_property(star_gauge, "scale", Vector2.ONE, 0.30)
+			add_trauma(0.12)
+			if audio_mgr and audio_mgr.has_method("play_bump"):
+				audio_mgr.play_bump()
+		elif live_stars > _prev_live_stars and star_gauge.is_inside_tree():
+			star_gauge.pivot_offset = star_gauge.size / 2.0
+			var tw_sg: Tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			star_gauge.scale = Vector2(1.25, 1.25)
+			tw_sg.tween_property(star_gauge, "scale", Vector2.ONE, 0.20)
+
+	_prev_live_stars = live_stars
+
 	if loc_mgr:
 		level_label.text = loc_mgr.tr_text("GAME_LEVEL_LABEL", [current_level_index + 1, level_paths.size()])
-		stats_label.text = "%s   •   %s%s" % [
+		stats_label.text = "%s%s   •   %s%s" % [
 			loc_mgr.tr_text("GAME_MOVES", [grid.moves_count]),
+			star_target_sub,
 			loc_mgr.tr_text("GAME_PUSHES", [grid.pushes_count]),
 			best_str
 		]
@@ -507,7 +583,7 @@ func _update_ui() -> void:
 			win_retry_button.text = loc_mgr.tr_text("WIN_RETRY_BTN")
 	else:
 		level_label.text = "LEVEL %d / %d" % [current_level_index + 1, level_paths.size()]
-		stats_label.text = "MOVES: %d   •   PUSHES: %d%s" % [grid.moves_count, grid.pushes_count, best_str]
+		stats_label.text = "MOVES: %d%s   •   PUSHES: %d%s" % [grid.moves_count, star_target_sub, grid.pushes_count, best_str]
 		if undo_button != null:
 			undo_button.text = "Undo ↶"
 		_update_hint_button_text()
@@ -541,6 +617,8 @@ func _update_ui() -> void:
 
 
 func _on_player_moved(from_pos: Vector2i, to_pos: Vector2i) -> void:
+	consecutive_wall_bumps = 0
+	player_idle_time = 0.0
 	_update_ui()
 	_animate_player(from_pos, to_pos)
 	if not grid.last_move_pushed_crate and audio_mgr:
@@ -576,16 +654,22 @@ func _on_crate_pushed(from_pos: Vector2i, to_pos: Vector2i) -> void:
 
 func _on_level_won() -> void:
 	is_level_won = true
-	add_trauma(0.50)
+
+	# 1. Authentic Hit-Stop Freeze-Frame (Micro-pause right as final crate snaps into goal)
+	if is_inside_tree():
+		await get_tree().create_timer(0.075).timeout
+
+	# 2. Explosive screen shake and radiance rings
+	add_trauma(0.60)
 
 	# Trigger joyous worker celebration hops
 	player_celebration_hop = 0.0
 	var tw_hop: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tw_hop.tween_property(self, "player_celebration_hop", -22.0, 0.16)
+	tw_hop.tween_property(self, "player_celebration_hop", -24.0, 0.16)
 	tw_hop.set_ease(Tween.EASE_IN)
 	tw_hop.tween_property(self, "player_celebration_hop", 0.0, 0.14)
 	tw_hop.set_ease(Tween.EASE_OUT)
-	tw_hop.tween_property(self, "player_celebration_hop", -14.0, 0.14)
+	tw_hop.tween_property(self, "player_celebration_hop", -15.0, 0.14)
 	tw_hop.set_ease(Tween.EASE_IN)
 	tw_hop.tween_property(self, "player_celebration_hop", 0.0, 0.12)
 
@@ -774,15 +858,22 @@ func _animate_crate(from_pos: Vector2i, to_pos: Vector2i) -> void:
 		queue_redraw()
 	, Vector2(from_pos), Vector2(to_pos), 0.12)
 
-	# Squash & stretch deformation along push axis
+	# Squash & stretch deformation along push axis (Option A: Juicy Magnetic Goal Snap)
 	var push_dir: Vector2i = to_pos - from_pos
-	var squash_start: Vector2 = Vector2(0.86, 1.14) if push_dir.x != 0 else Vector2(1.14, 0.86)
+	var is_entering_goal: bool = (grid != null and grid.goals.has(to_pos))
+
+	var squash_start: Vector2
+	if is_entering_goal:
+		squash_start = Vector2(1.24, 0.78) if push_dir.x != 0 else Vector2(0.78, 1.24)
+	else:
+		squash_start = Vector2(0.86, 1.14) if push_dir.x != 0 else Vector2(1.14, 0.86)
+
 	crate_squash[to_pos] = squash_start
 	var sq_tw: Tween = create_tween().set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 	sq_tw.tween_method(func(s: Vector2):
 		crate_squash[to_pos] = s
 		queue_redraw()
-	, squash_start, Vector2.ONE, 0.22)
+	, squash_start, Vector2.ONE, 0.28 if is_entering_goal else 0.22)
 
 
 func try_move(dir: Vector2i) -> void:
@@ -799,30 +890,67 @@ func try_move(dir: Vector2i) -> void:
 	if grid != null:
 		var moved: bool = grid.move(dir)
 		if not moved:
-			add_trauma(0.12)
-			if haptic_mgr:
-				haptic_mgr.vibrate_bump()
+			_trigger_bump_recoil(dir)
+
+
+func _trigger_bump_recoil(dir: Vector2i) -> void:
+	if is_animating:
+		return
+	add_trauma(0.14)
+	consecutive_wall_bumps += 1
+	if consecutive_wall_bumps >= 3:
+		trigger_sweat_drop()
+
+	if haptic_mgr and haptic_mgr.has_method("vibrate_bump"):
+		haptic_mgr.vibrate_bump()
+	elif haptic_mgr and haptic_mgr.has_method("vibrate_click"):
+		haptic_mgr.vibrate_click()
+
+	if audio_mgr and audio_mgr.has_method("play_bump"):
+		audio_mgr.play_bump()
+	elif audio_mgr and audio_mgr.has_method("play_click"):
+		audio_mgr.play_click()
+
+	var recoil_vec: Vector2 = Vector2(dir) * 4.5
+	bump_offset = recoil_vec
+	var tw: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(self, "bump_offset", Vector2.ZERO, 0.11)
+	tw.tween_callback(queue_redraw)
+
+
+func trigger_sweat_drop() -> void:
+	sweat_drop_timer = 1.4
+	queue_redraw()
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if win_modal != null and win_modal.visible:
 		return
 
-	# Keyboard navigation (Desktop / Testing)
-	if event is InputEventKey and event.is_pressed() and not event.is_echo():
-		match event.keycode:
-			KEY_UP, KEY_W:
-				try_move(Vector2i.UP)
-			KEY_DOWN, KEY_S:
-				try_move(Vector2i.DOWN)
-			KEY_LEFT, KEY_A:
-				try_move(Vector2i.LEFT)
-			KEY_RIGHT, KEY_D:
-				try_move(Vector2i.RIGHT)
-			KEY_R:
-				_on_restart_pressed()
-			KEY_Z, KEY_U, KEY_BACKSPACE:
+	# Keyboard navigation (Desktop / Testing) with Rapid Rewind on Hold
+	if event is InputEventKey:
+		if event.keycode in [KEY_Z, KEY_U, KEY_BACKSPACE]:
+			if event.is_pressed() and not event.is_echo():
+				is_undo_held = true
+				undo_hold_time = 0.0
+				undo_step_timer = 0.0
 				_on_undo_pressed()
+			elif not event.is_pressed():
+				is_undo_held = false
+				undo_hold_time = 0.0
+				undo_step_timer = 0.0
+		elif event.is_pressed() and not event.is_echo():
+			match event.keycode:
+				KEY_UP, KEY_W:
+					try_move(Vector2i.UP)
+				KEY_DOWN, KEY_S:
+					try_move(Vector2i.DOWN)
+				KEY_LEFT, KEY_A:
+					try_move(Vector2i.LEFT)
+				KEY_RIGHT, KEY_D:
+					try_move(Vector2i.RIGHT)
+				KEY_R:
+					_on_restart_pressed()
 
 	# Touch & Mouse swipe detection (PRD Section 5)
 	if event is InputEventMouseButton:
@@ -987,6 +1115,18 @@ func _on_dpad_left_pressed() -> void:
 
 func _on_dpad_right_pressed() -> void:
 	try_move(Vector2i.RIGHT)
+
+
+func _on_undo_button_down() -> void:
+	is_undo_held = true
+	undo_hold_time = 0.0
+	undo_step_timer = 0.0
+
+
+func _on_undo_button_up() -> void:
+	is_undo_held = false
+	undo_hold_time = 0.0
+	undo_step_timer = 0.0
 
 
 func _on_undo_pressed() -> void:
@@ -1306,6 +1446,22 @@ func _spawn_star_burst(center_pt: Vector2) -> void:
 func _process(delta: float) -> void:
 	var needs_redraw: bool = is_animating
 
+	# Option A: Continuous Rapid Rewind when Undo is held down
+	if is_undo_held and (win_modal == null or not win_modal.visible):
+		undo_hold_time += delta
+		if undo_hold_time >= 0.30: # 300ms hold threshold
+			undo_step_timer += delta
+			if undo_step_timer >= 0.085: # Rewind 1 step every 85ms (~12 moves/sec)
+				undo_step_timer = 0.0
+				if grid != null and grid.can_undo():
+					if audio_mgr and audio_mgr.has_method("play_click"):
+						audio_mgr.play_click()
+					if haptic_mgr and haptic_mgr.has_method("vibrate_click"):
+						haptic_mgr.vibrate_click()
+					grid.undo()
+				else:
+					is_undo_held = false
+
 	# Update hint ghost timer
 	if hint_time_remaining > 0.0:
 		needs_redraw = true
@@ -1342,6 +1498,36 @@ func _process(delta: float) -> void:
 				dp["vel"] *= (1.0 - 5.0 * delta)
 				dp["size"] += 2.0 * delta
 			di -= 1
+
+	# Option B: Update floating ambient warehouse motes
+	if not ambient_motes.is_empty() and (win_modal == null or not win_modal.visible):
+		needs_redraw = true
+		for mote in ambient_motes:
+			mote["phase"] += delta * 1.35 * mote.get("speed_mult", 1.0)
+			var drift: Vector2 = mote["vel"] + Vector2(cos(mote["phase"]) * 0.006, sin(mote["phase"] * 0.8) * 0.005)
+			mote["pos_norm"] += drift * delta
+			if mote["pos_norm"].x < -0.05:
+				mote["pos_norm"].x = 1.05
+			elif mote["pos_norm"].x > 1.05:
+				mote["pos_norm"].x = -0.05
+			if mote["pos_norm"].y < -0.05:
+				mote["pos_norm"].y = 1.05
+			elif mote["pos_norm"].y > 1.05:
+				mote["pos_norm"].y = -0.05
+
+	# Option C: Worker Idle Nuance & Thinking Sweat Drop
+	if not is_animating and not is_level_won and (win_modal == null or not win_modal.visible):
+		player_idle_time += delta
+		if player_idle_time >= 10.0 and sweat_drop_timer <= 0.0:
+			trigger_sweat_drop()
+		if player_idle_time > 2.0:
+			needs_redraw = true
+	else:
+		player_idle_time = 0.0
+
+	if sweat_drop_timer > 0.0:
+		sweat_drop_timer -= delta
+		needs_redraw = true
 
 	# Update goal shockwaves & sparks
 	if not goal_effects.is_empty():
@@ -1506,7 +1692,10 @@ func _draw() -> void:
 				# Exterior void tile decorated with reference-inspired pine trees / chapter foliage
 				_draw_exterior_void_tile(rect, pos, ch)
 
-	# 3. Draw Goals with Chapter Pressure Plate & Pulsing Aura
+	# 2.5. Board Peripheral Vignette (Option B: Soft atmospheric edge darkening)
+	_draw_board_vignette(effective_origin, board_pixel_size)
+
+	# 3. Draw Goals with Chapter Pressure Plate, Hazard Markings & Pulsing Aura (Option B)
 	var time_sec: float = float(Time.get_ticks_msec()) / 1000.0
 	var pulse: float = sin(time_sec * 3.5) * 0.12
 	var aura_col_base: Color = ch["goal_aura"]
@@ -1514,15 +1703,23 @@ func _draw() -> void:
 	for goal_pos in grid.goals.keys():
 		var rect: Rect2 = Rect2(effective_origin + Vector2(goal_pos) * tile_size, Vector2(tile_size, tile_size))
 		var center: Vector2 = rect.get_center()
+		var has_crate: bool = grid.crates.has(goal_pos)
 
+		# Industrial hazard caution corner brackets on the goal pad
+		_draw_goal_hazard_brackets(rect, ch)
+
+		# Core goal texture
 		draw_texture_rect(tex_goal, rect, false)
 
-		# Pulsing dynamic chapter aura
-		var aura_radius: float = (tile_size * 0.26) * (1.0 + pulse)
+		# Subtle pulsing dynamic chapter aura (contained strictly within target pad)
+		var aura_radius: float = (tile_size * 0.22) * (1.0 + pulse * 0.5)
 		var aura_color: Color = aura_col_base
-		aura_color.a = 0.22 + pulse * 0.10
-		draw_circle(center, aura_radius + 4.0, aura_color)
-		draw_circle(center, 3.5, core_col)
+		aura_color.a = 0.16 + pulse * 0.06
+		draw_circle(center, aura_radius, aura_color)
+		draw_circle(center, 3.0, core_col)
+
+	# 3.5. Draw Floating Ambient Warehouse Motes (Option B)
+	_draw_ambient_motes(effective_origin, board_pixel_size, ch)
 
 	# 4. Draw Push Friction Dust Puffs
 	for dp in dust_particles:
@@ -1551,6 +1748,9 @@ func _draw() -> void:
 		draw_arc(ring["pos"], ring["radius"], 0.0, TAU, 36, r_col, 4.0, true)
 		var inner_col: Color = Color(1.0, 1.0, 0.90, alpha * 0.50)
 		draw_arc(ring["pos"], ring["radius"] * 0.72, 0.0, TAU, 28, inner_col, 2.0, true)
+
+	# 5.8. Draw Worker Ambient Headlamp Glow & Forward Beam (Option B)
+	_draw_player_headlamp(effective_origin)
 
 	# 6. Draw Crates with Drop Shadow, 3D Shading & Squash
 	for logical_pos in grid.crates.keys():
@@ -1654,9 +1854,158 @@ func _draw_cyber_pylon(rect: Rect2, center: Vector2) -> void:
 	draw_circle(center, pylon_sz * 0.22, Color(0.10, 0.85, 1.0, pulse * 0.9))
 
 
-func _draw_wall(rect: Rect2, _pos: Vector2i = Vector2i.ZERO) -> void:
+func _draw_wall(rect: Rect2, pos: Vector2i = Vector2i.ZERO) -> void:
 	var ch: Dictionary = get_current_chapter_theme()
 	draw_texture_rect(tex_wall, rect, false, ch["wall_tint"])
+
+	if grid == null:
+		return
+
+	var is_top_edge: bool = (pos.y == 0 or not grid.is_wall(pos + Vector2i.UP))
+	var is_bottom_edge: bool = (pos.y >= grid.height - 1 or not grid.is_wall(pos + Vector2i.DOWN))
+	var is_left_edge: bool = (pos.x == 0 or not grid.is_wall(pos + Vector2i.LEFT))
+	var is_right_edge: bool = (pos.x >= grid.width - 1 or not grid.is_wall(pos + Vector2i.RIGHT))
+
+	# 1. Top coping stone / specular highlight (Option B)
+	if is_top_edge:
+		# Crisp specular edge on top of wall cap
+		draw_line(rect.position, rect.position + Vector2(rect.size.x, 0.0), Color(1.0, 1.0, 1.0, 0.38), 2.5)
+		draw_line(rect.position + Vector2(0.0, 2.5), rect.position + Vector2(rect.size.x, 2.5), Color(1.0, 1.0, 1.0, 0.14), 1.0)
+		# Demarcation shadow crease right below the coping edge
+		draw_line(rect.position + Vector2(0.0, 3.5), rect.position + Vector2(rect.size.x, 3.5), Color(0.0, 0.0, 0.0, 0.28), 1.0)
+	else:
+		# Subtle interior masonry course line
+		draw_line(rect.position, rect.position + Vector2(rect.size.x, 0.0), Color(0.0, 0.0, 0.0, 0.18), 1.0)
+
+	# 2. Left side specular highlight (top-left key lighting)
+	if is_left_edge:
+		draw_line(rect.position, rect.position + Vector2(0.0, rect.size.y), Color(1.0, 1.0, 1.0, 0.22), 1.5)
+
+	# 3. Right side ambient shadow edge
+	if is_right_edge:
+		draw_line(rect.position + Vector2(rect.size.x, 0.0), rect.position + rect.size, Color(0.0, 0.0, 0.0, 0.35), 2.0)
+
+	# 4. Bottom base shadow / footing depth
+	if is_bottom_edge:
+		draw_line(rect.position + Vector2(0.0, rect.size.y - 1.0), rect.end - Vector2(0.0, 1.0), Color(0.0, 0.0, 0.0, 0.48), 2.5)
+
+
+func _draw_board_vignette(effective_origin: Vector2, board_pixel_size: Vector2) -> void:
+	var v_thick: float = minf(tile_size * 0.45, 36.0)
+	var board_rect: Rect2 = Rect2(effective_origin, board_pixel_size)
+
+	# Soft edge inward darkening strips
+	# Top edge
+	draw_rect(Rect2(board_rect.position, Vector2(board_rect.size.x, v_thick)), Color(0.0, 0.0, 0.0, 0.14))
+	draw_rect(Rect2(board_rect.position, Vector2(board_rect.size.x, v_thick * 0.45)), Color(0.0, 0.0, 0.0, 0.10))
+
+	# Bottom edge
+	draw_rect(Rect2(Vector2(board_rect.position.x, board_rect.end.y - v_thick), Vector2(board_rect.size.x, v_thick)), Color(0.0, 0.0, 0.0, 0.14))
+	draw_rect(Rect2(Vector2(board_rect.position.x, board_rect.end.y - v_thick * 0.45), Vector2(board_rect.size.x, v_thick * 0.45)), Color(0.0, 0.0, 0.0, 0.10))
+
+	# Left edge
+	draw_rect(Rect2(board_rect.position, Vector2(v_thick, board_rect.size.y)), Color(0.0, 0.0, 0.0, 0.14))
+	draw_rect(Rect2(board_rect.position, Vector2(v_thick * 0.45, board_rect.size.y)), Color(0.0, 0.0, 0.0, 0.10))
+
+	# Right edge
+	draw_rect(Rect2(Vector2(board_rect.end.x - v_thick, board_rect.position.y), Vector2(v_thick, board_rect.size.y)), Color(0.0, 0.0, 0.0, 0.14))
+	draw_rect(Rect2(Vector2(board_rect.end.x - v_thick * 0.45, board_rect.position.y), Vector2(v_thick * 0.45, board_rect.size.y)), Color(0.0, 0.0, 0.0, 0.10))
+
+	# Corner ambient shadow rounds
+	var corner_r: float = v_thick * 1.15
+	var corners: Array[Vector2] = [
+		board_rect.position,
+		Vector2(board_rect.end.x, board_rect.position.y),
+		Vector2(board_rect.position.x, board_rect.end.y),
+		board_rect.end
+	]
+	for c_pos in corners:
+		draw_circle(c_pos, corner_r, Color(0.0, 0.0, 0.0, 0.12))
+
+
+func _draw_goal_hazard_brackets(rect: Rect2, _ch: Dictionary) -> void:
+	var arm: float = rect.size.x * 0.22
+	var m: float = 1.0
+	var steel_col: Color = Color(0.12, 0.14, 0.18, 0.88)
+	var yellow_col: Color = Color(0.96, 0.80, 0.15, 0.85)
+	var rivet_col: Color = Color(0.90, 0.92, 0.95, 0.95)
+
+	# Top-Left Bracket
+	draw_line(rect.position + Vector2(m, m), rect.position + Vector2(m + arm, m), steel_col, 2.5)
+	draw_line(rect.position + Vector2(m, m), rect.position + Vector2(m, m + arm), steel_col, 2.5)
+	draw_line(rect.position + Vector2(m + 1.2, m + 1.2), rect.position + Vector2(m + arm * 0.75, m + 1.2), yellow_col, 1.4)
+	draw_line(rect.position + Vector2(m + 1.2, m + 1.2), rect.position + Vector2(m + 1.2, m + arm * 0.75), yellow_col, 1.4)
+	draw_circle(rect.position + Vector2(m + 2.0, m + 2.0), 1.2, rivet_col)
+
+	# Top-Right Bracket
+	var tr: Vector2 = rect.position + Vector2(rect.size.x, 0.0)
+	draw_line(tr + Vector2(-m, m), tr + Vector2(-m - arm, m), steel_col, 2.5)
+	draw_line(tr + Vector2(-m, m), tr + Vector2(-m, m + arm), steel_col, 2.5)
+	draw_line(tr + Vector2(-m - 1.2, m + 1.2), tr + Vector2(-m - arm * 0.75, m + 1.2), yellow_col, 1.4)
+	draw_line(tr + Vector2(-m - 1.2, m + 1.2), tr + Vector2(-m - 1.2, m + arm * 0.75), yellow_col, 1.4)
+	draw_circle(tr + Vector2(-m - 2.0, m + 2.0), 1.2, rivet_col)
+
+	# Bottom-Left Bracket
+	var bl: Vector2 = rect.position + Vector2(0.0, rect.size.y)
+	draw_line(bl + Vector2(m, -m), bl + Vector2(m + arm, -m), steel_col, 2.5)
+	draw_line(bl + Vector2(m, -m), bl + Vector2(m, -m - arm), steel_col, 2.5)
+	draw_line(bl + Vector2(m + 1.2, -m - 1.2), bl + Vector2(m + arm * 0.75, -m - 1.2), yellow_col, 1.4)
+	draw_line(bl + Vector2(m + 1.2, -m - 1.2), bl + Vector2(m + 1.2, -m - arm * 0.75), yellow_col, 1.4)
+	draw_circle(bl + Vector2(m + 2.0, -m - 2.0), 1.2, rivet_col)
+
+	# Bottom-Right Bracket
+	var br: Vector2 = rect.end
+	draw_line(br + Vector2(-m, -m), br + Vector2(-m - arm, -m), steel_col, 2.5)
+	draw_line(br + Vector2(-m, -m), br + Vector2(-m, -m - arm), steel_col, 2.5)
+	draw_line(br + Vector2(-m - 1.2, -m - 1.2), br + Vector2(-m - arm * 0.75, -m - 1.2), yellow_col, 1.4)
+	draw_line(br + Vector2(-m - 1.2, -m - 1.2), br + Vector2(-m - 1.2, -m - arm * 0.75), yellow_col, 1.4)
+	draw_circle(br + Vector2(-m - 2.0, -m - 2.0), 1.2, rivet_col)
+
+
+func _draw_player_headlamp(effective_origin: Vector2) -> void:
+	# Subtle, soft ambient contact warmth under player (no harsh discs or projecting beams)
+	var p_center: Vector2 = effective_origin + visual_player_pos * tile_size + Vector2(tile_size * 0.5, tile_size * 0.5) + bump_offset + Vector2(0.0, player_celebration_hop)
+	draw_circle(p_center, tile_size * 0.35, Color(1.0, 0.96, 0.82, 0.025))
+
+
+func _draw_ambient_motes(effective_origin: Vector2, board_pixel_size: Vector2, _ch: Dictionary) -> void:
+	for mote in ambient_motes:
+		var norm: Vector2 = mote.get("pos_norm", Vector2.ZERO)
+		var m_pos: Vector2 = effective_origin + Vector2(norm.x * board_pixel_size.x, norm.y * board_pixel_size.y)
+		var phase: float = mote.get("phase", 0.0)
+		var sz: float = mote.get("size", 2.0)
+		var b_alpha: float = mote.get("base_alpha", 0.4)
+
+		match current_chapter_idx:
+			1: # Cold Storage: crystalline frost sparkles
+				var alpha: float = b_alpha * (0.80 + 0.20 * sin(phase * 1.6))
+				var fl: float = sz * 1.3
+				draw_circle(m_pos, sz * 0.75, Color(0.70, 0.90, 1.0, alpha * 0.65))
+				draw_line(m_pos - Vector2(fl, 0), m_pos + Vector2(fl, 0), Color(0.88, 0.96, 1.0, alpha * 0.85), 1.0)
+				draw_line(m_pos - Vector2(0, fl), m_pos + Vector2(0, fl), Color(0.88, 0.96, 1.0, alpha * 0.85), 1.0)
+			2: # Cyber Depot: neon electronic embers
+				var alpha: float = b_alpha * (0.75 + 0.25 * sin(phase * 2.2))
+				draw_circle(m_pos, sz * 0.9, Color(0.20, 0.95, 0.85, alpha * 0.65))
+				draw_circle(m_pos, sz * 0.4, Color(0.85, 1.0, 0.95, alpha * 0.95))
+			_: # Cargo Bay (default): warm golden warehouse dust motes in sunbeams
+				var alpha: float = b_alpha * (0.75 + 0.25 * sin(phase))
+				draw_circle(m_pos, sz, Color(1.0, 0.90, 0.65, alpha * 0.60))
+				draw_circle(m_pos, sz * 0.5, Color(1.0, 1.0, 0.92, alpha * 0.85))
+
+
+func _init_ambient_motes() -> void:
+	ambient_motes.clear()
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.randomize()
+	for i in range(16):
+		ambient_motes.append({
+			"pos_norm": Vector2(rng.randf(), rng.randf()),
+			"vel": Vector2(rng.randf_range(-0.018, 0.018), rng.randf_range(-0.012, 0.012)),
+			"phase": rng.randf_range(0.0, TAU),
+			"size": rng.randf_range(1.6, 3.2),
+			"base_alpha": rng.randf_range(0.22, 0.55),
+			"speed_mult": rng.randf_range(0.8, 1.3)
+		})
 
 
 func _draw_crate(rect: Rect2, on_goal: bool, logical_pos: Vector2i = Vector2i.ZERO) -> void:
@@ -1712,13 +2061,31 @@ func _draw_crate(rect: Rect2, on_goal: bool, logical_pos: Vector2i = Vector2i.ZE
 		var time_sec: float = float(Time.get_ticks_msec()) / 1000.0
 		var star_pulse: float = sin(time_sec * 4.0) * 0.15
 		var aura_spark: Color = ch["goal_aura"]
-		aura_spark.a = 0.45
-		draw_circle(c_center, 8.0 * (1.0 + star_pulse), aura_spark)
+		aura_spark.a = 0.50
+		draw_circle(c_center, 9.5 * (1.0 + star_pulse), aura_spark)
+		draw_circle(c_center, 4.0, Color(1.0, 1.0, 0.92, 0.95))
+
+		# 4 Radiant metallic lock-in corner rivets
+		var r_pad: float = draw_r.size.x * 0.14
+		var corners: Array[Vector2] = [
+			draw_r.position + Vector2(r_pad, r_pad),
+			draw_r.position + Vector2(draw_r.size.x - r_pad, r_pad),
+			draw_r.position + Vector2(r_pad, draw_r.size.y - r_pad),
+			draw_r.position + Vector2(draw_r.size.x - r_pad, draw_r.size.y - r_pad)
+		]
+		for corn in corners:
+			draw_circle(corn, 2.6, Color(0.08, 0.10, 0.14, 0.85))
+			draw_circle(corn, 1.9, aura_spark)
+			draw_circle(corn - Vector2(0.5, 0.5), 0.8, Color(1.0, 1.0, 1.0, 0.95))
 
 
 func _draw_player(rect: Rect2) -> void:
+	var idle_breath_y: float = 0.0
+	if not is_animating and not is_level_won and player_idle_time > 2.0:
+		idle_breath_y = sin((player_idle_time - 2.0) * 3.5) * 1.2
+
 	var hopped_rect: Rect2 = Rect2(
-		rect.position + Vector2(0.0, player_celebration_hop),
+		rect.position + bump_offset + Vector2(0.0, player_celebration_hop + idle_breath_y),
 		rect.size
 	)
 	var center: Vector2 = hopped_rect.get_center()
@@ -1802,6 +2169,24 @@ func _draw_player(rect: Rect2) -> void:
 		_draw_star_shape(hopped_rect.position + Vector2(hopped_rect.size.x * 0.20, -8.0 + hop_bounce), 5.0, star_col)
 		_draw_star_shape(hopped_rect.position + Vector2(hopped_rect.size.x * 0.80, -11.0 - hop_bounce), 5.5, star_col)
 
+	# Option C: Anime-style thinking / perplexed sweat drop
+	if sweat_drop_timer > 0.0:
+		var s_alpha: float = clampf(sweat_drop_timer / 0.4, 0.0, 1.0)
+		var drip_progress: float = 1.0 - (sweat_drop_timer / 1.4)
+		var drip_y: float = drip_progress * 4.5
+		var drop_center: Vector2 = hopped_rect.position + Vector2(hopped_rect.size.x * 0.82, hopped_rect.size.y * 0.22 + drip_y)
+		var drop_r: float = 3.2
+		draw_circle(drop_center, drop_r, Color(0.22, 0.78, 1.0, s_alpha * 0.90))
+		var drop_tip: Vector2 = drop_center - Vector2(0.0, drop_r * 1.5)
+		var drop_pts: PackedVector2Array = [
+			drop_tip,
+			drop_center + Vector2(drop_r * 0.95, 0.0),
+			drop_center + Vector2(-drop_r * 0.95, 0.0)
+		]
+		draw_colored_polygon(drop_pts, Color(0.22, 0.78, 1.0, s_alpha * 0.90))
+		# Specular glint
+		draw_circle(drop_center - Vector2(0.9, 0.9), 1.1, Color(1.0, 1.0, 1.0, s_alpha * 0.95))
+
 
 
 func _draw_hint_ghost(effective_origin: Vector2) -> void:
@@ -1874,6 +2259,19 @@ func _draw_hint_ghost(effective_origin: Vector2) -> void:
 	var p2: Vector2 = arrow_end - arrow_norm * head_len + arrow_perp * head_width
 	var p3: Vector2 = arrow_end - arrow_norm * head_len - arrow_perp * head_width
 	draw_colored_polygon(PackedVector2Array([p1, p2, p3]), arrow_col)
+
+	# 4. Secondary Crate Push Trajectory (shows crate sliding to target beacon)
+	if hint_has_crate:
+		var c_dest_center: Vector2 = effective_origin + Vector2(hint_crate_target) * tile_size + Vector2(tile_size * 0.5, tile_size * 0.5)
+		var c_arrow_start: Vector2 = p_center + Vector2(active_hint_dir) * (tile_size * 0.28)
+		var c_arrow_end: Vector2 = c_dest_center - Vector2(active_hint_dir) * (tile_size * 0.20)
+		var c_arrow_col: Color = Color(1.0, 0.80, 0.25, 0.85 * base_alpha)
+		draw_line(c_arrow_start, c_arrow_end, c_arrow_col, 3.0)
+
+		var c_p1: Vector2 = c_arrow_end
+		var c_p2: Vector2 = c_arrow_end - arrow_norm * head_len + arrow_perp * head_width
+		var c_p3: Vector2 = c_arrow_end - arrow_norm * head_len - arrow_perp * head_width
+		draw_colored_polygon(PackedVector2Array([c_p1, c_p2, c_p3]), c_arrow_col)
 
 
 func add_trauma(amount: float) -> void:
