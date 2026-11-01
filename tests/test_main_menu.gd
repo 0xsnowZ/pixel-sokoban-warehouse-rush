@@ -273,6 +273,8 @@ func test_porter_locker_modal() -> void:
 	assert_equal(menu.locker_btn.text, "", "Locker button native text is empty to prevent overlap")
 	assert_true(menu.locker_modal != null, "Locker modal exists")
 	assert_false(menu.locker_modal.visible, "Locker modal is hidden initially")
+	assert_true(menu.modal_blur_overlay != null, "Modal blur overlay exists in MainMenu")
+	assert_false(menu.modal_blur_overlay.visible, "Modal blur overlay is hidden initially")
 	assert_true(menu.locker_stars_badge != null, "Locker stars badge exists")
 	assert_true(menu.outfits_tab_btn != null, "Outfits tab button exists")
 	assert_true(menu.crates_tab_btn != null, "Crates tab button exists")
@@ -282,6 +284,7 @@ func test_porter_locker_modal() -> void:
 	# 2. Open locker modal
 	menu._show_locker()
 	assert_true(menu.locker_modal.visible, "Locker modal opens via _show_locker")
+	assert_true(menu.modal_blur_overlay.visible, "Modal blur overlay is visible when locker is shown")
 	menu._process(0.1)
 	assert_true(true, "Locker live animated preview ticks without error")
 	assert_equal(menu.current_locker_tab, "outfits", "Default locker tab is outfits")

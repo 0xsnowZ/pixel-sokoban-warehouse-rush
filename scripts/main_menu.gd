@@ -75,6 +75,7 @@ var current_level_pulse_tw: Tween = null
 @onready var achievements_title_label: Label = find_child("AchievementsModal", true, false).find_child("Title", true, false) as Label if find_child("AchievementsModal", true, false) else null
 @onready var achievements_counter_badge: Label = find_child("AchievementsModal", true, false).find_child("CounterBadge", true, false) as Label if find_child("AchievementsModal", true, false) else null
 @onready var achievements_items_vbox: VBoxContainer = find_child("AchievementsModal", true, false).find_child("ItemsVBox", true, false) as VBoxContainer if find_child("AchievementsModal", true, false) else null
+@onready var modal_blur_overlay: ColorRect = $ModalBlurOverlay if has_node("ModalBlurOverlay") else null
 
 # Settings elements
 @onready var music_vol_label: Label = find_child("MusicVolLabel", true, false) as Label
@@ -150,6 +151,7 @@ func _initialize_nodes() -> void:
 			achievements_title_label = achievements_modal.find_child("Title", true, false) as Label
 			achievements_counter_badge = achievements_modal.find_child("CounterBadge", true, false) as Label
 			achievements_items_vbox = achievements_modal.find_child("ItemsVBox", true, false) as VBoxContainer
+		modal_blur_overlay = find_child("ModalBlurOverlay", true, false) as ColorRect
 
 
 func _ready() -> void:
@@ -233,6 +235,10 @@ func _ready() -> void:
 		quick_lang_btn.pressed.connect(_on_language_pressed)
 	if locker_preview_content != null and not locker_preview_content.draw.is_connected(_on_preview_content_draw):
 		locker_preview_content.draw.connect(_on_preview_content_draw)
+	if modal_blur_overlay != null:
+		modal_blur_overlay.hide()
+		if not modal_blur_overlay.gui_input.is_connected(_on_modal_backdrop_gui_input):
+			modal_blur_overlay.gui_input.connect(_on_modal_backdrop_gui_input)
 
 	# Enhanced UI Icons on Main Menu
 	if achievements_btn:
@@ -326,6 +332,8 @@ func _show_main_view() -> void:
 		locker_modal.hide()
 	if achievements_modal:
 		achievements_modal.hide()
+	if modal_blur_overlay:
+		modal_blur_overlay.hide()
 	_update_menu_state()
 
 
@@ -341,12 +349,58 @@ func _show_level_select() -> void:
 		locker_modal.hide()
 	if achievements_modal:
 		achievements_modal.hide()
+	if modal_blur_overlay:
+		modal_blur_overlay.hide()
 	_refresh_level_grid_buttons()
+
+
+var _backdrop_tw: Tween = null
+
+func _show_modal_backdrop() -> void:
+	if modal_blur_overlay == null:
+		return
+	if _backdrop_tw != null and _backdrop_tw.is_valid():
+		_backdrop_tw.kill()
+	modal_blur_overlay.show()
+	modal_blur_overlay.modulate.a = 0.0
+	_backdrop_tw = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_backdrop_tw.tween_property(modal_blur_overlay, "modulate:a", 1.0, 0.20)
+
+
+func _hide_modal_backdrop() -> void:
+	if modal_blur_overlay == null or not modal_blur_overlay.visible:
+		return
+	if _backdrop_tw != null and _backdrop_tw.is_valid():
+		_backdrop_tw.kill()
+	_backdrop_tw = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_backdrop_tw.tween_property(modal_blur_overlay, "modulate:a", 0.0, 0.15)
+	_backdrop_tw.tween_callback(func():
+		if modal_blur_overlay and not (
+			(locker_modal and locker_modal.visible) or 
+			(settings_modal and settings_modal.visible) or 
+			(achievements_modal and achievements_modal.visible) or 
+			(credits_modal and credits_modal.visible)
+		):
+			modal_blur_overlay.hide()
+	)
+
+
+func _on_modal_backdrop_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if locker_modal and locker_modal.visible:
+			_hide_locker()
+		elif settings_modal and settings_modal.visible:
+			_hide_settings()
+		elif achievements_modal and achievements_modal.visible:
+			_hide_achievements()
+		elif credits_modal and credits_modal.visible:
+			_hide_credits()
 
 
 func _animate_modal_open(modal: Control) -> void:
 	if modal == null:
 		return
+	_show_modal_backdrop()
 	modal.show()
 	modal.pivot_offset = modal.size / 2.0
 	modal.scale = Vector2(0.90, 0.90)
@@ -370,6 +424,7 @@ func _hide_credits() -> void:
 	if audio_mgr:
 		audio_mgr.play_click()
 	credits_modal.hide()
+	_hide_modal_backdrop()
 
 
 func _show_settings() -> void:
@@ -390,6 +445,7 @@ func _hide_settings() -> void:
 		audio_mgr.play_click()
 	if settings_modal:
 		settings_modal.hide()
+	_hide_modal_backdrop()
 	if save_mgr and save_mgr.has_method("save_data"):
 		save_mgr.save_data()
 	_update_menu_state()
@@ -417,6 +473,7 @@ func _hide_locker() -> void:
 		haptic_mgr.vibrate_click()
 	if locker_modal:
 		locker_modal.hide()
+	_hide_modal_backdrop()
 	_update_menu_state()
 
 
@@ -442,6 +499,7 @@ func _hide_achievements() -> void:
 		haptic_mgr.vibrate_click()
 	if achievements_modal:
 		achievements_modal.hide()
+	_hide_modal_backdrop()
 	_update_menu_state()
 
 
