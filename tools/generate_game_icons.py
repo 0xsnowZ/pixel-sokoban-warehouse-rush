@@ -585,35 +585,73 @@ def make_locker():
 # 19. icon_lock.png (Industrial Padlock)
 # ==========================================
 def make_lock():
-    im = new_canvas()
-    d = ImageDraw.Draw(im)
+    import subprocess
+    import shutil
 
-    # Shackle drop shadow
-    d.arc([76, 36, 180, 140], start=180, end=360, fill=(0, 0, 0, 90), width=24)
-    # Shackle (steel U-arch)
-    d.arc([72, 30, 184, 134], start=180, end=360, fill=(160, 175, 195, 255), width=22)
-    d.arc([74, 32, 182, 132], start=180, end=360, fill=(230, 240, 255, 255), width=10)
-    d.line([(72, 82), (72, 120)], fill=(160, 175, 195, 255), width=22)
-    d.line([(184, 82), (184, 120)], fill=(160, 175, 195, 255), width=22)
-    d.line([(74, 82), (74, 120)], fill=(230, 240, 255, 255), width=10)
-    d.line([(182, 82), (182, 120)], fill=(210, 225, 245, 255), width=10)
+    svg_lock = """<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="shadow" x="-15%" y="-15%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="14" flood-color="#000000" flood-opacity="0.65"/>
+    </filter>
+    <linearGradient id="shackleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="30%" stop-color="#E2E8F0"/>
+      <stop offset="70%" stop-color="#94A3B8"/>
+      <stop offset="100%" stop-color="#475569"/>
+    </linearGradient>
+    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FEF08A"/>
+      <stop offset="25%" stop-color="#FBBF24"/>
+      <stop offset="70%" stop-color="#D97706"/>
+      <stop offset="100%" stop-color="#92400E"/>
+    </linearGradient>
+    <linearGradient id="bevelHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.1"/>
+    </linearGradient>
+  </defs>
+  <g filter="url(#shadow)">
+    <!-- U-shaped Shackle -->
+    <path d="M 148 240 L 148 160 C 148 100, 196 52, 256 52 C 316 52, 364 100, 364 160 L 364 240" 
+          fill="none" stroke="#0F172A" stroke-width="68" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 148 240 L 148 160 C 148 100, 196 52, 256 52 C 316 52, 364 100, 364 160 L 364 240" 
+          fill="none" stroke="url(#shackleGrad)" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Shackle Specular Glint -->
+    <path d="M 172 160 C 172 114, 210 76, 256 76" 
+          fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" opacity="0.9"/>
 
-    # Body drop shadow
-    d.rounded_rectangle([52, 106, 204, 226], radius=20, fill=(0, 0, 0, 90))
-    # Brass Body
-    d.rounded_rectangle([48, 100, 208, 220], radius=20, fill=(245, 175, 35, 255), outline=(170, 105, 15, 255), width=6)
-    # Inner face highlight
-    d.rounded_rectangle([58, 110, 198, 210], radius=14, fill=(255, 195, 55, 255))
-    d.line([(62, 112), (194, 112)], fill=(255, 245, 180, 255), width=4)
+    <!-- Lock Brass Body -->
+    <rect x="80" y="200" width="352" height="260" rx="52" fill="#0F172A"/>
+    <rect x="92" y="212" width="328" height="236" rx="40" fill="url(#bodyGrad)" stroke="#78350F" stroke-width="12"/>
+    
+    <!-- Inner Beveled Face -->
+    <rect x="116" y="236" width="280" height="188" rx="26" fill="url(#bevelHighlight)" opacity="0.25"/>
+    
+    <!-- Heavy Industrial Rivets in 4 corners -->
+    <circle cx="126" cy="246" r="10" fill="#78350F"/>
+    <circle cx="124" cy="244" r="4" fill="#FEF08A"/>
+    <circle cx="386" cy="246" r="10" fill="#78350F"/>
+    <circle cx="384" cy="244" r="4" fill="#FEF08A"/>
+    <circle cx="126" cy="414" r="10" fill="#78350F"/>
+    <circle cx="124" cy="412" r="4" fill="#FEF08A"/>
+    <circle cx="386" cy="414" r="10" fill="#78350F"/>
+    <circle cx="384" cy="412" r="4" fill="#FEF08A"/>
 
-    # Keyhole
-    d.ellipse([114, 136, 142, 164], fill=(25, 20, 15, 255))
-    keyhole_slot = [(120, 154), (136, 154), (140, 188), (116, 188)]
-    d.polygon(keyhole_slot, fill=(25, 20, 15, 255))
-    # Keyhole metallic rim
-    d.ellipse([112, 134, 144, 166], outline=(150, 95, 15, 255), width=2)
+    <!-- Center Keyhole -->
+    <circle cx="256" cy="305" r="34" fill="#0F172A"/>
+    <circle cx="256" cy="305" r="26" fill="#1E293B"/>
+    <polygon points="238,315 274,315 284,375 228,375" fill="#0F172A"/>
+    <polygon points="242,318 270,318 278,368 234,368" fill="#1E293B"/>
+  </g>
+</svg>"""
 
-    save_icon(im, "icon_lock.png")
+    if shutil.which("rsvg-convert"):
+        subprocess.run(["rsvg-convert", "-w", "64", "-h", "64", "-f", "png", "-o", os.path.join(OUT_DIR, "icon_lock.png")], input=svg_lock.encode("utf-8"), check=True)
+        print("Generated assets/icons/icon_lock.png via rsvg-convert (Industrial Padlock)")
+    else:
+        im = new_canvas()
+        d = ImageDraw.Draw(im)
+        save_icon(im, "icon_lock.png")
 
 # ==========================================
 # 20. icon_play.png (Crisp Play Triangle)

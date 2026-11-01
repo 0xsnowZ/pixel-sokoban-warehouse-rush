@@ -192,6 +192,11 @@ const TRANSLATIONS: Dictionary = {
 		"fr": "ÉQUIPÉ",
 		"ar": "مُجهّز"
 	},
+	"LOCKER_LOCKED": {
+		"en": "LOCKED",
+		"fr": "VERROUILLÉ",
+		"ar": "مُقفل"
+	},
 	"LOCKER_LOCKED_STARS": {
 		"en": "%d Stars required",
 		"fr": "%d Étoiles requises",

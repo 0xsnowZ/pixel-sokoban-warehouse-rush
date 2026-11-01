@@ -729,29 +729,109 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 	info_vbox.add_child(desc_lbl)
 
 	var act_btn: Button = Button.new()
-	act_btn.custom_minimum_size = Vector2(96, 38)
-	act_btn.add_theme_font_size_override("font_size", 13)
+	act_btn.custom_minimum_size = Vector2(108, 36)
+	act_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	act_btn.clip_contents = true
+
+	var btn_center: HBoxContainer = HBoxContainer.new()
+	btn_center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	btn_center.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_center.add_theme_constant_override("separation", 6)
+	btn_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	act_btn.add_child(btn_center)
+
+	var btn_icon: TextureRect = TextureRect.new()
+	btn_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	btn_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	btn_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+
+	var btn_lbl: Label = Label.new()
+	btn_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
 	if is_equipped:
-		act_btn.text = loc_mgr.tr_text("LOCKER_EQUIPPED") if loc_mgr else "EQUIPPED"
-		act_btn.icon = icon_check
-		act_btn.expand_icon = true
-		act_btn.add_theme_constant_override("icon_max_width", 16)
-		act_btn.add_theme_constant_override("h_separation", 6)
-		act_btn.disabled = true
-		act_btn.theme_type_variation = &"PrimaryButton"
+		var sb_eq: StyleBoxFlat = StyleBoxFlat.new()
+		sb_eq.bg_color = Color(0.12, 0.40, 0.24, 0.95)
+		sb_eq.border_color = Color(0.35, 0.85, 0.52, 0.95)
+		sb_eq.set_border_width_all(2)
+		sb_eq.border_width_bottom = 3
+		sb_eq.set_corner_radius_all(8)
+		sb_eq.shadow_color = Color(0, 0, 0, 0.35)
+		sb_eq.shadow_size = 2
+		act_btn.add_theme_stylebox_override("normal", sb_eq)
+		act_btn.add_theme_stylebox_override("hover", sb_eq)
+		act_btn.add_theme_stylebox_override("pressed", sb_eq)
+		act_btn.add_theme_stylebox_override("disabled", sb_eq)
+
+		btn_icon.custom_minimum_size = Vector2(16, 16)
+		btn_icon.texture = icon_check
+		btn_icon.modulate = Color(0.95, 1.0, 0.95, 1.0)
+		btn_center.add_child(btn_icon)
+
+		var eq_text: String = loc_mgr.tr_text("LOCKER_EQUIPPED") if loc_mgr else "EQUIPPED"
+		btn_lbl.text = eq_text
+		btn_lbl.add_theme_font_size_override("font_size", 12)
+		btn_lbl.add_theme_color_override("font_color", Color(0.95, 1.0, 0.96, 1.0))
+		btn_center.add_child(btn_lbl)
+
+		act_btn.tooltip_text = eq_text
+		act_btn.mouse_filter = Control.MOUSE_FILTER_PASS
+
 	elif is_unlocked:
-		act_btn.text = loc_mgr.tr_text("LOCKER_EQUIP") if loc_mgr else "EQUIP"
-		act_btn.disabled = false
+		act_btn.theme_type_variation = &"PrimaryButton"
+		var equip_text: String = loc_mgr.tr_text("LOCKER_EQUIP") if loc_mgr else "EQUIP"
+		btn_lbl.text = equip_text
+		btn_lbl.add_theme_font_size_override("font_size", 13)
+		btn_lbl.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
+		btn_center.add_child(btn_lbl)
+
+		act_btn.mouse_entered.connect(func(): btn_lbl.add_theme_color_override("font_color", Color(1.0, 0.95, 0.8, 1.0)))
+		act_btn.mouse_exited.connect(func(): btn_lbl.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0)))
+		act_btn.button_down.connect(func(): btn_lbl.add_theme_color_override("font_color", Color(0.98, 0.82, 0.25, 1.0)))
+		act_btn.button_up.connect(func(): btn_lbl.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0)))
+
+		act_btn.tooltip_text = equip_text
 		act_btn.pressed.connect(equip_callable)
 		_attach_spring_physics(act_btn)
+
 	else:
-		act_btn.text = "LOCKED"
-		act_btn.icon = icon_lock
-		act_btn.expand_icon = true
-		act_btn.add_theme_constant_override("icon_max_width", 16)
-		act_btn.add_theme_constant_override("h_separation", 6)
-		act_btn.disabled = true
+		var sb_lock: StyleBoxFlat = StyleBoxFlat.new()
+		sb_lock.bg_color = Color(0.11, 0.14, 0.20, 0.90)
+		sb_lock.border_color = Color(0.28, 0.36, 0.48, 0.75)
+		sb_lock.set_border_width_all(2)
+		sb_lock.set_corner_radius_all(8)
+		sb_lock.shadow_color = Color(0, 0, 0, 0.35)
+		sb_lock.shadow_size = 2
+		act_btn.add_theme_stylebox_override("normal", sb_lock)
+		act_btn.add_theme_stylebox_override("hover", sb_lock)
+		act_btn.add_theme_stylebox_override("pressed", sb_lock)
+		act_btn.add_theme_stylebox_override("disabled", sb_lock)
+
+		btn_icon.custom_minimum_size = Vector2(16, 16)
+		btn_icon.texture = icon_lock
+		btn_icon.modulate = Color(0.95, 0.95, 1.0, 0.95)
+		btn_center.add_child(btn_icon)
+
+		var lock_text: String = loc_mgr.tr_text("LOCKER_LOCKED") if loc_mgr else "LOCKED"
+		btn_lbl.text = lock_text
+		btn_lbl.add_theme_font_size_override("font_size", 12)
+		btn_lbl.add_theme_color_override("font_color", Color(0.78, 0.84, 0.92, 1.0))
+		btn_center.add_child(btn_lbl)
+
+		act_btn.tooltip_text = lock_text
+
+		# Tactile feedback when tapping locked item
+		act_btn.pressed.connect(func():
+			var tw: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			tw.tween_property(desc_lbl, "modulate", Color(1.4, 0.9, 0.3, 1.0), 0.08)
+			tw.tween_property(desc_lbl, "modulate", Color.WHITE, 0.24)
+			if audio_mgr and audio_mgr.has_method("play_ui_click"):
+				audio_mgr.play_ui_click()
+			if haptic_mgr and haptic_mgr.has_method("vibrate_light"):
+				haptic_mgr.vibrate_light()
+		)
+		_attach_spring_physics(act_btn)
 
 	hbox.add_child(act_btn)
 	return panel
