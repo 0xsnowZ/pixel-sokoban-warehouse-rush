@@ -199,41 +199,32 @@ layout_mode = 2
 theme_override_constants/separation = 8
 alignment = 1
 
-[node name="PrevButton" type="Button" parent="BottomBar/Margin/HBox"]
-custom_minimum_size = Vector2(64, 48)
-layout_mode = 2
-text = "Prev"
-
 [node name="UndoButton" type="Button" parent="BottomBar/Margin/HBox"]
 custom_minimum_size = Vector2(88, 48)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_type_variation = &"InfoButton"
-theme_override_constants/icon_max_width = 20
-theme_override_constants/h_separation = 6
+theme_type_variation = &"GameUndoButton"
+theme_override_constants/icon_max_width = 22
+theme_override_constants/h_separation = 8
 text = "Undo"
 
 [node name="HintButton" type="Button" parent="BottomBar/Margin/HBox"]
 custom_minimum_size = Vector2(92, 48)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_type_variation = &"PrimaryButton"
-theme_override_constants/icon_max_width = 20
-theme_override_constants/h_separation = 6
+theme_type_variation = &"GameHintButton"
+theme_override_constants/icon_max_width = 22
+theme_override_constants/h_separation = 8
 text = "Hint"
 
 [node name="RestartButton" type="Button" parent="BottomBar/Margin/HBox"]
 custom_minimum_size = Vector2(80, 48)
 layout_mode = 2
-theme_override_constants/icon_max_width = 20
-theme_override_constants/h_separation = 6
+size_flags_horizontal = 3
+theme_type_variation = &"GameRestartButton"
+theme_override_constants/icon_max_width = 22
+theme_override_constants/h_separation = 8
 text = "Restart"
-
-[node name="NextButton" type="Button" parent="BottomBar/Margin/HBox"]
-custom_minimum_size = Vector2(64, 48)
-layout_mode = 2
-theme_type_variation = &"SuccessButton"
-text = "Next"
 
 [node name="DPadOverlay" type="Control" parent="."]
 visible = false

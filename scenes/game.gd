@@ -162,13 +162,13 @@ var ad_reward_modal: PanelContainer = null
 @onready var level_label: Label = find_child("LevelLabel", true, false) as Label
 @onready var star_gauge: Label = find_child("StarGauge", true, false) as Label
 @onready var stats_label: Label = find_child("StatsLabel", true, false) as Label
-@onready var prev_button: Button = $BottomBar/Margin/HBox/PrevButton
+@onready var prev_button: Button = $BottomBar/Margin/HBox/PrevButton if has_node("BottomBar/Margin/HBox/PrevButton") else null
 @onready var undo_button: Button = $BottomBar/Margin/HBox/UndoButton if has_node("BottomBar/Margin/HBox/UndoButton") else null
 @onready var hint_button: Button = $BottomBar/Margin/HBox/HintButton if has_node("BottomBar/Margin/HBox/HintButton") else null
 @onready var hint_toast: PanelContainer = $HintToast if has_node("HintToast") else null
 @onready var hint_toast_label: Label = $HintToast/Margin/Label if has_node("HintToast/Margin/Label") else ($HintToast/Label if has_node("HintToast/Label") else null)
-@onready var restart_button: Button = $BottomBar/Margin/HBox/RestartButton
-@onready var next_button: Button = $BottomBar/Margin/HBox/NextButton
+@onready var restart_button: Button = $BottomBar/Margin/HBox/RestartButton if has_node("BottomBar/Margin/HBox/RestartButton") else null
+@onready var next_button: Button = $BottomBar/Margin/HBox/NextButton if has_node("BottomBar/Margin/HBox/NextButton") else null
 @onready var win_modal: PanelContainer = $WinModal
 @onready var win_blur_overlay: ColorRect = $WinBlurOverlay if has_node("WinBlurOverlay") else null
 @onready var win_title: Label = $WinModal.find_child("WinTitle", true, false) if has_node("WinModal") else null
@@ -249,20 +249,23 @@ func _initialize_nodes() -> void:
 		dpad_down = find_child("DPadDown", true, false) as Button
 		dpad_left = find_child("DPadLeft", true, false) as Button
 		dpad_right = find_child("DPadRight", true, false) as Button
+	if undo_button == null and has_node("BottomBar/Margin/HBox/UndoButton"):
+		undo_button = $BottomBar/Margin/HBox/UndoButton
+	if hint_button == null and has_node("BottomBar/Margin/HBox/HintButton"):
+		hint_button = $BottomBar/Margin/HBox/HintButton
+	if restart_button == null and has_node("BottomBar/Margin/HBox/RestartButton"):
+		restart_button = $BottomBar/Margin/HBox/RestartButton
 	if prev_button == null and has_node("BottomBar/Margin/HBox/PrevButton"):
 		prev_button = $BottomBar/Margin/HBox/PrevButton
-		if has_node("BottomBar/Margin/HBox/UndoButton"):
-			undo_button = $BottomBar/Margin/HBox/UndoButton
-		if has_node("BottomBar/Margin/HBox/HintButton"):
-			hint_button = $BottomBar/Margin/HBox/HintButton
-		if has_node("HintToast"):
-			hint_toast = $HintToast
-			if has_node("HintToast/Margin/Label"):
-				hint_toast_label = $HintToast/Margin/Label
-			elif has_node("HintToast/Label"):
-				hint_toast_label = $HintToast/Label
-		restart_button = $BottomBar/Margin/HBox/RestartButton
+	if next_button == null and has_node("BottomBar/Margin/HBox/NextButton"):
 		next_button = $BottomBar/Margin/HBox/NextButton
+	if hint_toast == null and has_node("HintToast"):
+		hint_toast = $HintToast
+		if has_node("HintToast/Margin/Label"):
+			hint_toast_label = $HintToast/Margin/Label
+		elif has_node("HintToast/Label"):
+			hint_toast_label = $HintToast/Label
+	if restart_dialog == null and has_node("RestartConfirmDialog"):
 		restart_dialog = $RestartConfirmDialog
 
 	if win_modal == null and has_node("WinModal"):
@@ -311,18 +314,19 @@ func _initialize_nodes() -> void:
 	if undo_button != null:
 		undo_button.icon = icon_undo
 		undo_button.expand_icon = true
-		undo_button.add_theme_constant_override("icon_max_width", 20)
-		undo_button.add_theme_constant_override("h_separation", 6)
+		undo_button.add_theme_constant_override("icon_max_width", 22)
+		undo_button.add_theme_constant_override("h_separation", 8)
+		undo_button.add_theme_color_override("icon_disabled_color", Color(0.55, 0.65, 0.78, 0.50))
 	if restart_button != null:
 		restart_button.icon = icon_restart
 		restart_button.expand_icon = true
-		restart_button.add_theme_constant_override("icon_max_width", 20)
-		restart_button.add_theme_constant_override("h_separation", 6)
+		restart_button.add_theme_constant_override("icon_max_width", 22)
+		restart_button.add_theme_constant_override("h_separation", 8)
 	if hint_button != null:
 		hint_button.icon = icon_hint
 		hint_button.expand_icon = true
-		hint_button.add_theme_constant_override("icon_max_width", 20)
-		hint_button.add_theme_constant_override("h_separation", 6)
+		hint_button.add_theme_constant_override("icon_max_width", 22)
+		hint_button.add_theme_constant_override("h_separation", 8)
 
 	if win_menu_button != null:
 		win_menu_button.icon = null
@@ -388,11 +392,11 @@ func _ready() -> void:
 			undo_button.button_up.connect(_on_undo_button_up)
 	if hint_button != null and not hint_button.pressed.is_connected(_on_hint_pressed):
 		hint_button.pressed.connect(_on_hint_pressed)
-	if not restart_button.pressed.is_connected(_on_restart_pressed):
+	if restart_button != null and not restart_button.pressed.is_connected(_on_restart_pressed):
 		restart_button.pressed.connect(_on_restart_pressed)
-	if not prev_button.pressed.is_connected(_on_prev_level_pressed):
+	if prev_button != null and not prev_button.pressed.is_connected(_on_prev_level_pressed):
 		prev_button.pressed.connect(_on_prev_level_pressed)
-	if not next_button.pressed.is_connected(_on_next_level_pressed):
+	if next_button != null and not next_button.pressed.is_connected(_on_next_level_pressed):
 		next_button.pressed.connect(_on_next_level_pressed)
 	if next_level_button != null and not next_level_button.pressed.is_connected(_on_next_level_pressed):
 		next_level_button.pressed.connect(_on_next_level_pressed)
@@ -439,13 +443,18 @@ func _ready() -> void:
 		get_viewport().size_changed.connect(queue_redraw)
 
 	# Tactile arcade button physics
-	_attach_spring_physics(menu_button)
-	_attach_spring_physics(prev_button)
-	_attach_spring_physics(undo_button)
-	if hint_button != null:
+	if menu_button:
+		_attach_spring_physics(menu_button)
+	if prev_button:
+		_attach_spring_physics(prev_button)
+	if undo_button:
+		_attach_spring_physics(undo_button)
+	if hint_button:
 		_attach_spring_physics(hint_button)
-	_attach_spring_physics(restart_button)
-	_attach_spring_physics(next_button)
+	if restart_button:
+		_attach_spring_physics(restart_button)
+	if next_button:
+		_attach_spring_physics(next_button)
 	if hint_toast != null:
 		hint_toast.hide()
 	if win_menu_button:
@@ -573,7 +582,7 @@ func _update_ui() -> void:
 	if save_mgr and save_mgr.is_level_completed(current_level_index):
 		var rec: Dictionary = save_mgr.get_level_record(current_level_index)
 		var best_m: int = rec.get("best_moves", 0)
-		best_str = " | %s" % (loc_mgr.tr_text("GAME_BEST", [best_m]) if loc_mgr else "BEST: %d" % best_m)
+		best_str = "   •   %s" % (loc_mgr.tr_text("GAME_BEST", [best_m]) if loc_mgr else "BEST: %d" % best_m)
 
 	if chapter_badge != null:
 		var ch_info: Dictionary = get_current_chapter_theme()
@@ -635,12 +644,15 @@ func _update_ui() -> void:
 			loc_mgr.tr_text("GAME_PUSHES", [grid.pushes_count]),
 			best_str
 		]
-		restart_button.text = loc_mgr.tr_text("BTN_RESTART")
+		if restart_button != null:
+			restart_button.text = loc_mgr.tr_text("BTN_RESTART")
 		if undo_button != null:
 			undo_button.text = loc_mgr.tr_text("BTN_UNDO")
 		_update_hint_button_text()
-		prev_button.text = loc_mgr.tr_text("BTN_PREV")
-		next_button.text = loc_mgr.tr_text("BTN_NEXT")
+		if prev_button != null:
+			prev_button.text = loc_mgr.tr_text("BTN_PREV")
+		if next_button != null:
+			next_button.text = loc_mgr.tr_text("BTN_NEXT")
 		if win_menu_button != null:
 			win_menu_button.text = loc_mgr.tr_text("WIN_MENU_BTN")
 		if next_level_button != null:
@@ -652,6 +664,12 @@ func _update_ui() -> void:
 		stats_label.text = "MOVES: %d%s   •   PUSHES: %d%s" % [grid.moves_count, star_target_sub, grid.pushes_count, best_str]
 		if undo_button != null:
 			undo_button.text = "Undo"
+		if restart_button != null:
+			restart_button.text = "Restart"
+		if prev_button != null:
+			prev_button.text = "Prev"
+		if next_button != null:
+			next_button.text = "Next"
 		_update_hint_button_text()
 		if win_menu_button != null:
 			win_menu_button.text = "MENU"
@@ -664,11 +682,13 @@ func _update_ui() -> void:
 		undo_button.disabled = (grid == null or not grid.can_undo())
 	if hint_button != null:
 		hint_button.disabled = (grid == null or grid.is_won())
-	prev_button.disabled = (current_level_index == 0)
+	if prev_button != null:
+		prev_button.disabled = (current_level_index == 0)
 	var can_advance: bool = (current_level_index < level_paths.size() - 1)
 	if save_mgr:
 		can_advance = can_advance and save_mgr.is_level_unlocked(current_level_index + 1)
-	next_button.disabled = not can_advance
+	if next_button != null:
+		next_button.disabled = not can_advance
 
 	# Numeric pop animation on moves counter
 	if grid != null and grid.moves_count > _last_hud_moves:
@@ -1720,14 +1740,20 @@ func _draw() -> void:
 
 	# 1. Industrial Warehouse Loading Bay Board Framing (PRD Section 4 & Phase 2 Themes)
 	if is_non_square:
-		# Multi-stage silhouette 2.5D drop shadow under the exact non-square shape
+		# Multi-stage cinematic silhouette 2.5D drop shadow under the non-square shape
 		for y in range(grid.height):
 			for x in range(grid.width):
 				var pos: Vector2i = Vector2i(x, y)
 				if not grid.is_exterior_void(pos):
 					var s_rect: Rect2 = Rect2(effective_origin + Vector2(x, y) * tile_size, Vector2(tile_size, tile_size))
-					draw_rect(Rect2(s_rect.position + Vector2(6, 8), s_rect.size), Color(0.0, 0.0, 0.0, 0.50))
-					draw_rect(Rect2(s_rect.position + Vector2(3, 4), s_rect.size), Color(0.0, 0.0, 0.0, 0.28))
+					# Layer 4: Distant soft ambient penumbra
+					draw_rect(Rect2(s_rect.position + Vector2(10, 14), s_rect.size + Vector2(8, 8)), Color(0.0, 0.0, 0.0, 0.08))
+					# Layer 3: Mid ambient spread
+					draw_rect(Rect2(s_rect.position + Vector2(6, 9), s_rect.size + Vector2(4, 4)), Color(0.0, 0.0, 0.0, 0.18))
+					# Layer 2: Directional elevation shadow
+					draw_rect(Rect2(s_rect.position + Vector2(4, 5), s_rect.size + Vector2(2, 2)), Color(0.0, 0.0, 0.0, 0.32))
+					# Layer 1: Tight perimeter contact depth
+					draw_rect(Rect2(s_rect.position + Vector2(1, 2), s_rect.size), Color(0.0, 0.0, 0.0, 0.48))
 	else:
 		var frame_margin: float = 12.0
 		var frame_rect: Rect2 = Rect2(
@@ -1736,8 +1762,9 @@ func _draw() -> void:
 		)
 
 		# Multi-stage drop shadow
-		draw_rect(Rect2(frame_rect.position + Vector2(8, 10), frame_rect.size), Color(0.0, 0.0, 0.0, 0.65))
-		draw_rect(Rect2(frame_rect.position + Vector2(4, 5), frame_rect.size), Color(0.0, 0.0, 0.0, 0.40))
+		draw_rect(Rect2(frame_rect.position + Vector2(10, 14), frame_rect.size + Vector2(6, 6)), Color(0.0, 0.0, 0.0, 0.22))
+		draw_rect(Rect2(frame_rect.position + Vector2(6, 9), frame_rect.size + Vector2(3, 3)), Color(0.0, 0.0, 0.0, 0.45))
+		draw_rect(Rect2(frame_rect.position + Vector2(2, 3), frame_rect.size), Color(0.0, 0.0, 0.0, 0.60))
 
 		# Heavy chapter frame base
 		draw_rect(frame_rect, ch["frame_base"])
@@ -1772,12 +1799,25 @@ func _draw() -> void:
 				var floor_tex: Texture2D = tex_floor_1 if is_alt else tex_floor_2
 				draw_texture_rect(floor_tex, rect, false, ch["floor_tint"])
 
-				# 3D Depth Shadow: if cell above is a wall, cast drop shadow down
-				if y > 0 and grid.is_wall(Vector2i(x, y - 1)):
-					draw_rect(Rect2(rect.position, Vector2(rect.size.x, tile_size * 0.22)), Color(0.0, 0.0, 0.0, 0.42))
+				# Graduated 3D Ambient Depth Shadow: if cell above is a wall, cast soft drop shadow down
+				var has_top_wall: bool = (y > 0 and grid.is_wall(Vector2i(x, y - 1)))
+				var has_left_wall: bool = (x > 0 and grid.is_wall(Vector2i(x - 1, y)))
+
+				if has_top_wall:
+					# Multi-tier shadow gradient from wall base down onto floor
+					draw_rect(Rect2(rect.position, Vector2(rect.size.x, tile_size * 0.06)), Color(0.0, 0.0, 0.0, 0.45))
+					draw_rect(Rect2(rect.position, Vector2(rect.size.x, tile_size * 0.14)), Color(0.0, 0.0, 0.0, 0.26))
+					draw_rect(Rect2(rect.position, Vector2(rect.size.x, tile_size * 0.24)), Color(0.0, 0.0, 0.0, 0.12))
+
 				# Left-wall drop shadow for isometric ambient depth
-				if x > 0 and grid.is_wall(Vector2i(x - 1, y)):
-					draw_rect(Rect2(rect.position, Vector2(tile_size * 0.14, rect.size.y)), Color(0.0, 0.0, 0.0, 0.25))
+				if has_left_wall:
+					draw_rect(Rect2(rect.position, Vector2(tile_size * 0.05, rect.size.y)), Color(0.0, 0.0, 0.0, 0.36))
+					draw_rect(Rect2(rect.position, Vector2(tile_size * 0.12, rect.size.y)), Color(0.0, 0.0, 0.0, 0.20))
+					draw_rect(Rect2(rect.position, Vector2(tile_size * 0.20, rect.size.y)), Color(0.0, 0.0, 0.0, 0.08))
+
+				# Deep corner ambient occlusion when flanked by both top and left walls
+				if has_top_wall and has_left_wall:
+					draw_circle(rect.position, tile_size * 0.22, Color(0.0, 0.0, 0.0, 0.20))
 			else:
 				# Exterior void tile: only draw for solid rectangular boards (no empty spaces on irregular levels)
 				if not is_non_square:
@@ -1801,18 +1841,49 @@ func _draw() -> void:
 		var center: Vector2 = rect.get_center()
 		var has_crate: bool = grid.crates.has(goal_pos)
 
-		# Industrial hazard caution corner brackets on the goal pad
-		_draw_goal_hazard_brackets(rect, ch)
+		if not has_crate:
+			# --- Empty Goal: Recessed Industrial Docking Station ---
+			var pad_inset: float = tile_size * 0.04
+			var pad_rect: Rect2 = rect.grow(-pad_inset)
 
-		# Core goal texture
-		draw_texture_rect(tex_goal, rect, false)
+			# 1. Dark recessed floor plate
+			draw_rect(pad_rect, Color(0.09, 0.11, 0.15, 0.72))
+			# Inset shadow along top & left interior edges
+			draw_line(pad_rect.position, pad_rect.position + Vector2(pad_rect.size.x, 0.0), Color(0.0, 0.0, 0.0, 0.65), 1.8)
+			draw_line(pad_rect.position, pad_rect.position + Vector2(0.0, pad_rect.size.y), Color(0.0, 0.0, 0.0, 0.55), 1.8)
+			# Subtle specular lip along bottom & right edges
+			draw_line(pad_rect.position + Vector2(0.0, pad_rect.size.y), pad_rect.end, Color(0.40, 0.46, 0.54, 0.35), 1.2)
+			draw_line(pad_rect.position + Vector2(pad_rect.size.x, 0.0), pad_rect.end, Color(0.40, 0.46, 0.54, 0.35), 1.2)
 
-		# Subtle pulsing dynamic chapter aura (contained strictly within target pad)
-		var aura_radius: float = (tile_size * 0.22) * (1.0 + pulse * 0.5)
-		var aura_color: Color = aura_col_base
-		aura_color.a = 0.16 + pulse * 0.06
-		draw_circle(center, aura_radius, aura_color)
-		draw_circle(center, 3.0, core_col)
+			# 2. Industrial hazard caution corner brackets on the goal pad
+			_draw_goal_hazard_brackets(rect, ch)
+
+			# 3. Integrated goal station graphic (harmonious modulate)
+			draw_texture_rect(tex_goal, rect, false, Color(1.0, 0.90, 0.60, 0.74))
+
+			# 4. Pulsing laser reticle & concentric target ring
+			var ring_r: float = (tile_size * 0.28) * (1.0 + pulse * 0.35)
+			var ring_col: Color = Color(aura_col_base.r, aura_col_base.g, aura_col_base.b, 0.24 + pulse * 0.08)
+			draw_arc(center, ring_r, 0.0, TAU, 32, ring_col, 1.5, true)
+
+			# 4-direction alignment crosshair tick marks
+			var tick_in: float = tile_size * 0.16
+			var tick_out: float = tile_size * 0.32
+			var tick_c: Color = Color(aura_col_base.r, aura_col_base.g, aura_col_base.b, 0.30 + pulse * 0.10)
+			draw_line(center - Vector2(tick_out, 0.0), center - Vector2(tick_in, 0.0), tick_c, 1.4)
+			draw_line(center + Vector2(tick_in, 0.0), center + Vector2(tick_out, 0.0), tick_c, 1.4)
+			draw_line(center - Vector2(0.0, tick_out), center - Vector2(0.0, tick_in), tick_c, 1.4)
+			draw_line(center + Vector2(0.0, tick_in), center + Vector2(0.0, tick_out), tick_c, 1.4)
+
+			draw_circle(center, 3.2, core_col)
+		else:
+			# --- Filled Goal: Radiant Docking Under-Glow beneath crate ---
+			_draw_goal_hazard_brackets(rect, ch)
+			draw_texture_rect(tex_goal, rect, false, Color(1.0, 1.0, 1.0, 0.50))
+			var aura_glow: Color = aura_col_base
+			aura_glow.a = 0.36 + pulse * 0.12
+			draw_circle(center, tile_size * 0.46, aura_glow)
+			draw_arc(center, tile_size * 0.42, 0.0, TAU, 36, Color(1.0, 0.92, 0.45, 0.70), 2.0, true)
 
 	# 3.5. Draw Floating Ambient Warehouse Motes (Option B)
 	_draw_ambient_motes(effective_origin, board_pixel_size, ch)
@@ -2204,14 +2275,32 @@ func _init_ambient_motes() -> void:
 
 
 func _draw_crate(rect: Rect2, on_goal: bool, logical_pos: Vector2i = Vector2i.ZERO) -> void:
-	# Crate soft drop shadow
-	var shadow_rect: Rect2 = Rect2(rect.position + Vector2(3, 5), rect.size)
-	draw_rect(shadow_rect, Color(0.0, 0.0, 0.0, 0.38))
-
 	var scale_fac: Vector2 = crate_squash.get(logical_pos, Vector2.ONE)
 	var c_center: Vector2 = rect.get_center()
 	var scaled_sz: Vector2 = rect.size * scale_fac
 	var draw_r: Rect2 = Rect2(c_center - scaled_sz * 0.5, scaled_sz)
+
+	# 1. High-fidelity multi-stage 2.5D contact drop shadow (squashes dynamically with crate)
+	var shadow_y: float = draw_r.position.y + draw_r.size.y * 0.92
+	var shadow_center: Vector2 = Vector2(c_center.x + 2.0, shadow_y + 2.0)
+	var rx_outer: float = draw_r.size.x * 0.48
+	var ry_outer: float = draw_r.size.y * 0.22
+	var rx_core: float = draw_r.size.x * 0.40
+	var ry_core: float = draw_r.size.y * 0.12
+
+	# Ambient diffused contact shadow
+	var pts_c_outer: PackedVector2Array = []
+	for i in range(16):
+		var a: float = i * (TAU / 16.0)
+		pts_c_outer.append(shadow_center + Vector2(cos(a) * rx_outer, sin(a) * ry_outer))
+	draw_colored_polygon(pts_c_outer, Color(0.0, 0.0, 0.0, 0.24))
+
+	# Core contact crease right under the base
+	var pts_c_core: PackedVector2Array = []
+	for i in range(16):
+		var a: float = i * (TAU / 16.0)
+		pts_c_core.append(shadow_center + Vector2(cos(a) * rx_core, sin(a) * ry_core))
+	draw_colored_polygon(pts_c_core, Color(0.0, 0.0, 0.0, 0.48))
 
 	var ch: Dictionary = get_current_chapter_theme()
 	var c_tex: Texture2D = tex_crate_goal if on_goal else tex_crate
@@ -2223,6 +2312,10 @@ func _draw_crate(rect: Rect2, on_goal: bool, logical_pos: Vector2i = Vector2i.ZE
 
 	var c_mod: Color = Color(1.0, 1.0, 1.0) if on_goal else (ch["crate_tint"] * crate_tint)
 	draw_texture_rect(c_tex, draw_r, false, c_mod)
+
+	# 2. 3D Volume Bevel Highlights matching warehouse overhead light
+	draw_line(draw_r.position + Vector2(2.0, 1.0), draw_r.position + Vector2(draw_r.size.x - 2.0, 1.0), Color(1.0, 1.0, 1.0, 0.24), 1.2)
+	draw_line(draw_r.position + Vector2(2.0, draw_r.size.y - 1.0), draw_r.end - Vector2(2.0, 1.0), Color(0.0, 0.0, 0.0, 0.32), 1.5)
 
 	# Crate custom skin accessories (only when not on goal so goal star is unobstructed)
 	if not on_goal:
@@ -2269,9 +2362,9 @@ func _draw_crate(rect: Rect2, on_goal: bool, logical_pos: Vector2i = Vector2i.ZE
 			draw_r.position + Vector2(draw_r.size.x - r_pad, draw_r.size.y - r_pad)
 		]
 		for corn in corners:
-			draw_circle(corn, 2.6, Color(0.08, 0.10, 0.14, 0.85))
-			draw_circle(corn, 1.9, aura_spark)
-			draw_circle(corn - Vector2(0.5, 0.5), 0.8, Color(1.0, 1.0, 1.0, 0.95))
+			draw_circle(corn, 2.8, Color(0.08, 0.10, 0.14, 0.90))
+			draw_circle(corn, 2.0, aura_spark)
+			draw_circle(corn - Vector2(0.5, 0.5), 0.9, Color(1.0, 1.0, 0.95, 0.98))
 
 
 func _draw_player(rect: Rect2) -> void:
@@ -2299,21 +2392,26 @@ func _draw_player(rect: Rect2) -> void:
 
 	# 1. Outer soft ambient shadow
 	var pts_outer: PackedVector2Array = []
-	var rx_outer: float = radius * 0.54 * hop_factor
-	var ry_outer: float = radius * 0.18 * hop_factor
+	var rx_outer: float = radius * 0.68 * hop_factor
+	var ry_outer: float = radius * 0.24 * hop_factor
 	for i in range(16):
 		var a: float = i * (TAU / 16.0)
 		pts_outer.append(shadow_center + Vector2(cos(a) * rx_outer, sin(a) * ry_outer))
-	draw_colored_polygon(pts_outer, Color(0.0, 0.0, 0.0, 0.22 * hop_factor))
+	draw_colored_polygon(pts_outer, Color(0.0, 0.0, 0.0, 0.30 * hop_factor))
 
 	# 2. Inner core contact shadow (tight under soles)
 	var pts_inner: PackedVector2Array = []
-	var rx_inner: float = radius * 0.40 * hop_factor
-	var ry_inner: float = radius * 0.11 * hop_factor
+	var rx_inner: float = radius * 0.48 * hop_factor
+	var ry_inner: float = radius * 0.14 * hop_factor
 	for i in range(16):
 		var a: float = i * (TAU / 16.0)
 		pts_inner.append(shadow_center + Vector2(cos(a) * rx_inner, sin(a) * ry_inner))
-	draw_colored_polygon(pts_inner, Color(0.0, 0.0, 0.0, 0.32 * hop_factor))
+	draw_colored_polygon(pts_inner, Color(0.0, 0.0, 0.0, 0.55 * hop_factor))
+
+	# 3. Grounded micro contact points under left and right boots
+	var boot_spacing: float = radius * 0.20
+	draw_circle(shadow_center + Vector2(-boot_spacing, 0.0), radius * 0.10 * hop_factor, Color(0.0, 0.0, 0.0, 0.40 * hop_factor))
+	draw_circle(shadow_center + Vector2(boot_spacing, 0.0), radius * 0.10 * hop_factor, Color(0.0, 0.0, 0.0, 0.40 * hop_factor))
 
 	# Pick directional sprite (idle vs walk cycle frame 1/2)
 	var p_tex: Texture2D = tex_player_down

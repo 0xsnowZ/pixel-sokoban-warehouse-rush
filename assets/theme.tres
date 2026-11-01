@@ -691,6 +691,216 @@ shadow_color = Color(0, 0, 0, 0.82)
 shadow_size = 24
 shadow_offset = Vector2(0, 8)
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_game_undo_normal"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 11.0
+bg_color = Color(0.10, 0.16, 0.26, 0.96)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 3
+border_color = Color(0.28, 0.58, 0.90, 0.85)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0.06, 0.14, 0.26, 0.40)
+shadow_size = 4
+shadow_offset = Vector2(0, 2)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_game_undo_hover"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 11.0
+bg_color = Color(0.14, 0.22, 0.35, 1.0)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 3
+border_color = Color(0.45, 0.75, 1.0, 1.0)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0.12, 0.24, 0.45, 0.50)
+shadow_size = 5
+shadow_offset = Vector2(0, 2)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_game_undo_pressed"]
+content_margin_left = 12.0
+content_margin_top = 11.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+bg_color = Color(0.08, 0.12, 0.20, 1.0)
+border_width_left = 1
+border_width_top = 2
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.20, 0.45, 0.72, 1.0)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_game_undo_disabled"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
+bg_color = Color(0.08, 0.10, 0.15, 0.70)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 2
+border_color = Color(0.20, 0.25, 0.32, 0.50)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_game_hint_normal"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 11.0
+bg_color = Color(0.22, 0.16, 0.08, 0.96)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 3
+border_color = Color(0.92, 0.72, 0.25, 0.90)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0.32, 0.22, 0.06, 0.40)
+shadow_size = 4
+shadow_offset = Vector2(0, 2)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_game_hint_hover"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 11.0
+bg_color = Color(0.28, 0.20, 0.10, 1.0)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 3
+border_color = Color(1.0, 0.84, 0.38, 1.0)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0.42, 0.28, 0.08, 0.50)
+shadow_size = 5
+shadow_offset = Vector2(0, 2)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_game_hint_pressed"]
+content_margin_left = 12.0
+content_margin_top = 11.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+bg_color = Color(0.16, 0.11, 0.05, 1.0)
+border_width_left = 1
+border_width_top = 2
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.75, 0.55, 0.18, 1.0)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_game_hint_disabled"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
+bg_color = Color(0.08, 0.10, 0.15, 0.70)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 2
+border_color = Color(0.20, 0.25, 0.32, 0.50)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_game_restart_normal"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 11.0
+bg_color = Color(0.22, 0.12, 0.14, 0.96)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 3
+border_color = Color(0.85, 0.40, 0.35, 0.85)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0.28, 0.08, 0.10, 0.35)
+shadow_size = 4
+shadow_offset = Vector2(0, 2)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_game_restart_hover"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 11.0
+bg_color = Color(0.28, 0.15, 0.18, 1.0)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 3
+border_color = Color(1.0, 0.55, 0.48, 1.0)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0.38, 0.10, 0.12, 0.45)
+shadow_size = 5
+shadow_offset = Vector2(0, 2)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_game_restart_pressed"]
+content_margin_left = 12.0
+content_margin_top = 11.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+bg_color = Color(0.16, 0.08, 0.10, 1.0)
+border_width_left = 1
+border_width_top = 2
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.68, 0.28, 0.24, 1.0)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_game_restart_disabled"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
+bg_color = Color(0.08, 0.10, 0.15, 0.70)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 2
+border_color = Color(0.20, 0.25, 0.32, 0.50)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
 [resource]
 default_font = ExtResource("1_font")
 default_font_size = 15
@@ -815,3 +1025,39 @@ WinModalPanel/base_type = &"PanelContainer"
 WinModalPanel/styles/panel = SubResource("StyleBoxFlat_win_modal")
 Window/colors/title_color = Color(0.98, 0.82, 0.25, 1)
 Window/styles/panel = SubResource("StyleBoxFlat_e8htd")
+GameUndoButton/base_type = &"Button"
+GameUndoButton/colors/font_color = Color(0.95, 0.98, 1.0, 1)
+GameUndoButton/colors/font_disabled_color = Color(0.42, 0.48, 0.58, 0.7)
+GameUndoButton/colors/font_hover_color = Color(1, 1, 1, 1)
+GameUndoButton/colors/font_pressed_color = Color(0.85, 0.94, 1.0, 1)
+GameUndoButton/colors/font_shadow_color = Color(0.02, 0.06, 0.14, 0.85)
+GameUndoButton/constants/shadow_offset_y = 1
+GameUndoButton/styles/disabled = SubResource("StyleBoxFlat_game_undo_disabled")
+GameUndoButton/styles/focus = SubResource("StyleBoxEmpty_wl1kw")
+GameUndoButton/styles/hover = SubResource("StyleBoxFlat_game_undo_hover")
+GameUndoButton/styles/normal = SubResource("StyleBoxFlat_game_undo_normal")
+GameUndoButton/styles/pressed = SubResource("StyleBoxFlat_game_undo_pressed")
+GameHintButton/base_type = &"Button"
+GameHintButton/colors/font_color = Color(1.0, 0.98, 0.92, 1)
+GameHintButton/colors/font_disabled_color = Color(0.48, 0.48, 0.48, 0.7)
+GameHintButton/colors/font_hover_color = Color(1, 1, 1, 1)
+GameHintButton/colors/font_pressed_color = Color(1.0, 0.90, 0.70, 1)
+GameHintButton/colors/font_shadow_color = Color(0.14, 0.08, 0.02, 0.85)
+GameHintButton/constants/shadow_offset_y = 1
+GameHintButton/styles/disabled = SubResource("StyleBoxFlat_game_hint_disabled")
+GameHintButton/styles/focus = SubResource("StyleBoxEmpty_wl1kw")
+GameHintButton/styles/hover = SubResource("StyleBoxFlat_game_hint_hover")
+GameHintButton/styles/normal = SubResource("StyleBoxFlat_game_hint_normal")
+GameHintButton/styles/pressed = SubResource("StyleBoxFlat_game_hint_pressed")
+GameRestartButton/base_type = &"Button"
+GameRestartButton/colors/font_color = Color(1.0, 0.96, 0.96, 1)
+GameRestartButton/colors/font_disabled_color = Color(0.48, 0.45, 0.48, 0.7)
+GameRestartButton/colors/font_hover_color = Color(1, 1, 1, 1)
+GameRestartButton/colors/font_pressed_color = Color(1.0, 0.85, 0.85, 1)
+GameRestartButton/colors/font_shadow_color = Color(0.14, 0.04, 0.04, 0.85)
+GameRestartButton/constants/shadow_offset_y = 1
+GameRestartButton/styles/disabled = SubResource("StyleBoxFlat_game_restart_disabled")
+GameRestartButton/styles/focus = SubResource("StyleBoxEmpty_wl1kw")
+GameRestartButton/styles/hover = SubResource("StyleBoxFlat_game_restart_hover")
+GameRestartButton/styles/normal = SubResource("StyleBoxFlat_game_restart_normal")
+GameRestartButton/styles/pressed = SubResource("StyleBoxFlat_game_restart_pressed")

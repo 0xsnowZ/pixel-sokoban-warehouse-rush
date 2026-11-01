@@ -103,7 +103,8 @@ func test_game_initialization_and_ui() -> void:
 	assert_true(game.hint_button != null, "Hint button initialized in game")
 	assert_true("Hint" in game.hint_button.text, "Hint button localized in EN")
 	assert_true(not game.hint_button.disabled, "Hint button is enabled initially")
-	assert_true(game.prev_button.disabled, "Prev button is disabled on first level")
+	assert_true(game.prev_button == null, "Prev button removed from bottom bar")
+	assert_true(game.next_button == null, "Next button removed from bottom bar")
 
 	# Test switching language updates UI
 	loc.set_language("fr")
