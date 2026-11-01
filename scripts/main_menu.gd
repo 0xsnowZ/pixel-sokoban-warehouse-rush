@@ -241,15 +241,9 @@ func _ready() -> void:
 		star_progress_btn.add_theme_constant_override("icon_max_width", 20)
 		star_progress_btn.add_theme_constant_override("h_separation", 8)
 	if continue_btn:
-		continue_btn.icon = icon_play
-		continue_btn.expand_icon = true
-		continue_btn.add_theme_constant_override("icon_max_width", 20)
-		continue_btn.add_theme_constant_override("h_separation", 10)
+		continue_btn.icon = null
 	if play_btn:
-		play_btn.icon = icon_play
-		play_btn.expand_icon = true
-		play_btn.add_theme_constant_override("icon_max_width", 20)
-		play_btn.add_theme_constant_override("h_separation", 10)
+		play_btn.icon = null
 
 	_show_main_view()
 	_update_menu_state()
