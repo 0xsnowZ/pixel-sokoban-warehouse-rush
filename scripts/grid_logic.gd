@@ -152,7 +152,7 @@ func load_from_text(level_text: String) -> bool:
 func _compute_interior_floor() -> void:
 	interior_floor.clear()
 	var queue: Array[Vector2i] = []
-	if player_pos != Vector2i.ZERO or has_crate(Vector2i.ZERO) or is_goal(Vector2i.ZERO):
+	if is_in_bounds(player_pos):
 		queue.append(player_pos)
 	for c in crates.keys():
 		if not queue.has(c):
@@ -472,6 +472,43 @@ func to_text() -> String:
 				row_chars.append(" ")
 		result_lines.append("".join(row_chars).rstrip(" "))
 	return "\n".join(result_lines)
+
+
+## Returns true if any crate is trapped in an unresolvable corner deadlock or 2x2 block.
+func has_deadlock() -> bool:
+	for c in crates.keys():
+		if is_goal(c):
+			continue
+		# Corner check
+		var wall_u: bool = not is_in_bounds(c + Vector2i.UP) or is_wall(c + Vector2i.UP) or is_exterior_void(c + Vector2i.UP)
+		var wall_d: bool = not is_in_bounds(c + Vector2i.DOWN) or is_wall(c + Vector2i.DOWN) or is_exterior_void(c + Vector2i.DOWN)
+		var wall_l: bool = not is_in_bounds(c + Vector2i.LEFT) or is_wall(c + Vector2i.LEFT) or is_exterior_void(c + Vector2i.LEFT)
+		var wall_r: bool = not is_in_bounds(c + Vector2i.RIGHT) or is_wall(c + Vector2i.RIGHT) or is_exterior_void(c + Vector2i.RIGHT)
+		if (wall_u and wall_l) or (wall_u and wall_r) or (wall_d and wall_l) or (wall_d and wall_r):
+			return true
+
+		# 2x2 block check
+		var offsets: Array[Vector2i] = [
+			Vector2i(0, 0), Vector2i(-1, 0), Vector2i(0, -1), Vector2i(-1, -1)
+		]
+		for off in offsets:
+			var c00: Vector2i = c + off
+			var cells: Array[Vector2i] = [c00, c00 + Vector2i(1, 0), c00 + Vector2i(0, 1), c00 + Vector2i(1, 1)]
+			var all_solid: bool = true
+			var has_non_goal: bool = false
+			for cell in cells:
+				var is_b: bool = not is_in_bounds(cell) or is_wall(cell) or is_exterior_void(cell)
+				if is_b:
+					continue
+				if has_crate(cell):
+					if not is_goal(cell):
+						has_non_goal = true
+				else:
+					all_solid = false
+					break
+			if all_solid and has_non_goal:
+				return true
+	return false
 
 
 ## Creates an independent clone of the current GridLogic instance.

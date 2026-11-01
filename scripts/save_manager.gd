@@ -42,6 +42,11 @@ func _ready() -> void:
 	load_data()
 
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_WM_CLOSE_REQUEST:
+		save_data()
+
+
 ## Returns true if the level at level_index is unlocked and playable.
 func is_level_unlocked(level_index: int) -> bool:
 	return level_index <= unlocked_level
@@ -58,11 +63,11 @@ func unlock_level(target_level_index: int) -> bool:
 
 # Mathematically verified optimal moves for all 50 levels
 const OPTIMAL_MOVES: Array[int] = [
-	9, 15, 19, 19, 20, 19, 22, 25, 21, 23,
-	20, 28, 29, 31, 35, 27, 28, 30, 32, 34,
-	29, 26, 32, 25, 32, 29, 39, 28, 38, 39,
-	26, 37, 38, 40, 37, 38, 37, 40, 40, 38,
-	35, 38, 35, 40, 32, 48, 39, 47, 35, 40
+	9, 12, 18, 21, 22, 25, 26, 27, 28, 29,
+	28, 28, 30, 30, 31, 35, 36, 24, 36, 38,
+	28, 35, 38, 30, 30, 50, 51, 51, 52, 53,
+	54, 55, 54, 48, 47, 51, 48, 52, 49, 53,
+	50, 48, 51, 52, 53, 54, 54, 55, 56, 56,
 ]
 
 
@@ -85,6 +90,19 @@ func calculate_stars(level_index: int, moves: int) -> int:
 	elif moves <= optimal + tolerance_2:
 		return 2
 	return 1
+
+
+## Returns a Dictionary with move targets for 3-star, 2-star, and optimal moves:
+## { "optimal": int, "three_star": int, "two_star": int }
+func get_star_targets(level_index: int) -> Dictionary:
+	var optimal: int = get_optimal_moves(level_index)
+	var tolerance_3: int = maxi(2, ceili(optimal * 0.15))
+	var tolerance_2: int = maxi(5, ceili(optimal * 0.40))
+	return {
+		"optimal": optimal,
+		"three_star": optimal + tolerance_3,
+		"two_star": optimal + tolerance_2
+	}
 
 
 ## Returns the best earned stars (0 to 3) for a given level.
@@ -383,31 +401,69 @@ func from_dict(data: Dictionary) -> void:
 	last_hint_refill_date = str(economy.get("last_hint_refill_date", ""))
 
 
-## Saves game state to JSON on disk.
+## Saves game state to JSON on disk atomically with backup copy protection.
 func save_data(custom_path: String = "") -> bool:
 	var target_path: String = custom_path if not custom_path.is_empty() else DEFAULT_SAVE_PATH
-	var file: FileAccess = FileAccess.open(target_path, FileAccess.WRITE)
+	var temp_path: String = target_path + ".tmp"
+	var bak_path: String = target_path + ".bak"
+
+	var file: FileAccess = FileAccess.open(temp_path, FileAccess.WRITE)
 	if not file:
-		push_error("SaveManager: Failed to open save file for writing at: %s (Error: %s)" % [target_path, FileAccess.get_open_error()])
+		push_error("SaveManager: Failed to open temp save file for writing at: %s (Error: %s)" % [temp_path, FileAccess.get_open_error()])
 		return false
 
 	var json_string: String = JSON.stringify(to_dict(), "\t")
 	file.store_string(json_string)
+	file.flush()
 	file.close()
+
+	# Keep backup copy of last good save file
+	if FileAccess.file_exists(target_path):
+		DirAccess.copy_absolute(target_path, bak_path)
+		DirAccess.remove_absolute(target_path)
+
+	# Atomically rename temp file to target
+	var rename_err: Error = DirAccess.rename_absolute(temp_path, target_path)
+	if rename_err != OK:
+		# Fallback if rename fails across partitions/devices
+		DirAccess.copy_absolute(temp_path, target_path)
+		DirAccess.remove_absolute(temp_path)
 
 	progress_saved.emit()
 	return true
 
 
 ## Loads game state from JSON on disk. Returns false if file doesn't exist or is invalid.
+## Automatically recovers from .bak backup file if primary file is corrupted.
 func load_data(custom_path: String = "") -> bool:
 	var target_path: String = custom_path if not custom_path.is_empty() else DEFAULT_SAVE_PATH
-	if not FileAccess.file_exists(target_path):
+	var bak_path: String = target_path + ".bak"
+
+	# Try primary file first
+	var success: bool = _try_load_file(target_path)
+	if success:
+		progress_loaded.emit()
+		return true
+
+	# If primary file failed, check if backup file exists
+	if FileAccess.file_exists(bak_path):
+		push_warning("SaveManager: Primary save corrupted or invalid at %s. Attempting restore from backup: %s" % [target_path, bak_path])
+		var bak_success: bool = _try_load_file(bak_path)
+		if bak_success:
+			push_warning("SaveManager: Successfully recovered player data from backup!")
+			save_data(target_path) # Restore primary save from loaded backup data
+			progress_loaded.emit()
+			return true
+
+	return false
+
+
+func _try_load_file(path: String) -> bool:
+	if not FileAccess.file_exists(path):
 		return false
 
-	var file: FileAccess = FileAccess.open(target_path, FileAccess.READ)
+	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
 	if not file:
-		push_error("SaveManager: Failed to open save file for reading at: %s" % target_path)
 		return false
 
 	var content: String = file.get_as_text()
@@ -419,16 +475,13 @@ func load_data(custom_path: String = "") -> bool:
 	var json: JSON = JSON.new()
 	var error: Error = json.parse(content)
 	if error != OK:
-		push_warning("SaveManager: JSON parse error in save file: %s (Line: %d)" % [json.get_error_message(), json.get_error_line()])
 		return false
 
 	var parsed_data: Variant = json.data
 	if not parsed_data is Dictionary:
-		push_warning("SaveManager: Expected Dictionary in save file, got %s" % typeof(parsed_data))
 		return false
 
 	from_dict(parsed_data)
-	progress_loaded.emit()
 	return true
 
 
@@ -452,6 +505,10 @@ func reset_all_progress(custom_path: String = "") -> void:
 	unlocked_achievements.clear()
 	last_hint_refill_date = ""
 	save_data(custom_path)
+	var target_path: String = custom_path if not custom_path.is_empty() else DEFAULT_SAVE_PATH
+	var bak_path: String = target_path + ".bak"
+	if FileAccess.file_exists(bak_path):
+		DirAccess.remove_absolute(bak_path)
 
 
 func get_hints_remaining() -> int:
@@ -475,7 +532,6 @@ func add_hints(amount: int) -> void:
 
 func record_crate_push() -> void:
 	total_crates_pushed += 1
-	save_data()
 
 
 func is_achievement_unlocked(id: String) -> bool:

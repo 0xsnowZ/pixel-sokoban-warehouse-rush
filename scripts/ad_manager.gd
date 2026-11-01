@@ -68,6 +68,121 @@ func _init_plugin_or_simulator() -> void:
 	elif Engine.has_singleton("GodotAdMob"):
 		_plugin_singleton = Engine.get_singleton("GodotAdMob")
 
+	if _plugin_singleton != null:
+		_wire_plugin_signals()
+
+
+func _wire_plugin_signals() -> void:
+	if _plugin_singleton == null:
+		return
+
+	_connect_signal_variant([
+		"interstitial_ad_loaded", "on_interstitial_ad_loaded", "interstitial_loaded", "_on_interstitial_loaded"
+	], _on_plugin_interstitial_loaded)
+
+	_connect_signal_variant([
+		"interstitial_ad_opened", "on_interstitial_ad_opened", "interstitial_opened", "_on_interstitial_opened"
+	], _on_plugin_interstitial_opened)
+
+	_connect_signal_variant([
+		"interstitial_ad_closed", "on_interstitial_ad_closed", "interstitial_closed", "_on_interstitial_closed", "_on_interstitial_close", "on_interstitial_dismissed"
+	], _on_plugin_interstitial_closed)
+
+	_connect_signal_variant([
+		"rewarded_ad_loaded", "on_rewarded_ad_loaded", "rewarded_loaded", "_on_rewarded_video_ad_loaded"
+	], _on_plugin_rewarded_loaded)
+
+	_connect_signal_variant([
+		"rewarded_ad_opened", "on_rewarded_ad_opened", "rewarded_opened", "_on_rewarded_video_ad_opened"
+	], _on_plugin_rewarded_opened)
+
+	_connect_signal_variant([
+		"rewarded_ad_closed", "on_rewarded_ad_closed", "rewarded_closed", "_on_rewarded_video_ad_closed"
+	], _on_plugin_rewarded_closed)
+
+	_connect_signal_variant([
+		"user_earned_rewarded", "on_user_earned_rewarded", "rewarded_earned", "_on_rewarded_video_ad_completed"
+	], _on_plugin_rewarded_earned)
+
+
+func _connect_signal_variant(variants: Array[String], callback: Callable) -> void:
+	if _plugin_singleton == null:
+		return
+	for sig_name in variants:
+		if _plugin_singleton.has_signal(sig_name):
+			if not _plugin_singleton.is_connected(sig_name, callback):
+				_plugin_singleton.connect(sig_name, callback)
+			return
+
+
+func _on_plugin_interstitial_loaded() -> void:
+	is_interstitial_loaded = true
+	interstitial_loaded.emit()
+
+
+func _on_plugin_interstitial_opened() -> void:
+	is_showing_ad = true
+	interstitial_opened.emit()
+
+
+func _on_plugin_interstitial_closed() -> void:
+	is_showing_ad = false
+	interstitial_closed.emit()
+	preload_interstitial()
+
+
+func _on_plugin_rewarded_loaded() -> void:
+	is_rewarded_loaded = true
+	rewarded_loaded.emit()
+
+
+func _on_plugin_rewarded_opened() -> void:
+	is_showing_rewarded = true
+	rewarded_opened.emit()
+
+
+func _on_plugin_rewarded_closed() -> void:
+	is_showing_rewarded = false
+	rewarded_closed.emit()
+	preload_rewarded()
+
+
+func _on_plugin_rewarded_earned(arg1: Variant = null, arg2: Variant = null) -> void:
+	var r_type: String = "hints"
+	var r_amount: int = 3
+	if arg1 is String and not (arg1 as String).is_empty():
+		r_type = arg1
+	elif arg2 is String and not (arg2 as String).is_empty():
+		r_type = arg2
+
+	if arg1 is int and (arg1 as int) > 0:
+		r_amount = arg1
+	elif arg2 is int and (arg2 as int) > 0:
+		r_amount = arg2
+	rewarded_earned.emit(r_type, r_amount)
+
+
+func _start_interstitial_watchdog() -> void:
+	if not is_inside_tree():
+		return
+	var timer: SceneTreeTimer = get_tree().create_timer(12.0)
+	timer.timeout.connect(func() -> void:
+		if is_showing_ad:
+			push_warning("AdManager: Interstitial ad watchdog triggered after 12s timeout.")
+			_on_plugin_interstitial_closed()
+	)
+
+
+func _start_rewarded_watchdog() -> void:
+	if not is_inside_tree():
+		return
+	var timer: SceneTreeTimer = get_tree().create_timer(15.0)
+	timer.timeout.connect(func() -> void:
+		if is_showing_rewarded:
+			push_warning("AdManager: Rewarded ad watchdog triggered after 15s timeout.")
+			_on_plugin_rewarded_closed()
+	)
+
 
 ## Requests consent form status (EEA / UK UMP requirements).
 func request_consent() -> void:
@@ -140,6 +255,7 @@ func show_interstitial(level_index: int) -> bool:
 
 	if _plugin_singleton != null and _plugin_singleton.has_method("show_interstitial"):
 		_plugin_singleton.show_interstitial()
+		_start_interstitial_watchdog()
 	else:
 		# Simulated interstitial ad: simulate quick display and auto-close
 		_simulate_ad_close()
@@ -187,6 +303,7 @@ func show_rewarded_for_hints() -> bool:
 
 	if _plugin_singleton != null and _plugin_singleton.has_method("show_rewarded"):
 		_plugin_singleton.show_rewarded()
+		_start_rewarded_watchdog()
 	else:
 		_simulate_rewarded_close()
 

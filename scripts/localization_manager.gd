@@ -322,6 +322,11 @@ const TRANSLATIONS: Dictionary = {
 		"fr": "Bloqué ! Appuyez sur Annuler ↶",
 		"ar": "طريق مسدود! اضغط تراجع ↶"
 	},
+	"HINT_NO_PATH": {
+		"en": "No clear path found. Try another move or Undo ↶",
+		"fr": "Aucun chemin trouvé. Essayez un autre coup ou Annuler ↶",
+		"ar": "لم يتم العثور على مسار. جرب حركة أخرى أو تراجع ↶"
+	},
 	"HINT_ALREADY_SOLVED": {
 		"en": "Level already completed!",
 		"fr": "Niveau déjà terminé !",

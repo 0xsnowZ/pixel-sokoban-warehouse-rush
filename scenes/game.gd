@@ -28,6 +28,7 @@ var safe_area_mgr: Node = null
 # Visual settings
 var tile_size: float = 64.0
 var grid_origin: Vector2 = Vector2.ZERO
+var _layout_dirty: bool = true
 var player_facing_dir: Vector2i = Vector2i.DOWN
 var win_particles: Array[Dictionary] = []
 var is_level_won: bool = false
@@ -435,6 +436,7 @@ func load_level(index: int) -> void:
 		push_error("Failed to load level: %s" % path)
 		return
 
+	_layout_dirty = true
 	is_animating = false
 	queued_move_dir = Vector2i.ZERO
 	current_walk_frame = 0
@@ -621,8 +623,9 @@ func _on_level_won() -> void:
 	var time_formatted: String = "%02d:%02d" % [int(elapsed_sec / 60.0), elapsed_sec % 60]
 
 	var earned_stars: int = save_mgr.calculate_stars(current_level_index, grid.moves_count) if save_mgr else 1
-	var optimal_moves: int = save_mgr.get_optimal_moves(current_level_index) if save_mgr else 10
-	var three_star_target: int = optimal_moves + 2
+	var star_targets: Dictionary = save_mgr.get_star_targets(current_level_index) if (save_mgr and save_mgr.has_method("get_star_targets")) else { "optimal": 10, "three_star": 12, "two_star": 15 }
+	var optimal_moves: int = star_targets.get("optimal", 10)
+	var three_star_target: int = star_targets.get("three_star", optimal_moves + 2)
 
 	# Populate card stats
 	var moves_card = win_modal.find_child("MovesCard", true, false) if win_modal else null
@@ -829,7 +832,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				touch_start_pos = event.position
 			else:
 				if is_touching:
-					_handle_swipe(event.position - touch_start_pos)
+					var release_delta: Vector2 = event.position - touch_start_pos
+					if release_delta.length() >= SWIPE_THRESHOLD_PIXELS:
+						_handle_swipe(release_delta)
 					is_touching = false
 
 	elif event is InputEventScreenTouch:
@@ -838,8 +843,17 @@ func _unhandled_input(event: InputEvent) -> void:
 			touch_start_pos = event.position
 		else:
 			if is_touching:
-				_handle_swipe(event.position - touch_start_pos)
+				var release_delta: Vector2 = event.position - touch_start_pos
+				if release_delta.length() >= SWIPE_THRESHOLD_PIXELS:
+					_handle_swipe(release_delta)
 				is_touching = false
+
+	elif event is InputEventScreenDrag or (event is InputEventMouseMotion and is_touching):
+		if is_touching:
+			var drag_delta: Vector2 = event.position - touch_start_pos
+			if drag_delta.length() >= SWIPE_THRESHOLD_PIXELS:
+				_handle_swipe(drag_delta)
+				touch_start_pos = event.position
 
 
 func _handle_swipe(delta: Vector2) -> void:
@@ -1022,15 +1036,37 @@ func _on_hint_pressed() -> void:
 	if haptic_mgr:
 		haptic_mgr.vibrate_click()
 
-	var result: SokobanSolver.SolverResult = SokobanSolverScript.solve(grid, 25000)
-	if not result.is_solvable or result.solution_str.is_empty():
-		# Deadlock detected!
+	var move_char: String = ""
+	var is_confirmed_deadlock: bool = false
+
+	# 1. Fast check if current state matches the level's verified optimal path (instant 0ms lookup)
+	var lvl_path: String = level_paths[current_level_index] if current_level_index < level_paths.size() else ""
+	var path_hint: String = SokobanSolverScript.get_next_hint(grid, current_level_index, lvl_path)
+	if not path_hint.is_empty():
+		move_char = path_hint
+	else:
+		# 2. Check if player has placed a crate into an immediate unresolvable deadlock
+		if grid.has_deadlock():
+			is_confirmed_deadlock = true
+		else:
+			# 3. High-speed solver search for custom player paths
+			var result: SokobanSolver.SolverResult = SokobanSolverScript.solve(grid, 15000)
+			if result.is_solvable and not result.solution_str.is_empty():
+				move_char = result.solution_str.substr(0, 1)
+			elif result.is_deadlock:
+				is_confirmed_deadlock = true
+
+	if move_char.is_empty():
+		# Deadlock or search limit reached
 		if audio_mgr:
 			audio_mgr.play_deadlock()
 		if haptic_mgr:
 			haptic_mgr.vibrate_impact()
 		add_trauma(0.25)
-		_show_hint_toast(loc_mgr.tr_text("HINT_DEADLOCK") if loc_mgr else "No solution from here! Tap Undo ↶", Color(1.0, 0.4, 0.4))
+		if is_confirmed_deadlock:
+			_show_hint_toast(loc_mgr.tr_text("HINT_DEADLOCK") if loc_mgr else "No solution from here! Tap Undo ↶", Color(1.0, 0.4, 0.4))
+		else:
+			_show_hint_toast(loc_mgr.tr_text("HINT_NO_PATH") if loc_mgr else "No clear path found. Try another move or Undo ↶", Color(1.0, 0.7, 0.4))
 		clear_hint()
 		return
 
@@ -1042,8 +1078,6 @@ func _on_hint_pressed() -> void:
 	# Solvable next step
 	if audio_mgr:
 		audio_mgr.play_hint()
-
-	var move_char: String = result.solution_str.substr(0, 1)
 	match move_char:
 		"u": active_hint_dir = Vector2i.UP
 		"d": active_hint_dir = Vector2i.DOWN
@@ -1120,7 +1154,15 @@ func _on_next_level_pressed() -> void:
 		if ad_mgr and ad_mgr.should_show_interstitial(current_level_index):
 			ad_mgr.show_interstitial(current_level_index)
 			if ad_mgr.is_showing_ad:
-				await ad_mgr.interstitial_closed
+				# Await ad close with safety timeout guard so level advance is never hung
+				var safety_timer: SceneTreeTimer = get_tree().create_timer(10.0)
+				var ad_done: Array[bool] = [false]
+				var on_closed: Callable = func() -> void:
+					ad_done[0] = true
+				ad_mgr.interstitial_closed.connect(on_closed, CONNECT_ONE_SHOT)
+				safety_timer.timeout.connect(on_closed, CONNECT_ONE_SHOT)
+				while not ad_done[0] and is_inside_tree():
+					await get_tree().process_frame
 		load_level(next_idx)
 
 
@@ -1397,13 +1439,15 @@ func calculate_layout(custom_viewport_size: Vector2 = Vector2.ZERO) -> void:
 		floor((viewport_size.x - board_pixel_size.x) / 2.0),
 		floor(top_offset + (playable_height - board_pixel_size.y) / 2.0)
 	)
+	_layout_dirty = false
 
 
 func _draw() -> void:
 	if not grid or grid.width == 0 or grid.height == 0:
 		return
 
-	calculate_layout()
+	if _layout_dirty:
+		calculate_layout()
 	var effective_origin: Vector2 = grid_origin + board_shake_offset
 	var board_pixel_size: Vector2 = Vector2(grid.width * tile_size, grid.height * tile_size)
 	var ch: Dictionary = get_current_chapter_theme()
