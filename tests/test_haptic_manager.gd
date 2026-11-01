@@ -198,9 +198,9 @@ func test_game_scene_haptic_integration() -> void:
 	game.load_level(0)
 	var initial_vibes: int = haptics.total_vibrations_triggered
 
-	# 1. Pushing crate UP triggers push vibration
+	# 1. Pushing crate UP triggers push or target vibration
 	game.try_move(Vector2i.UP)
-	assert_eq(haptics.last_vibration_type, "push", "Pushing crate UP triggered push vibration")
+	assert_true(haptics.last_vibration_type in ["push", "target"], "Pushing crate UP triggered push/target vibration")
 
 	# Reset animation flag for immediate headless evaluation
 	game.is_animating = false

@@ -376,7 +376,7 @@ func test_win_modal_three_star_system() -> void:
 
 	# Test Star rating calculation integration with save manager
 	assert_eq(save_mgr.calculate_stars(0, 5), 3, "Optimal moves achieves 3 stars")
-	assert_eq(save_mgr.calculate_stars(0, 10), 2, "Moderate moves achieves 2 stars")
+	assert_eq(save_mgr.calculate_stars(0, 14), 2, "Moderate moves achieves 2 stars")
 	assert_eq(save_mgr.calculate_stars(0, 20), 1, "Completed with high moves achieves 1 star")
 
 	game.free()

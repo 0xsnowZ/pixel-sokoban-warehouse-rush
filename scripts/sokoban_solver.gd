@@ -23,18 +23,61 @@ class SolverResult:
 		return "UNSOLVABLE or TIMED OUT (Explored %d states in %.2fms)" % [states_explored, time_ms]
 
 
+## Checks if a position is impassable boundary (wall, out of bounds, or exterior void).
+static func is_blocked_tile(pos: Vector2i, grid: GridLogic) -> bool:
+	return not grid.is_in_bounds(pos) or grid.is_wall(pos) or grid.is_exterior_void(pos)
+
+
 ## Checks if a crate at pos is in a fatal corner deadlock (not on a goal and blocked in 2 perpendicular wall directions).
 static func is_corner_deadlock(pos: Vector2i, grid: GridLogic) -> bool:
 	if grid.is_goal(pos):
 		return false # Crates on goals are allowed in corners
 
-	var wall_up: bool = grid.is_wall(pos + Vector2i.UP) or not grid.is_in_bounds(pos + Vector2i.UP)
-	var wall_down: bool = grid.is_wall(pos + Vector2i.DOWN) or not grid.is_in_bounds(pos + Vector2i.DOWN)
-	var wall_left: bool = grid.is_wall(pos + Vector2i.LEFT) or not grid.is_in_bounds(pos + Vector2i.LEFT)
-	var wall_right: bool = grid.is_wall(pos + Vector2i.RIGHT) or not grid.is_in_bounds(pos + Vector2i.RIGHT)
+	var wall_up: bool = is_blocked_tile(pos + Vector2i.UP, grid)
+	var wall_down: bool = is_blocked_tile(pos + Vector2i.DOWN, grid)
+	var wall_left: bool = is_blocked_tile(pos + Vector2i.LEFT, grid)
+	var wall_right: bool = is_blocked_tile(pos + Vector2i.RIGHT, grid)
 
 	if (wall_up and wall_left) or (wall_up and wall_right) or (wall_down and wall_left) or (wall_down and wall_right):
 		return true
+
+	return false
+
+
+## Checks if placing a crate at pos creates an unresolvable 2x2 solid block of crates and walls.
+static func is_2x2_deadlock(pos: Vector2i, grid: GridLogic, moving_from_pos: Vector2i) -> bool:
+	var offsets: Array[Vector2i] = [
+		Vector2i(0, 0),
+		Vector2i(-1, 0),
+		Vector2i(0, -1),
+		Vector2i(-1, -1)
+	]
+
+	for off in offsets:
+		var c00: Vector2i = pos + off
+		var cells: Array[Vector2i] = [
+			c00,
+			c00 + Vector2i(1, 0),
+			c00 + Vector2i(0, 1),
+			c00 + Vector2i(1, 1)
+		]
+
+		var all_solid: bool = true
+		var has_non_goal_crate: bool = false
+
+		for c in cells:
+			if is_blocked_tile(c, grid):
+				continue
+			var is_crate_here: bool = (c == pos) or (grid.has_crate(c) and c != moving_from_pos)
+			if is_crate_here:
+				if not grid.is_goal(c):
+					has_non_goal_crate = true
+			else:
+				all_solid = false
+				break
+
+		if all_solid and has_non_goal_crate:
+			return true
 
 	return false
 
@@ -94,10 +137,10 @@ static func solve(level_text_or_grid: Variant, max_states: int = 50000) -> Solve
 	})
 
 	var directions: Array[Dictionary] = [
-		{ "dir": Vector2i.UP, "char": "u" },
-		{ "dir": Vector2i.DOWN, "char": "d" },
-		{ "dir": Vector2i.LEFT, "char": "l" },
-		{ "dir": Vector2i.RIGHT, "char": "r" }
+		{"dir": Vector2i.UP, "char": "u"},
+		{"dir": Vector2i.DOWN, "char": "d"},
+		{"dir": Vector2i.LEFT, "char": "l"},
+		{"dir": Vector2i.RIGHT, "char": "r"}
 	]
 
 	var queue_head: int = 0
@@ -128,8 +171,10 @@ static func solve(level_text_or_grid: Variant, max_states: int = 50000) -> Solve
 				var behind_pos: Vector2i = target_pos + dir
 				if not cur_grid.is_in_bounds(behind_pos) or cur_grid.is_wall(behind_pos) or cur_grid.has_crate(behind_pos):
 					continue
-				# Deadlock check: if the pushed crate lands in a corner and is not on a goal, prune immediately!
+				# Deadlock checks: corner and 2x2 block deadlocks
 				if is_corner_deadlock(behind_pos, cur_grid):
+					continue
+				if is_2x2_deadlock(behind_pos, cur_grid, target_pos):
 					continue
 
 			# Clone state and execute move

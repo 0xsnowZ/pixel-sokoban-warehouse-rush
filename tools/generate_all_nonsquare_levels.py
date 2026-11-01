@@ -1,479 +1,220 @@
 import sys
-import random
-import time
-from collections import deque
-import json
 import os
+import random
+sys.path.insert(0, 'tools')
+from new_level_generator import TEMPLATES, generate_puzzles, solve_forward
 
-# Set seed for reproducible campaign generation
 random.seed(42)
 
-def solve_forward(walls, floor, goals, player, crates, max_states=30000):
-    crates = tuple(sorted(crates))
-    goals = frozenset(goals)
-    visited = set([(player, crates)])
-    q = deque([(player, crates, 0, 0, '')])
-    states = 0
-    start = time.time()
-    
-    while q:
-        states += 1
-        if states > max_states:
-            return None
-        p, cr, moves, pushes, path = q.popleft()
-        if set(cr) == goals:
-            return {
-                'solvable': True,
-                'moves': moves,
-                'pushes': pushes,
-                'states': states,
-                'path': path,
-                'time_s': time.time() - start
-            }
-        pr, pc = p
-        for dr, dc, name in [(-1, 0, 'U'), (1, 0, 'D'), (0, -1, 'L'), (0, 1, 'R')]:
-            nr, nc = pr + dr, pc + dc
-            if (nr, nc) in walls: continue
-            if (nr, nc) in cr:
-                nnr, nnc = nr + dr, nc + dc
-                if (nnr, nnc) in walls or (nnr, nnc) in cr: continue
-                # Corner deadlock pruning
-                if (nnr, nnc) not in goals:
-                    w_up = (nnr-1, nnc) in walls
-                    w_dn = (nnr+1, nnc) in walls
-                    w_lt = (nnr, nnc-1) in walls
-                    w_rt = (nnr, nnc+1) in walls
-                    if (w_up and w_lt) or (w_up and w_rt) or (w_dn and w_lt) or (w_dn and w_rt):
-                        continue
-                new_cr = list(cr)
-                new_cr.remove((nr, nc))
-                new_cr.append((nnr, nnc))
-                new_cr = tuple(sorted(new_cr))
-                if ((nr, nc), new_cr) not in visited:
-                    visited.add(((nr, nc), new_cr))
-                    q.append(((nr, nc), new_cr, moves + 1, pushes + 1, path + name))
-            else:
-                if ((nr, nc), cr) not in visited:
-                    visited.add(((nr, nc), cr))
-                    q.append(((nr, nc), cr, moves + 1, pushes, path + name.lower()))
-    return None
+# L1: 4 crates (3 secured on goals, 1 active) -> 5 moves, 3 pushes
+l1_lines = [
+    '######',
+    '#   .#',
+    '# $ *#',
+    '# @**#',
+    '#    #',
+    '######'
+]
 
-def format_grid(template_lines, walls, goals, player, crates):
-    height = len(template_lines)
-    width = max(len(l) for l in template_lines)
-    grid = []
-    crate_set = set(crates)
-    for r in range(height):
-        row = []
-        for c in range(width):
-            pos = (r, c)
-            if pos in walls:
-                row.append('#')
-            elif pos == player and pos in goals:
-                row.append('+')
-            elif pos == player:
-                row.append('@')
-            elif pos in crate_set and pos in goals:
-                row.append('*')
-            elif pos in crate_set:
-                row.append('$')
-            elif pos in goals:
-                row.append('.')
-            elif (r < len(template_lines) and c < len(template_lines[r]) and template_lines[r][c] == ' ') or pos in walls:
-                row.append(' ')
-            else:
-                row.append(' ')
-        grid.append(''.join(row).rstrip())
-    return grid
+# L2: 4 crates (symmetrical quad distribution) -> 10 moves, 4 pushes
+l2_lines = [
+    ' #####',
+    '##. .##',
+    '# $ $ #',
+    '#  @  #',
+    '# $ $ #',
+    '##. .##',
+    ' #####'
+]
 
-def generate_puzzles_from_template(template_str, name, num_crates, count=3, min_moves=10, max_moves=65):
-    lines = [l.rstrip() for l in template_str.strip('\n').split('\n')]
-    height = len(lines)
-    width = max(len(l) for l in lines)
-    walls = set()
-    floor = set()
-    possible_goals = []
-    
-    for r in range(height):
-        line = lines[r]
-        for c in range(len(line)):
-            ch = line[c]
+# L45 candidate: Corner Alcove 4c, 27 moves, 11 pushes
+l45_lines = [
+    '  #######',
+    '  #.  $ #',
+    '###. #  #',
+    '#  $$#$ #',
+    '#  .+   #',
+    '#########'
+]
+
+def parse_and_solve(lines, name):
+    walls, floor, goals, crates, player = set(), set(), set(), [], None
+    for r, l in enumerate(lines):
+        for c, ch in enumerate(l):
             if ch == '#': walls.add((r, c))
+            elif ch == '.': goals.add((r, c)); floor.add((r, c))
+            elif ch == '$': crates.append((r, c)); floor.add((r, c))
+            elif ch == '*': crates.append((r, c)); goals.add((r, c)); floor.add((r, c))
+            elif ch == '@': player = (r, c); floor.add((r, c))
+            elif ch == '+': player = (r, c); goals.add((r, c)); floor.add((r, c))
             elif ch == ' ': floor.add((r, c))
-            elif ch == '.':
-                floor.add((r, c))
-                possible_goals.append((r, c))
-                
-    if len(possible_goals) < num_crates:
-        possible_goals = list(floor)
-        
-    found = []
-    attempts = 0
-    while len(found) < count and attempts < 150:
-        attempts += 1
-        goals = tuple(sorted(random.sample(possible_goals, num_crates)))
-        crates = list(goals)
-        player_candidates = []
-        for cr in crates:
-            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                p = (cr[0] + dr, cr[1] + dc)
-                if p in floor and p not in crates:
-                    player_candidates.append(p)
-        if not player_candidates: continue
-        cur_p = random.choice(player_candidates)
-        cur_crates = list(crates)
-        
-        # Pull walk
-        num_pulls = random.randint(35, 150)
-        for _ in range(num_pulls):
-            pulls = []
-            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                c_pos = (cur_p[0] - dr, cur_p[1] - dc)
-                p_next = (cur_p[0] + dr, cur_p[1] + dc)
-                if c_pos in cur_crates and p_next in floor and p_next not in cur_crates:
-                    pulls.append((c_pos, p_next))
-            walks = []
-            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                p_next = (cur_p[0] + dr, cur_p[1] + dc)
-                if p_next in floor and p_next not in cur_crates:
-                    walks.append(p_next)
-                    
-            if pulls and random.random() < 0.65:
-                c_pos, p_next = random.choice(pulls)
-                cur_crates.remove(c_pos)
-                cur_crates.append(cur_p)
-                cur_p = p_next
-            elif walks:
-                cur_p = random.choice(walks)
-            else:
-                break
-                
-        if set(cur_crates) == set(goals):
+    res = solve_forward(walls, floor, goals, player, crates, max_states=80000)
+    assert res is not None, f"Failed to solve {name}!"
+    return {
+        'name': name,
+        'crates': len(crates),
+        'moves': res['moves'],
+        'pushes': res['pushes'],
+        'states': res['states'],
+        'lines': lines
+    }
+
+l1_puz = parse_and_solve(l1_lines, 'Tutorial 1 (4-Crate Focus)')
+l2_puz = parse_and_solve(l2_lines, 'Tutorial 2 (Quad Distribution)')
+l45_puz = parse_and_solve(l45_lines, 'Corner Alcove (4c)')
+
+# Collect archive 4+ crate levels
+arch_puzzles = {}
+for i in range(1, 51):
+    f = f'/home/snowz/godot/levels/archive/level_{i:02d}.sok'
+    with open(f) as fp:
+        lines = [l.rstrip() for l in fp.read().strip('\n').split('\n')]
+    crates_count = sum(l.count('$') + l.count('*') for l in lines)
+    if crates_count >= 4:
+        p = parse_and_solve(lines, f'Archive L{i:02d}')
+        arch_puzzles[i] = p
+
+print(f"Archive 4+ crate levels available: {len(arch_puzzles)}")
+
+# Generate fresh 4 and 5 crate levels across templates
+fresh_pool = []
+for name, tmpl, crates_list in TEMPLATES:
+    for c in [4, 5]:
+        puzs = generate_puzzles(tmpl, name, c, count=6, min_moves=11, max_moves=60)
+        for p in puzs:
+            fresh_pool.append({
+                'name': f"{name} ({c}c)",
+                'crates': c,
+                'moves': p['moves'],
+                'pushes': p['pushes'],
+                'states': p['states'],
+                'lines': p['lines']
+            })
+
+print(f"Fresh 4+ crate levels generated: {len(fresh_pool)}")
+
+seen_layouts = set()
+unique_fresh = []
+for p in fresh_pool:
+    k = '\n'.join(p['lines'])
+    if k not in seen_layouts:
+        seen_layouts.add(k)
+        unique_fresh.append(p)
+
+used_fresh = set()
+def pick_fresh(tgt_moves, min_crates=4, max_crates=5, disfavor_name=""):
+    best = None
+    best_diff = 999
+    best_idx = -1
+    for i, p in enumerate(unique_fresh):
+        if i in used_fresh:
             continue
-            
-        res = solve_forward(walls, floor, goals, cur_p, cur_crates, max_states=25000)
-        if res and res['solvable'] and min_moves <= res['moves'] <= max_moves:
-            grid_lines = format_grid(lines, walls, goals, cur_p, cur_crates)
-            puzzle_obj = {
-                'name': f'{name} #{len(found)+1}',
-                'moves': res['moves'],
-                'pushes': res['pushes'],
-                'states': res['states'],
-                'crates': num_crates,
-                'path': res['path'],
-                'lines': grid_lines
-            }
-            if not any(p['moves'] == res['moves'] and p['crates'] == num_crates for p in found):
-                found.append(puzzle_obj)
-    return found
+        if min_crates <= p['crates'] <= max_crates:
+            diff = abs(p['moves'] - tgt_moves)
+            if p['name'] == disfavor_name:
+                diff += 5
+            if diff < best_diff:
+                best_diff = diff
+                best = p
+                best_idx = i
+                if diff == 0:
+                    break
+    if best is not None:
+        used_fresh.add(best_idx)
+    return best
 
-# ==============================================================================
-# 20 AUTHENTIC NON-SQUARE TEMPLATES INSPIRED BY REF_LEVELS
-# ==============================================================================
+campaign = [
+    # --- CHAPTER 0: CARGO BAY (Levels 1-15) ---
+    l1_puz,                                         # L01: 4c, 5m (Tutorial 1)
+    l2_puz,                                         # L02: 4c, 10m (Tutorial 2)
+    pick_fresh(11, 4, 4),                          # L03: 4c, 11m
+    arch_puzzles[2],                               # L04: 4c, 12m (Pinwheel Cross!)
+    pick_fresh(12, 4, 4),                          # L05: 4c, 12m
+    pick_fresh(13, 4, 4),                          # L06: 4c, 13m
+    pick_fresh(13, 4, 4),                          # L07: 4c, 13m
+    arch_puzzles[7],                               # L08: 4c, 14m
+    pick_fresh(14, 4, 4),                          # L09: 4c, 14m
+    arch_puzzles[8],                               # L10: 4c, 15m (Peak 1)
+    pick_fresh(12, 4, 4),                          # L11: 4c, 12m (Breather)
+    pick_fresh(14, 4, 4),                          # L12: 4c, 14m
+    arch_puzzles[9],                               # L13: 4c, 15m
+    arch_puzzles[12],                              # L14: 4c, 16m
+    arch_puzzles[17],                              # L15: 4c, 17m (Cargo Bay Boss)
 
-TEMPLATES = [
-    # 1. Pinwheel Cross (from ref 1.jpeg)
-    ('Pinwheel Cross', '''
-  ###
-  # #
-  # ####
-###    #
-#      #
-#### # #
-   # #
-   ###
-''', [3, 4]),
+    # --- CHAPTER 1: COLD STORAGE (Levels 16-35) ---
+    arch_puzzles[10],                              # L16: 4c, 15m
+    pick_fresh(15, 4, 4),                          # L17: 4c, 15m
+    arch_puzzles[14],                              # L18: 4c, 16m
+    pick_fresh(16, 4, 4),                          # L19: 4c, 16m
+    pick_fresh(17, 4, 4),                          # L20: 4c, 17m
+    pick_fresh(15, 4, 4),                          # L21: 4c, 15m (Breather)
+    pick_fresh(17, 4, 4),                          # L22: 4c, 17m
+    arch_puzzles[22],                              # L23: 4c, 18m
+    pick_fresh(19, 4, 4),                          # L24: 4c, 19m
+    arch_puzzles[25],                              # L25: 5c, 20m (Intro 5 crates!)
+    arch_puzzles[26],                              # L26: 4c, 20m
+    arch_puzzles[30],                              # L27: 5c, 21m
+    arch_puzzles[32],                              # L28: 4c, 21m
+    arch_puzzles[33],                              # L29: 4c, 22m
+    arch_puzzles[38],                              # L30: 4c, 23m (Cold Storage Peak 2)
+    pick_fresh(18, 4, 4),                          # L31: 4c, 18m (Breather)
+    arch_puzzles[34],                              # L32: 4c, 22m
+    pick_fresh(24, 4, 4),                          # L33: 4c, 24m
+    pick_fresh(24, 5, 5),                          # L34: 5c, 24m
+    arch_puzzles[41],                              # L35: 4c, 25m (Cold Storage Boss)
 
-    # 2. Stepped L-Shape (from ref 2.jpeg)
-    ('Stepped L-Room', '''
-#####
-#   #
-#   ###
-#     #
-#   ###
-#   #
-#...#
-#####
-''', [2, 3]),
-
-    # 3. Corner Nook (from ref 3.jpeg)
-    ('Corner Nook', '''
-  #####
-###   #
-#     #
-#     #
-#   ###
-#   #
-#####
-''', [2, 3]),
-
-    # 4. S-Winding Corridor (from ref 4.jpeg)
-    ('S-Corridor', '''
-  #####
-  #   #
-  #   ##
-### #  #
-#   #  #
-#   # ##
-#      #
-########
-''', [2, 3]),
-
-    # 5. Twin Pillar Room (from ref 8.jpeg)
-    ('Pillar Hall', '''
-######
-#    #
-# ## #
-#    #
-# ## #
-#    #
-######
-''', [3, 4]),
-
-    # 6. Central Column Donut
-    ('Island Loop', '''
-#######
-#     #
-# ### #
-# # # #
-# ### #
-#     #
-#######
-''', [2, 3, 4]),
-
-    # 7. Asymmetric Dock (from ref 5.jpeg)
-    ('Stepped Depot', '''
-  ######
-  #    #
-###    #
-#      #
-#    ###
-######
-''', [3, 4]),
-
-    # 8. Twin Bays (from ref 10.jpeg)
-    ('Twin Bays', '''
-########
-#  #   #
-#      #
-#  #   #
-########
-''', [3, 4]),
-
-    # 9. Narrow Shaft (from ref 12.jpeg)
-    ('Vertical Shaft', '''
-######
-#    #
-# ## #
-#  # #
-#  # #
-#    #
-######
-''', [2, 3]),
-
-    # 10. Castle Keep / Notched Corners (from ref 7.jpeg & 15.jpeg)
-    ('Castle Keep', '''
- #####
-##   ##
-#     #
-#     #
-##   ##
- #####
-''', [3, 4]),
-
-    # 11. T-Junction Depot
-    ('T-Depot', '''
-#########
-#       #
-###   ###
-  #   #
-  #   #
-  #####
-''', [2, 3]),
-
-    # 12. Trident 3-Bay
-    ('Trident Bay', '''
- #######
- #     #
-## # # ##
-#  # #  #
-#########
-''', [2, 3]),
-
-    # 13. Airlock Double Chamber
-    ('Airlock Chambers', '''
-##### #####
-#   ###   #
-#         #
-#   ###   #
-##### #####
-''', [2, 3, 4]),
-
-    # 14. Diamond Depot
-    ('Diamond Depot', '''
-   ###
-  ## ##
- ##   ##
-##     ##
-#       #
-##     ##
- ##   ##
-  #####
-''', [3, 4]),
-
-    # 15. Zigzag Corridor
-    ('Zigzag Run', '''
-  #####
-  #   #
-###   #
-#   ###
-#   #
-### ###
-  # #
-  ###
-''', [2, 3]),
-
-    # 16. Fortress Vault
-    ('Fortress Vault', '''
-  #####
- ##   ##
-##  #  ##
-#       #
-##     ##
- #######
-''', [3, 4]),
-
-    # 17. S-Bend with Pocket (from ref 14.jpeg)
-    ('Pocket S-Bend', '''
-  ######
-  #    #
-###    #
-#    # #
-#  ### #
-#      #
-########
-''', [3, 4]),
-
-    # 18. Stepped Cross (from ref 13.jpeg)
-    ('Cruciform Depot', '''
-  #####
-  #   #
-###   ###
-#       #
-#       #
-###   ###
-  #   #
-  #####
-''', [3, 4]),
-
-    # 19. Extended L-Bay
-    ('Extended L-Bay', '''
-######
-#    ###
-#      #
-###    #
-  #    #
-  ######
-''', [2, 3]),
-
-    # 20. Master Ring Chamber
-    ('Grand Ring', '''
- #######
-##     ##
-#  ###  #
-#  # #  #
-#  ###  #
-##     ##
- #######
-''', [3, 4, 5])
+    # --- CHAPTER 2: CYBER DEPOT (Levels 36-50) ---
+    pick_fresh(21, 4, 4),                          # L36: 4c, 21m
+    pick_fresh(22, 5, 5),                          # L37: 5c, 22m
+    pick_fresh(23, 5, 5),                          # L38: 5c, 23m
+    pick_fresh(24, 4, 4),                          # L39: 4c, 24m
+    arch_puzzles[42],                              # L40: 4c, 25m (Peak 1)
+    arch_puzzles[28],                              # L41: 4c, 20m (Breather)
+    pick_fresh(25, 4, 4),                          # L42: 4c, 25m
+    pick_fresh(25, 5, 5),                          # L43: 5c, 25m
+    arch_puzzles[44],                              # L44: 4c, 27m
+    l45_puz,                                       # L45: 4c, 27m (Corner Alcove)
+    arch_puzzles[46],                              # L46: 4c, 28m
+    pick_fresh(28, 5, 5),                          # L47: 5c, 28m
+    arch_puzzles[47],                              # L48: 4c, 28m (Pre-Climax)
+    arch_puzzles[48],                              # L49: 4c, 29m (Climax)
+    arch_puzzles[49],                              # L50: 4c, 30m (Grand Master Finale)
 ]
 
-all_puzzles = []
+assert len(campaign) == 50, f"Expected 50 levels, got {len(campaign)}"
 
-# Include signature Reference Level 1 directly
-ref1_lines = [
-    '  ###',
-    '  #.#',
-    '  # ####',
-    '###$ $ .#',
-    '#. $ @##',
-    '####$#',
-    '   #.#',
-    '   ###'
-]
-# Solve ref 1
-w1 = set()
-f1 = set()
-g1 = set()
-c1 = []
-p1 = None
-for r, l in enumerate(ref1_lines):
-    for c, ch in enumerate(l):
-        if ch == '#': w1.add((r, c))
-        elif ch == '.': g1.add((r, c)); f1.add((r, c))
-        elif ch == '$': c1.append((r, c)); f1.add((r, c))
-        elif ch == '@': p1 = (r, c); f1.add((r, c))
-        elif ch == ' ': f1.add((r, c))
-res1 = solve_forward(w1, f1, g1, p1, c1)
-if res1:
-    all_puzzles.append({
-        'name': 'Ref Level 1 Pinwheel',
-        'moves': res1['moves'],
-        'pushes': res1['pushes'],
-        'states': res1['states'],
-        'crates': 4,
-        'path': res1['path'],
-        'lines': ref1_lines
-    })
+# Check for duplicate layouts
+unique_check = set()
+for idx, p in enumerate(campaign):
+    key = '\n'.join(p['lines'])
+    assert key not in unique_check, f"Level {idx+1} is a duplicate layout!"
+    unique_check.add(key)
 
-print(f'Added Ref Level 1 (Moves: {res1["moves"]})')
+print(f"Verified: All 50 levels have unique layouts!")
 
-# Generate puzzles across all templates
-for name, tmpl, crate_opts in TEMPLATES:
-    for num_c in crate_opts:
-        puzs = generate_puzzles_from_template(tmpl, name, num_c, count=2, min_moves=10, max_moves=65)
-        all_puzzles.extend(puzs)
-        print(f'Template "{name}" ({num_c} crates): generated {len(puzs)} puzzles')
+print("\n" + "="*74)
+print("       REFACTORED 50-LEVEL CAMPAIGN (MINIMUM 4 CRATES PER LEVEL)")
+print("="*74)
+print(f"{'Lvl':3s} | {'Chapter':12s} | {'Source':26s} | {'Crates':6s} | {'Moves':5s} | {'Pushes':6s}")
+print("-"*74)
 
-print(f'\nTotal generated puzzles: {len(all_puzzles)}')
+optimal_moves = []
+for i, p in enumerate(campaign):
+    assert p['crates'] >= 4, f"Level {i+1} has {p['crates']} crates, which is < 4!"
+    lvl = i + 1
+    ch = 'Cargo Bay' if lvl <= 15 else ('Cold Storage' if lvl <= 35 else 'Cyber Depot')
+    print(f"{lvl:3d} | {ch:12s} | {p['name']:26s} | {p['crates']:6d} | {p['moves']:5d} | {p['pushes']:6d}")
+    optimal_moves.append(p['moves'])
 
-# Sort by moves ascending
-all_puzzles.sort(key=lambda p: (p['moves'], p['pushes'], p['crates']))
+print("="*74)
+print(f"Verified: All 50 levels have >= 4 crates! (Min: {min(p['crates'] for p in campaign)}, Max: {max(p['crates'] for p in campaign)})")
+print(f"\nNew OPTIMAL_MOVES array:\n{optimal_moves}\n")
 
-# Remove duplicate layouts or exact same move counts if too clustered
-selected = []
-for p in all_puzzles:
-    # ensure non-square
-    lines = p['lines']
-    # Check that it has non-square characteristics (leading spaces or stepped line lengths)
-    has_leading_space = any(l.startswith(' ') for l in lines)
-    has_varying_length = len(set(len(l) for l in lines)) > 1
-    if not (has_leading_space or has_varying_length):
-        continue
-    # Keep diverse puzzles
-    selected.append(p)
+# Write out levels to disk
+for i, p in enumerate(campaign):
+    lvl = i + 1
+    path = f"/home/snowz/godot/levels/level_{lvl:02d}.sok"
+    with open(path, 'w') as f:
+        f.write('\n'.join(p['lines']) + '\n')
 
-print(f'Selected valid non-square puzzles: {len(selected)}')
-
-# Take top 50
-campaign = selected[:50]
-if len(campaign) < 50:
-    print(f'Warning: only {len(campaign)} puzzles selected, taking all.')
-else:
-    print(f'Successfully curated 50 non-square campaign levels!')
-    print(f'Moves range: {campaign[0]["moves"]} to {campaign[-1]["moves"]}')
-    print(f'Crates range: {min(p["crates"] for p in campaign)} to {max(p["crates"] for p in campaign)}')
-
-# Save campaign summary to json
-with open('/tmp/nonsquare_campaign.json', 'w') as f:
-    json.dump([{
-        'lvl': idx + 1,
-        'name': p['name'],
-        'moves': p['moves'],
-        'pushes': p['pushes'],
-        'crates': p['crates'],
-        'states': p['states'],
-        'lines': p['lines']
-    } for idx, p in enumerate(campaign)], f, indent=2)
-
-print('Saved to /tmp/nonsquare_campaign.json')
+print("All 50 level files updated on disk!")

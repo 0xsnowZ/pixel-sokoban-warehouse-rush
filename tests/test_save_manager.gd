@@ -141,16 +141,16 @@ func test_score_recording() -> void:
 func test_star_rating_system() -> void:
 	var mgr = SaveManagerScript.new()
 
-	assert_equal(mgr.get_optimal_moves(0), 5, "Level 0 optimal moves is 5")
-	assert_equal(mgr.calculate_stars(0, 15), 1, "15 moves earns 1 star on Level 0")
-	assert_equal(mgr.calculate_stars(0, 10), 2, "10 moves earns 2 stars on Level 0")
-	assert_equal(mgr.calculate_stars(0, 6), 3, "6 moves earns 3 stars on Level 0")
+	assert_equal(mgr.get_optimal_moves(0), 9, "Level 0 optimal moves is 9")
+	assert_equal(mgr.calculate_stars(0, 20), 1, "20 moves earns 1 star on Level 0")
+	assert_equal(mgr.calculate_stars(0, 14), 2, "14 moves earns 2 stars on Level 0")
+	assert_equal(mgr.calculate_stars(0, 10), 3, "10 moves earns 3 stars on Level 0")
 
-	mgr.record_level_completion(0, 15, 8, TEST_SAVE_PATH)
+	mgr.record_level_completion(0, 20, 8, TEST_SAVE_PATH)
 	assert_equal(mgr.get_level_stars(0), 1, "Level 0 stars is 1")
 	assert_equal(mgr.get_total_stars(), 1, "Total stars is 1")
 
-	mgr.record_level_completion(0, 5, 3, TEST_SAVE_PATH)
+	mgr.record_level_completion(0, 9, 4, TEST_SAVE_PATH)
 	assert_equal(mgr.get_level_stars(0), 3, "Level 0 stars improved to 3")
 	assert_equal(mgr.get_total_stars(), 3, "Total stars is 3")
 	mgr.free()

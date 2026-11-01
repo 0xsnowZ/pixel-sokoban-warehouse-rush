@@ -58,11 +58,11 @@ func unlock_level(target_level_index: int) -> bool:
 
 # Mathematically verified optimal moves for all 50 levels
 const OPTIMAL_MOVES: Array[int] = [
-	5, 12, 10, 13, 14, 14, 14, 15, 15, 15,
-	15, 16, 16, 16, 16, 17, 17, 17, 17, 17,
-	17, 18, 19, 19, 20, 20, 20, 20, 20, 21,
-	21, 21, 22, 22, 22, 22, 22, 23, 24, 24,
-	25, 25, 27, 27, 27, 28, 28, 29, 30, 32
+	9, 15, 19, 19, 20, 19, 22, 25, 21, 23,
+	20, 28, 29, 31, 35, 27, 28, 30, 32, 34,
+	29, 26, 32, 25, 32, 29, 39, 28, 38, 39,
+	26, 37, 38, 40, 37, 38, 37, 40, 40, 38,
+	35, 38, 35, 40, 32, 48, 39, 47, 35, 40
 ]
 
 
@@ -74,15 +74,16 @@ func get_optimal_moves(level_index: int) -> int:
 
 
 ## Calculates earned stars (1 to 3) based on moves taken vs level optimal par.
+## Uses adaptive tolerance: 3★ scales at 15% (min +2 moves) to be fair on long levels,
+## while 2★ scales at 40% (min +5 moves) to maintain a rewarding middle tier.
 func calculate_stars(level_index: int, moves: int) -> int:
 	var optimal: int = get_optimal_moves(level_index)
-	# 3 Stars: optimal par with slight tolerance (+2 moves)
-	if moves <= optimal + 2:
+	var tolerance_3: int = maxi(2, ceili(optimal * 0.15))
+	var tolerance_2: int = maxi(5, ceili(optimal * 0.40))
+	if moves <= optimal + tolerance_3:
 		return 3
-	# 2 Stars: within ~1.6x of optimal par (+3 moves)
-	elif moves <= int(optimal * 1.6) + 3:
+	elif moves <= optimal + tolerance_2:
 		return 2
-	# 1 Star: valid completion
 	return 1
 
 
