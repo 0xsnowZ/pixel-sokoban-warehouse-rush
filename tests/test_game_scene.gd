@@ -554,6 +554,22 @@ func test_porter_locker_cosmetics_in_game() -> void:
 	var hazard_info: Dictionary = game.save_mgr.get_crate_skin_info("hazard_box")
 	assert_eq(hazard_info["icon"], "☣️", "Hazard crate icon is ☣️")
 
+	game.save_mgr.selected_crate_skin = "cryo_vault"
+	var cryo_info: Dictionary = game.save_mgr.get_crate_skin_info("cryo_vault")
+	assert_eq(cryo_info["icon"], "❄️", "Cryo vault icon is ❄️")
+
+	game.save_mgr.selected_crate_skin = "luxury_safe"
+	var safe_info: Dictionary = game.save_mgr.get_crate_skin_info("luxury_safe")
+	assert_eq(safe_info["icon"], "💎", "Executive safe icon is 💎")
+
+	game.save_mgr.selected_worker_skin = "mechanic"
+	var mech_info: Dictionary = game.save_mgr.get_worker_skin_info("mechanic")
+	assert_eq(mech_info["icon"], "🔧", "Mechanic skin icon is 🔧")
+
+	game.save_mgr.selected_worker_skin = "hazmat"
+	var haz_info: Dictionary = game.save_mgr.get_worker_skin_info("hazmat")
+	assert_eq(haz_info["icon"], "☣️", "Hazmat skin icon is ☣️")
+
 	# 4. Trigger redraw with active cosmetics without errors
 	game.queue_redraw()
 	assert_true(true, "Board redrawn with equipped cosmetics without error")
@@ -561,17 +577,23 @@ func test_porter_locker_cosmetics_in_game() -> void:
 	# 5. Localization of Locker strings & Cosmetics (EN, FR, AR)
 	assert_eq(loc.tr_text("LOCKER_TITLE"), "SUPPLY DEPOT", "EN Locker title is SUPPLY DEPOT")
 	assert_eq(loc.tr_text("SKIN_WORKER_SAFETY_VEST"), "Safety Vest", "EN Safety Vest skin name")
+	assert_eq(loc.tr_text("SKIN_WORKER_MECHANIC"), "Workshop Mechanic", "EN Mechanic skin name")
 	assert_eq(loc.tr_text("SKIN_CRATE_STEEL_CONTAINER"), "Steel Container", "EN Steel Container skin name")
+	assert_eq(loc.tr_text("SKIN_CRATE_CRYO_VAULT"), "Cryo Container", "EN Cryo Container skin name")
 
 	loc.current_language = "fr"
 	assert_eq(loc.tr_text("LOCKER_TITLE"), "DÉPÔT CENTRAL", "FR Locker title is DÉPÔT CENTRAL")
 	assert_eq(loc.tr_text("SKIN_WORKER_SAFETY_VEST"), "Gilet de Sécurité", "FR Safety Vest skin name")
+	assert_eq(loc.tr_text("SKIN_WORKER_MECHANIC"), "Mécanicien d'Atelier", "FR Mechanic skin name")
 	assert_eq(loc.tr_text("SKIN_CRATE_STEEL_CONTAINER"), "Conteneur en Acier", "FR Steel Container skin name")
+	assert_eq(loc.tr_text("SKIN_CRATE_CRYO_VAULT"), "Conteneur Cryogénique", "FR Cryo Container skin name")
 
 	loc.current_language = "ar"
 	assert_eq(loc.tr_text("LOCKER_TITLE"), "مستودع الإمدادات", "AR Locker title is مستودع الإمدادات")
 	assert_eq(loc.tr_text("SKIN_WORKER_SAFETY_VEST"), "سترة الأمان", "AR Safety Vest skin name")
+	assert_eq(loc.tr_text("SKIN_WORKER_MECHANIC"), "ميكانيكي الورشة", "AR Mechanic skin name")
 	assert_eq(loc.tr_text("SKIN_CRATE_STEEL_CONTAINER"), "حاوية فولاذية", "AR Steel Container skin name")
+	assert_eq(loc.tr_text("SKIN_CRATE_CRYO_VAULT"), "حاوية تبريد فائقة", "AR Cryo Container skin name")
 
 	game.free()
 	loc.free()

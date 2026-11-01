@@ -280,10 +280,14 @@ func test_porter_locker_cosmetics() -> void:
 
 	# 2. Locked status with 0 stars
 	assert_false(mgr.is_worker_skin_unlocked("safety_vest"), "Safety Vest is locked initially (needs 25 stars)")
+	assert_false(mgr.is_worker_skin_unlocked("mechanic"), "Mechanic uniform is locked initially (needs 45 stars)")
 	assert_false(mgr.is_worker_skin_unlocked("foreman"), "Foreman uniform is locked initially (needs 60 stars)")
+	assert_false(mgr.is_worker_skin_unlocked("hazmat"), "Hazmat Specialist is locked initially (needs 95 stars)")
 	assert_false(mgr.is_worker_skin_unlocked("golden_porter"), "Golden Master is locked initially (needs 120 stars)")
 	assert_false(mgr.is_crate_skin_unlocked("steel_container"), "Steel Container is locked initially (needs 40 stars)")
+	assert_false(mgr.is_crate_skin_unlocked("cryo_vault"), "Cryo Container is locked initially (needs 65 stars)")
 	assert_false(mgr.is_crate_skin_unlocked("hazard_box"), "Hazard Crate is locked initially (needs 80 stars)")
+	assert_false(mgr.is_crate_skin_unlocked("luxury_safe"), "Executive Safe is locked initially (needs 140 stars)")
 
 	# 3. Equipping locked item fails
 	var equip_locked_ok: bool = mgr.equip_worker_skin("safety_vest")
@@ -303,11 +307,13 @@ func test_porter_locker_cosmetics() -> void:
 	assert_true(equip_ok, "Equipping unlocked Safety Vest returns true")
 	assert_equal(mgr.selected_worker_skin, "safety_vest", "Equipped worker skin is now safety_vest")
 
-	# 6. Reach 45 stars -> Steel Container unlocked
+	# 6. Reach 45 stars -> Steel Container & Mechanic unlocked
 	for i in range(10, 15): # +5 levels with 3 stars = 45 stars total
 		mgr.completed_levels[str(i)] = { "stars": 3, "best_moves": 5, "best_pushes": 2 }
 	assert_equal(mgr.get_total_stars(), 45, "Total stars is now 45")
 	assert_true(mgr.is_crate_skin_unlocked("steel_container"), "Steel Container (40 stars) is now unlocked")
+	assert_true(mgr.is_worker_skin_unlocked("mechanic"), "Workshop Mechanic (45 stars) is now unlocked")
+	assert_false(mgr.is_crate_skin_unlocked("cryo_vault"), "Cryo Container (65 stars) is still locked")
 
 	var crate_equip_ok: bool = mgr.equip_crate_skin("steel_container")
 	assert_true(crate_equip_ok, "Equipping unlocked Steel Container returns true")

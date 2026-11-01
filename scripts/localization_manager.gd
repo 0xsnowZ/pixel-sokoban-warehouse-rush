@@ -217,6 +217,16 @@ const TRANSLATIONS: Dictionary = {
 		"fr": "Orange fluo haute visibilité avec bandes réfléchissantes.",
 		"ar": "برتقالي نيون عالي الوضوح مع أشرطة عاكسة."
 	},
+	"SKIN_WORKER_MECHANIC": {
+		"en": "Workshop Mechanic",
+		"fr": "Mécanicien d'Atelier",
+		"ar": "ميكانيكي الورشة"
+	},
+	"SKIN_WORKER_MECHANIC_DESC": {
+		"en": "Heavy-duty navy workwear with a reinforced utility tool belt.",
+		"fr": "Tenue bleu marine robuste avec ceinture à outils renforcée.",
+		"ar": "زي عمل متين كحلي مع حزام أدوات متعدد الاستخدامات."
+	},
 	"SKIN_WORKER_FOREMAN": {
 		"en": "Foreman",
 		"fr": "Chef d'équipe",
@@ -226,6 +236,16 @@ const TRANSLATIONS: Dictionary = {
 		"en": "Hard hat and khaki uniform for senior warehouse operations.",
 		"fr": "Casque de chantier et uniforme kaki d'opération.",
 		"ar": "خوذة صلبة وزي كاكي لعمليات المستودع المتقدمة."
+	},
+	"SKIN_WORKER_HAZMAT": {
+		"en": "Hazmat Specialist",
+		"fr": "Spécialiste Hazmat",
+		"ar": "أخصائي المواد الخطرة"
+	},
+	"SKIN_WORKER_HAZMAT_DESC": {
+		"en": "High-containment biosuit with a luminous protective visor.",
+		"fr": "Combinaison haute protection avec visière luminescente.",
+		"ar": "بدلة حماية فائقة مع قناع مضيء مقاوم للأخطار."
 	},
 	"SKIN_WORKER_GOLDEN_PORTER": {
 		"en": "Golden Master",
@@ -257,6 +277,16 @@ const TRANSLATIONS: Dictionary = {
 		"fr": "Caisse en acier laminé à froid avec bordure métallique.",
 		"ar": "صندوق شحن فولاذي مقوى بحواف معدنية."
 	},
+	"SKIN_CRATE_CRYO_VAULT": {
+		"en": "Cryo Container",
+		"fr": "Conteneur Cryogénique",
+		"ar": "حاوية تبريد فائقة"
+	},
+	"SKIN_CRATE_CRYO_VAULT_DESC": {
+		"en": "Sub-zero freight capsule with frost-reinforced seals.",
+		"fr": "Capsule réfrigérée sous zéro avec joints renforcés de givre.",
+		"ar": "كبسولة شحن جليدية تحت الصفر مع حواف مثلجة."
+	},
 	"SKIN_CRATE_HAZARD_BOX": {
 		"en": "Hazard Crate",
 		"fr": "Caisse Danger",
@@ -266,6 +296,16 @@ const TRANSLATIONS: Dictionary = {
 		"en": "Caution-striped high-voltage container with glowing edges.",
 		"fr": "Conteneur haute tension à bandes de danger lumineuses.",
 		"ar": "صندوق عالي الجهد مع خطوط تحذيرية مضيئة."
+	},
+	"SKIN_CRATE_LUXURY_SAFE": {
+		"en": "Executive Safe",
+		"fr": "Coffre Exécutif",
+		"ar": "الخزنة الفاخرة"
+	},
+	"SKIN_CRATE_LUXURY_SAFE_DESC": {
+		"en": "Heavy reinforced gold-leaf vault for high-priority classified cargo.",
+		"fr": "Coffre blindé orné de dorures pour cargaison de haute valeur.",
+		"ar": "خزنة فولاذية مذهبة ومحصنة للبضائع ذات القيمة العالية."
 	},
 	"GAME_LEVEL_LABEL": {
 		"en": "LEVEL %d / %d",

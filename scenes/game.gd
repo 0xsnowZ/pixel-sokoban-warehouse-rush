@@ -2352,6 +2352,43 @@ func _draw_crate(rect: Rect2, on_goal: bool, logical_pos: Vector2i = Vector2i.ZE
 				draw_line(c_center - Vector2(c_len * 0.5, -c_len * 0.5), c_center + Vector2(c_len * 0.5, -c_len * 0.5), h_col, 3.5)
 				# Glowing hazard border rim
 				draw_rect(draw_r.grow(-2), Color(1.0, 0.75, 0.15, 0.55), false, 1.5)
+			"cryo_vault":
+				# Sub-zero icy frost border and chilled corner brackets
+				draw_rect(draw_r.grow(-2), Color(0.40, 0.88, 1.0, 0.65), false, 1.5)
+				# 4 Frost crystalline corner studs
+				var pad: float = draw_r.size.x * 0.18
+				var frost_pts = [
+					draw_r.position + Vector2(pad, pad),
+					draw_r.position + Vector2(draw_r.size.x - pad, pad),
+					draw_r.position + Vector2(pad, draw_r.size.y - pad),
+					draw_r.position + Vector2(draw_r.size.x - pad, draw_r.size.y - pad)
+				]
+				for pt in frost_pts:
+					draw_circle(pt, 2.2, Color(0.85, 0.98, 1.0, 0.90))
+					draw_circle(pt, 1.0, Color(1.0, 1.0, 1.0, 1.0))
+				# Center snowflake cross accent
+				var cr_sz: float = draw_r.size.x * 0.16
+				draw_line(c_center - Vector2(cr_sz, 0), c_center + Vector2(cr_sz, 0), Color(0.70, 0.95, 1.0, 0.80), 1.5)
+				draw_line(c_center - Vector2(0, cr_sz), c_center + Vector2(0, cr_sz), Color(0.70, 0.95, 1.0, 0.80), 1.5)
+			"luxury_safe":
+				# Double gold-leaf prestige border rim
+				draw_rect(draw_r.grow(-2), Color(1.0, 0.84, 0.20, 0.85), false, 1.8)
+				draw_rect(draw_r.grow(-4), Color(0.85, 0.65, 0.15, 0.50), false, 1.0)
+				# Central brass vault combination dial
+				draw_circle(c_center, 6.0, Color(0.12, 0.10, 0.08, 0.85))
+				draw_circle(c_center, 5.0, Color(1.0, 0.86, 0.28, 0.95))
+				draw_circle(c_center, 2.0, Color(0.30, 0.20, 0.05, 1.0))
+				# 4 Gold corner rivets
+				var g_pad: float = draw_r.size.x * 0.14
+				var g_corners = [
+					draw_r.position + Vector2(g_pad, g_pad),
+					draw_r.position + Vector2(draw_r.size.x - g_pad, g_pad),
+					draw_r.position + Vector2(g_pad, draw_r.size.y - g_pad),
+					draw_r.position + Vector2(draw_r.size.x - g_pad, draw_r.size.y - g_pad)
+				]
+				for pt in g_corners:
+					draw_circle(pt, 2.4, Color(1.0, 0.85, 0.25, 0.95))
+					draw_circle(pt - Vector2(0.5, 0.5), 0.8, Color(1.0, 1.0, 0.90, 1.0))
 
 	if on_goal:
 		var time_sec: float = float(Time.get_ticks_msec()) / 1000.0
@@ -2448,12 +2485,31 @@ func _draw_player(rect: Rect2) -> void:
 			var stripe_x: float = center.x - stripe_w * 0.5
 			draw_line(Vector2(stripe_x, stripe_y), Vector2(stripe_x + stripe_w, stripe_y), Color(0.95, 0.98, 1.0, 0.85), 2.2)
 			draw_line(Vector2(stripe_x, stripe_y - 2), Vector2(stripe_x + stripe_w, stripe_y - 2), Color(1.0, 0.55, 0.10, 0.70), 1.2)
+		"mechanic":
+			# Dark utility tool belt strap with silver wrench / tool clip
+			var belt_y: float = rect.position.y + rect.size.y * 0.58
+			var belt_w: float = rect.size.x * 0.44
+			var belt_x: float = center.x - belt_w * 0.5
+			draw_line(Vector2(belt_x, belt_y), Vector2(belt_x + belt_w, belt_y), Color(0.18, 0.20, 0.25, 0.90), 2.4)
+			var clip_x: float = belt_x + belt_w * 0.78
+			draw_line(Vector2(clip_x, belt_y - 2), Vector2(clip_x, belt_y + 4), Color(0.80, 0.85, 0.92, 0.95), 1.8)
+			draw_line(Vector2(clip_x - 1, belt_y + 4), Vector2(clip_x + 2, belt_y + 4), Color(0.80, 0.85, 0.92, 0.95), 1.8)
 		"foreman":
 			# Foreman hardhat brim highlight
 			var brim_y: float = rect.position.y + rect.size.y * 0.28
 			var brim_w: float = rect.size.x * 0.50
 			var brim_x: float = center.x - brim_w * 0.5
 			draw_line(Vector2(brim_x, brim_y), Vector2(brim_x + brim_w, brim_y), Color(1.0, 0.90, 0.25, 0.90), 2.0)
+		"hazmat":
+			# Glowing cyan protective visor
+			var visor_y: float = rect.position.y + rect.size.y * 0.32
+			var visor_w: float = rect.size.x * 0.38
+			var visor_x: float = center.x - visor_w * 0.5
+			draw_line(Vector2(visor_x, visor_y), Vector2(visor_x + visor_w, visor_y), Color(0.20, 0.95, 1.0, 0.92), 2.2)
+			draw_line(Vector2(visor_x + 2, visor_y), Vector2(visor_x + visor_w - 2, visor_y), Color(1.0, 1.0, 1.0, 0.85), 1.0)
+			# Chest biohazard breather regulator
+			draw_circle(Vector2(center.x, rect.position.y + rect.size.y * 0.52), 2.2, Color(0.15, 0.18, 0.22, 0.90))
+			draw_circle(Vector2(center.x, rect.position.y + rect.size.y * 0.52), 1.2, Color(0.30, 0.95, 0.40, 0.95))
 		"golden_porter":
 			# Radiant golden sparkles & prestige shimmer
 			var time_sec: float = float(Time.get_ticks_msec()) / 1000.0

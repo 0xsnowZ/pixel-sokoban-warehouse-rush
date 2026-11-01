@@ -279,15 +279,15 @@ func test_porter_locker_modal() -> void:
 	assert_equal(menu.current_locker_tab, "outfits", "Default locker tab is outfits")
 	assert_true("Stars" in menu.locker_stars_badge.text, "Locker stars badge reflects total stars")
 
-	# 3. Items populated for Outfits (4 worker skins)
+	# 3. Items populated for Outfits (6 worker skins)
 	var outfit_cards = menu.locker_items_vbox.get_children()
-	assert_equal(outfit_cards.size(), 4, "Locker displays 4 worker skin cards in outfits tab")
+	assert_equal(outfit_cards.size(), 6, "Locker displays 6 worker skin cards in outfits tab")
 
-	# 4. Switch tab to Crates (3 crate skins)
+	# 4. Switch tab to Crates (5 crate skins)
 	menu._switch_locker_tab("crates")
 	assert_equal(menu.current_locker_tab, "crates", "Switched current tab to crates")
 	var crate_cards = menu.locker_items_vbox.get_children()
-	assert_equal(crate_cards.size(), 3, "Locker displays 3 crate skin cards in crates tab")
+	assert_equal(crate_cards.size(), 5, "Locker displays 5 crate skin cards in crates tab")
 
 	# 5. Unlock and Equip cosmetics with stars
 	menu.save_mgr.reset_all_progress(TEST_SAVE_PATH)

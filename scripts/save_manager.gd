@@ -185,6 +185,17 @@ const WORKER_SKINS: Array[Dictionary] = [
 		"sprite_tint": Color(1.05, 0.90, 0.70)
 	},
 	{
+		"id": "mechanic",
+		"name": "Workshop Mechanic",
+		"desc": "Heavy-duty navy workwear with a reinforced utility tool belt.",
+		"name_key": "SKIN_WORKER_MECHANIC",
+		"desc_key": "SKIN_WORKER_MECHANIC_DESC",
+		"required_stars": 45,
+		"icon": "🔧",
+		"accent_color": Color(0.25, 0.45, 0.75),
+		"sprite_tint": Color(0.85, 0.92, 1.05)
+	},
+	{
 		"id": "foreman",
 		"name": "Foreman",
 		"desc": "Polished industrial hardhat & durable khaki workwear.",
@@ -194,6 +205,17 @@ const WORKER_SKINS: Array[Dictionary] = [
 		"icon": "👷",
 		"accent_color": Color(0.95, 0.85, 0.20),
 		"sprite_tint": Color(1.02, 0.96, 0.75)
+	},
+	{
+		"id": "hazmat",
+		"name": "Hazmat Specialist",
+		"desc": "High-containment biosuit with a luminous protective visor.",
+		"name_key": "SKIN_WORKER_HAZMAT",
+		"desc_key": "SKIN_WORKER_HAZMAT_DESC",
+		"required_stars": 95,
+		"icon": "☣️",
+		"accent_color": Color(0.20, 0.85, 0.40),
+		"sprite_tint": Color(0.80, 1.10, 0.80)
 	},
 	{
 		"id": "golden_porter",
@@ -232,6 +254,17 @@ const CRATE_SKINS: Array[Dictionary] = [
 		"tint": Color(0.75, 0.85, 0.98)
 	},
 	{
+		"id": "cryo_vault",
+		"name": "Cryo Container",
+		"desc": "Sub-zero freight capsule with frost-reinforced seals.",
+		"name_key": "SKIN_CRATE_CRYO_VAULT",
+		"desc_key": "SKIN_CRATE_CRYO_VAULT_DESC",
+		"required_stars": 65,
+		"icon": "❄️",
+		"accent_color": Color(0.35, 0.85, 1.0),
+		"tint": Color(0.70, 0.92, 1.05)
+	},
+	{
 		"id": "hazard_box",
 		"name": "Hazard Crate",
 		"desc": "High-voltage caution crate with pulsing safety markers.",
@@ -241,6 +274,17 @@ const CRATE_SKINS: Array[Dictionary] = [
 		"icon": "☣️",
 		"accent_color": Color(1.0, 0.70, 0.15),
 		"tint": Color(1.10, 0.88, 0.35)
+	},
+	{
+		"id": "luxury_safe",
+		"name": "Executive Safe",
+		"desc": "Heavy reinforced gold-leaf vault for high-priority classified cargo.",
+		"name_key": "SKIN_CRATE_LUXURY_SAFE",
+		"desc_key": "SKIN_CRATE_LUXURY_SAFE_DESC",
+		"required_stars": 140,
+		"icon": "💎",
+		"accent_color": Color(1.0, 0.84, 0.20),
+		"tint": Color(1.15, 1.05, 0.75)
 	}
 ]
 
