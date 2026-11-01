@@ -537,8 +537,17 @@ size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 14
 text = "CRATES"
 
+[node name="PreviewFrame" type="PanelContainer" parent="LockerModal/Margin/VBox"]
+custom_minimum_size = Vector2(0, 78)
+layout_mode = 2
+theme_type_variation = &"TopBarPanel"
+
+[node name="PreviewContent" type="Control" parent="LockerModal/Margin/VBox/PreviewFrame"]
+custom_minimum_size = Vector2(0, 78)
+layout_mode = 2
+
 [node name="Scroll" type="ScrollContainer" parent="LockerModal/Margin/VBox"]
-custom_minimum_size = Vector2(0, 310)
+custom_minimum_size = Vector2(0, 240)
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0

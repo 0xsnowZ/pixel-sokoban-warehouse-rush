@@ -21,6 +21,14 @@ var icon_lock: Texture2D = preload("res://assets/icons/icon_lock.png")
 var icon_play: Texture2D = preload("res://assets/icons/icon_play.png")
 var icon_check: Texture2D = preload("res://assets/icons/icon_check.png")
 
+var tex_player_down: Texture2D = preload("res://assets/player_down.png")
+var tex_player_down_w1: Texture2D = preload("res://assets/player_down_walk1.png")
+var tex_player_down_w2: Texture2D = preload("res://assets/player_down_walk2.png")
+var tex_crate: Texture2D = preload("res://assets/crate_normal.png")
+var tex_goal_pad: Texture2D = preload("res://assets/goal_pad.png")
+
+var _preview_anim_time: float = 0.0
+
 var save_mgr: Node = null
 var audio_mgr: Node = null
 var loc_mgr: Node = null
@@ -51,6 +59,7 @@ var achievement_mgr: Node = null
 @onready var locker_title_label: Label = find_child("LockerModal", true, false).find_child("Title", true, false) as Label if find_child("LockerModal", true, false) else null
 @onready var locker_stars_badge: Label = find_child("LockerModal", true, false).find_child("StarsBadge", true, false) as Label if find_child("LockerModal", true, false) else null
 @onready var locker_items_vbox: VBoxContainer = find_child("LockerModal", true, false).find_child("ItemsVBox", true, false) as VBoxContainer if find_child("LockerModal", true, false) else null
+@onready var locker_preview_content: Control = find_child("LockerModal", true, false).find_child("PreviewContent", true, false) as Control if find_child("LockerModal", true, false) else null
 @onready var star_progress_btn: Button = _find_button("StarProgressBtn", "MainView/TopBarMargin/HBox/StarProgressBtn")
 @onready var quick_lang_btn: Button = _find_button("QuickLangBtn", "MainView/TopBarMargin/HBox/QuickBar/QuickLangBtn")
 
@@ -131,6 +140,7 @@ func _initialize_nodes() -> void:
 			locker_title_label = locker_modal.find_child("Title", true, false) as Label
 			locker_stars_badge = locker_modal.find_child("StarsBadge", true, false) as Label
 			locker_items_vbox = locker_modal.find_child("ItemsVBox", true, false) as VBoxContainer
+			locker_preview_content = locker_modal.find_child("PreviewContent", true, false) as Control
 		if achievements_modal != null:
 			achievements_title_label = achievements_modal.find_child("Title", true, false) as Label
 			achievements_counter_badge = achievements_modal.find_child("CounterBadge", true, false) as Label
@@ -216,6 +226,8 @@ func _ready() -> void:
 		star_progress_btn.pressed.connect(_show_level_select)
 	if quick_lang_btn and not quick_lang_btn.pressed.is_connected(_on_language_pressed):
 		quick_lang_btn.pressed.connect(_on_language_pressed)
+	if locker_preview_content != null and not locker_preview_content.draw.is_connected(_on_preview_content_draw):
+		locker_preview_content.draw.connect(_on_preview_content_draw)
 
 	# Enhanced UI Icons on Main Menu
 	if achievements_btn:
@@ -458,9 +470,139 @@ func _on_equip_crate_skin(skin_id: String) -> void:
 	_refresh_locker_ui()
 
 
+func _process(delta: float) -> void:
+	if locker_modal != null and locker_modal.visible:
+		_preview_anim_time += delta
+		if locker_preview_content != null:
+			locker_preview_content.queue_redraw()
+
+
+func _on_preview_content_draw() -> void:
+	if locker_preview_content == null:
+		return
+
+	var size: Vector2 = locker_preview_content.size
+	if size.x <= 10.0 or size.y <= 10.0:
+		return
+
+	var center_x: float = size.x * 0.5
+	var base_y: float = size.y * 0.64
+
+	# 1. Industrial Platform Pedestal
+	var plat_w: float = minf(size.x - 32.0, 320.0)
+	var plat_h: float = 24.0
+	var plat_rect: Rect2 = Rect2(center_x - plat_w * 0.5, base_y - 2.0, plat_w, plat_h)
+
+	# Platform soft drop shadow
+	locker_preview_content.draw_rect(plat_rect.grow(2.0), Color(0.04, 0.06, 0.09, 0.55), false, 2.0)
+	locker_preview_content.draw_rect(plat_rect, Color(0.12, 0.16, 0.22, 0.95))
+	# Polished metallic rim line on platform
+	locker_preview_content.draw_line(
+		plat_rect.position + Vector2(2.0, 1.0),
+		plat_rect.position + Vector2(plat_rect.size.x - 2.0, 1.0),
+		Color(0.95, 0.82, 0.35, 0.70), 1.5
+	)
+
+	# 2. Freight Crate on Goal Pad (Right side)
+	var crate_pos: Vector2 = Vector2(center_x + 50.0, base_y + 1.0)
+	var goal_rect: Rect2 = Rect2(crate_pos - Vector2(17, 16), Vector2(34, 32))
+	if tex_goal_pad:
+		locker_preview_content.draw_texture_rect(tex_goal_pad, goal_rect, false, Color(1.0, 1.0, 1.0, 0.85))
+
+	var crate_info: Dictionary = save_mgr.get_crate_skin_info() if (save_mgr and save_mgr.has_method("get_crate_skin_info")) else {}
+	var crate_id: String = crate_info.get("id", "classic_wood")
+	var crate_tint: Color = crate_info.get("tint", Color.WHITE)
+	var crate_draw_r: Rect2 = Rect2(crate_pos - Vector2(15, 23), Vector2(30, 30))
+
+	# Soft crate shadow
+	locker_preview_content.draw_circle(crate_pos + Vector2(0, 4), 10.0, Color(0.0, 0.0, 0.0, 0.35))
+	if tex_crate:
+		locker_preview_content.draw_texture_rect(tex_crate, crate_draw_r, false, crate_tint)
+
+	# Crate custom skin accessories in preview
+	var c_center: Vector2 = crate_draw_r.get_center()
+	match crate_id:
+		"steel_container":
+			var b_col: Color = Color(0.85, 0.92, 1.0, 0.80)
+			locker_preview_content.draw_rect(crate_draw_r.grow(-1), b_col, false, 1.4)
+		"hazard_box":
+			locker_preview_content.draw_rect(crate_draw_r.grow(-2), Color(1.0, 0.75, 0.15, 0.80), false, 1.5)
+			locker_preview_content.draw_line(c_center - Vector2(5, 5), c_center + Vector2(5, 5), Color(0.12, 0.12, 0.15, 0.85), 2.5)
+			locker_preview_content.draw_line(c_center - Vector2(5, -5), c_center + Vector2(5, -5), Color(0.12, 0.12, 0.15, 0.85), 2.5)
+		"cryo_vault":
+			locker_preview_content.draw_rect(crate_draw_r.grow(-2), Color(0.40, 0.88, 1.0, 0.80), false, 1.5)
+			locker_preview_content.draw_circle(c_center, 3.0, Color(0.85, 0.98, 1.0, 0.90))
+		"luxury_safe":
+			locker_preview_content.draw_rect(crate_draw_r.grow(-2), Color(1.0, 0.84, 0.20, 0.90), false, 1.8)
+			locker_preview_content.draw_circle(c_center, 4.0, Color(1.0, 0.86, 0.28, 0.95))
+
+	# 3. Worker with animated walk/breathing cycle (Left side)
+	var worker_pos: Vector2 = Vector2(center_x - 50.0, base_y + 1.0)
+	var walk_phase: int = int(_preview_anim_time * 3.5) % 4
+	var p_tex: Texture2D = tex_player_down
+	var bob_y: float = 0.0
+	if walk_phase == 0:
+		p_tex = tex_player_down_w1 if tex_player_down_w1 else tex_player_down
+		bob_y = -1.2
+	elif walk_phase == 2:
+		p_tex = tex_player_down_w2 if tex_player_down_w2 else tex_player_down
+		bob_y = -1.2
+
+	var worker_info: Dictionary = save_mgr.get_worker_skin_info() if (save_mgr and save_mgr.has_method("get_worker_skin_info")) else {}
+	var worker_id: String = worker_info.get("id", "classic")
+	var worker_mod: Color = worker_info.get("sprite_tint", Color.WHITE)
+	var worker_rect: Rect2 = Rect2(worker_pos - Vector2(14, 25) + Vector2(0, bob_y), Vector2(28, 28))
+
+	# Worker foot shadow
+	locker_preview_content.draw_circle(worker_pos + Vector2(0, 3), 9.0, Color(0.0, 0.0, 0.0, 0.35))
+	if p_tex:
+		locker_preview_content.draw_texture_rect(p_tex, worker_rect, false, worker_mod)
+
+	# Worker accessories in preview
+	var w_center: Vector2 = worker_rect.get_center()
+	match worker_id:
+		"safety_vest":
+			var stripe_y: float = worker_rect.position.y + worker_rect.size.y * 0.54
+			locker_preview_content.draw_line(Vector2(w_center.x - 6, stripe_y), Vector2(w_center.x + 6, stripe_y), Color(0.95, 0.98, 1.0, 0.90), 2.0)
+		"mechanic":
+			var belt_y: float = worker_rect.position.y + worker_rect.size.y * 0.58
+			locker_preview_content.draw_line(Vector2(w_center.x - 6, belt_y), Vector2(w_center.x + 6, belt_y), Color(0.18, 0.20, 0.25, 0.90), 2.0)
+			locker_preview_content.draw_line(Vector2(w_center.x + 3, belt_y - 2), Vector2(w_center.x + 3, belt_y + 3), Color(0.85, 0.90, 0.98, 0.95), 1.5)
+		"foreman":
+			var brim_y: float = worker_rect.position.y + worker_rect.size.y * 0.28
+			locker_preview_content.draw_line(Vector2(w_center.x - 7, brim_y), Vector2(w_center.x + 7, brim_y), Color(1.0, 0.90, 0.25, 0.90), 1.8)
+		"hazmat":
+			var visor_y: float = worker_rect.position.y + worker_rect.size.y * 0.32
+			locker_preview_content.draw_line(Vector2(w_center.x - 5, visor_y), Vector2(w_center.x + 5, visor_y), Color(0.20, 0.95, 1.0, 0.95), 2.0)
+		"golden_porter":
+			var shim: float = sin(_preview_anim_time * 5.0) * 0.25 + 0.75
+			locker_preview_content.draw_circle(w_center + Vector2(0, -worker_rect.size.y * 0.45), 2.2 * shim, Color(1.0, 0.95, 0.60, 0.85))
+
+	# 4. Loadout Display Text Banner
+	var w_name: String = loc_mgr.tr_text(worker_info.get("name_key", "")) if (loc_mgr and worker_info.has("name_key")) else worker_info.get("name", "Classic")
+	var c_name: String = loc_mgr.tr_text(crate_info.get("name_key", "")) if (loc_mgr and crate_info.has("name_key")) else crate_info.get("name", "Pine")
+	var banner_text: String = "%s  •  %s" % [w_name.to_upper(), c_name.to_upper()]
+	var font: Font = get_theme_default_font()
+	if font:
+		var font_sz: int = 11
+		var txt_w: float = font.get_string_size(banner_text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_sz).x
+		locker_preview_content.draw_string(
+			font,
+			Vector2(center_x - txt_w * 0.5, 14.0),
+			banner_text,
+			HORIZONTAL_ALIGNMENT_CENTER,
+			-1,
+			font_sz,
+			Color(0.98, 0.85, 0.30, 0.95)
+		)
+
+
 func _refresh_locker_ui() -> void:
 	if locker_modal == null or save_mgr == null:
 		return
+
+	if locker_preview_content:
+		locker_preview_content.queue_redraw()
 
 	var total_stars: int = save_mgr.get_total_stars()
 	if locker_title_label:

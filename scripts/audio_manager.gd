@@ -532,27 +532,54 @@ func _synth_click() -> AudioStreamWAV:
 	return _create_wav(bytes)
 
 
-## Generates a cheerful two-tone chime when a crate snaps onto a goal (C5 to E5 arpeggio, 140ms)
+## Generates a punchy hydraulic goal lock sound (pneumatic hiss + mechanical clamp + ascending chime, 240ms)
 func _synth_goal_lock() -> AudioStreamWAV:
-	var duration: float = 0.14
+	var duration: float = 0.24
 	var total_samples: int = int(duration * MIX_RATE)
 	var bytes: PackedByteArray = PackedByteArray()
 	bytes.resize(total_samples * 2)
 
 	var phase1: float = 0.0
 	var phase2: float = 0.0
+	var phase_sub: float = 0.0
+	var noise_seed: int = 1337
 
 	for i in range(total_samples):
 		var t: float = float(i) / float(total_samples)
-		# Ascending pitch from 523Hz (C5) to 659Hz (E5) with harmonic overtone
-		var freq1: float = 523.25 if t < 0.4 else 659.25
-		var freq2: float = freq1 * 2.0
-		phase1 += (freq1 * TAU) / float(MIX_RATE)
-		phase2 += (freq2 * TAU) / float(MIX_RATE)
+		var t_sec: float = float(i) / float(MIX_RATE)
 
-		var wave: float = sin(phase1) * 0.75 + sin(phase2) * 0.25
-		var env: float = pow(1.0 - t, 1.8)
-		var sample_val: int = int(clampi(int(wave * env * 22000.0), -32767, 32767))
+		# 1. Pneumatic Air Release (Noise burst, 0 - 65ms)
+		var air: float = 0.0
+		if t_sec < 0.065:
+			noise_seed = int((noise_seed * 1103515245 + 12345) & 0x7FFFFFFF)
+			var noise: float = (float(noise_seed & 0xFFFF) / 32768.0) - 1.0
+			var air_env: float = pow(1.0 - t_sec / 0.065, 1.5)
+			air = noise * air_env * 0.35
+
+		# 2. Mechanical Clamp Thud (Sub click, 0 - 50ms)
+		var thud: float = 0.0
+		if t_sec < 0.050:
+			var sub_freq: float = 150.0 - (t_sec / 0.050) * 85.0
+			phase_sub += (sub_freq * TAU) / float(MIX_RATE)
+			var thud_env: float = pow(1.0 - t_sec / 0.050, 2.0)
+			thud = sin(phase_sub) * thud_env * 0.45
+
+		# 3. 3-Tone Ascending Golden Lock Chime (C5 -> E5 -> G5)
+		var chime_freq: float = 523.25
+		if t_sec >= 0.14:
+			chime_freq = 783.99
+		elif t_sec >= 0.07:
+			chime_freq = 659.25
+
+		phase1 += (chime_freq * TAU) / float(MIX_RATE)
+		phase2 += (chime_freq * 2.0 * TAU) / float(MIX_RATE)
+
+		var chime_wave: float = sin(phase1) * 0.70 + sin(phase2) * 0.30
+		var chime_env: float = pow(1.0 - t, 1.6)
+		var chime: float = chime_wave * chime_env * 0.65
+
+		var final_wave: float = air + thud + chime
+		var sample_val: int = int(clampi(int(final_wave * 24000.0), -32767, 32767))
 		bytes.encode_s16(i * 2, sample_val)
 
 	return _create_wav(bytes)

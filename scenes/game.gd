@@ -2642,20 +2642,24 @@ func _spawn_push_dust(from_pos: Vector2i, to_pos: Vector2i) -> void:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.randomize()
 
+	var crate_skin_id: String = save_mgr.selected_crate_skin if save_mgr else "classic_wood"
+	var worker_skin_id: String = save_mgr.selected_worker_skin if save_mgr else "classic"
+
+	# 1. Base boot traction dust puffs
 	var dust_palette: Array[Color] = [
 		Color(0.85, 0.80, 0.72, 0.85),
 		Color(0.72, 0.67, 0.60, 0.80),
 		Color(0.55, 0.50, 0.45, 0.70)
 	]
 
-	for i in range(6):
+	for i in range(5):
 		var offset: Vector2 = Vector2.ZERO
 		if dir.x != 0:
 			offset = Vector2(0, rng.randf_range(-tile_size * 0.35, tile_size * 0.35))
 		else:
 			offset = Vector2(rng.randf_range(-tile_size * 0.35, tile_size * 0.35), 0)
 
-		var back_vel: Vector2 = -Vector2(dir) * rng.randf_range(40.0, 85.0) + Vector2(rng.randf_range(-20.0, 20.0), rng.randf_range(-20.0, 20.0))
+		var back_vel: Vector2 = -Vector2(dir) * rng.randf_range(40.0, 85.0) + Vector2(rng.randf_range(-15.0, 15.0), rng.randf_range(-15.0, 15.0))
 		dust_particles.append({
 			"pos": spawn_edge_center + offset,
 			"vel": back_vel,
@@ -2665,35 +2669,131 @@ func _spawn_push_dust(from_pos: Vector2i, to_pos: Vector2i) -> void:
 			"max_life": 0.32
 		})
 
+	# 2. Material-specific friction particles along crate contact line
+	var crate_edge_center: Vector2 = base_origin + Vector2(tile_size * 0.5, tile_size * 0.5) + Vector2(dir) * (tile_size * 0.46)
+	match crate_skin_id:
+		"steel_container":
+			# High-speed metallic friction sparks shooting sideways
+			for i in range(5):
+				var lateral: Vector2 = Vector2(-dir.y, dir.x) * rng.randf_range(-65.0, 65.0)
+				dust_particles.append({
+					"pos": crate_edge_center + Vector2(rng.randf_range(-6.0, 6.0), rng.randf_range(-6.0, 6.0)),
+					"vel": lateral + Vector2(dir) * rng.randf_range(15.0, 40.0),
+					"size": rng.randf_range(2.0, 4.0),
+					"color": Color(1.0, 0.95, 0.70, 0.95) if i % 2 == 0 else Color(0.80, 0.90, 1.0, 0.90),
+					"life": rng.randf_range(0.18, 0.28),
+					"max_life": 0.28
+				})
+		"hazard_box":
+			# Electric caution sparks
+			for i in range(4):
+				var h_vel: Vector2 = Vector2(rng.randf_range(-50.0, 50.0), rng.randf_range(-50.0, 50.0))
+				dust_particles.append({
+					"pos": crate_edge_center,
+					"vel": h_vel,
+					"size": rng.randf_range(2.5, 4.5),
+					"color": Color(1.0, 0.75, 0.15, 0.95),
+					"life": rng.randf_range(0.20, 0.30),
+					"max_life": 0.30
+				})
+		"cryo_vault":
+			# Drifting sub-zero frost mist
+			for i in range(4):
+				var c_vel: Vector2 = -Vector2(dir) * rng.randf_range(20.0, 45.0) + Vector2(0, rng.randf_range(-25.0, -5.0))
+				dust_particles.append({
+					"pos": crate_edge_center + Vector2(rng.randf_range(-10.0, 10.0), rng.randf_range(-10.0, 10.0)),
+					"vel": c_vel,
+					"size": rng.randf_range(3.5, 6.0),
+					"color": Color(0.65, 0.92, 1.0, 0.85),
+					"life": rng.randf_range(0.25, 0.38),
+					"max_life": 0.38
+				})
+		"luxury_safe":
+			# Golden stardust glints
+			for i in range(4):
+				dust_particles.append({
+					"pos": crate_edge_center + Vector2(rng.randf_range(-8.0, 8.0), rng.randf_range(-8.0, 8.0)),
+					"vel": Vector2(rng.randf_range(-35.0, 35.0), rng.randf_range(-35.0, 35.0)),
+					"size": rng.randf_range(3.0, 5.0),
+					"color": Color(1.0, 0.88, 0.28, 0.95),
+					"life": rng.randf_range(0.22, 0.32),
+					"max_life": 0.32
+				})
+
+	# 3. Outfit-specific trailing accents
+	if worker_skin_id == "golden_porter":
+		for i in range(3):
+			dust_particles.append({
+				"pos": spawn_edge_center + Vector2(rng.randf_range(-8.0, 8.0), rng.randf_range(-8.0, 8.0)),
+				"vel": Vector2(rng.randf_range(-25.0, 25.0), rng.randf_range(-25.0, 25.0)),
+				"size": rng.randf_range(2.5, 4.5),
+				"color": Color(1.0, 0.85, 0.20, 0.90),
+				"life": 0.28,
+				"max_life": 0.28
+			})
+	elif worker_skin_id == "hazmat":
+		for i in range(2):
+			dust_particles.append({
+				"pos": spawn_edge_center,
+				"vel": Vector2(rng.randf_range(-20.0, 20.0), rng.randf_range(-20.0, 20.0)),
+				"size": rng.randf_range(2.5, 4.0),
+				"color": Color(0.30, 0.95, 0.40, 0.90),
+				"life": 0.25,
+				"max_life": 0.25
+			})
+
 
 func _spawn_goal_effect(goal_pos: Vector2i) -> void:
 	var center: Vector2 = grid_origin + Vector2(goal_pos) * tile_size + Vector2(tile_size * 0.5, tile_size * 0.5)
+	var crate_skin_id: String = save_mgr.selected_crate_skin if save_mgr else "classic_wood"
+
+	var ring_col: Color = Color(1.0, 0.88, 0.25, 0.95)
+	var spark_col1: Color = Color(1.0, 0.92, 0.40, 1.0)
+	var spark_col2: Color = Color(1.0, 0.65, 0.20, 1.0)
+
+	match crate_skin_id:
+		"cryo_vault":
+			ring_col = Color(0.40, 0.90, 1.0, 0.95)
+			spark_col1 = Color(0.85, 0.98, 1.0, 1.0)
+			spark_col2 = Color(0.35, 0.85, 1.0, 1.0)
+		"luxury_safe":
+			ring_col = Color(1.0, 0.86, 0.20, 0.98)
+			spark_col1 = Color(1.0, 0.95, 0.65, 1.0)
+			spark_col2 = Color(1.0, 0.80, 0.20, 1.0)
+		"hazard_box":
+			ring_col = Color(1.0, 0.68, 0.12, 0.95)
+			spark_col1 = Color(1.0, 0.85, 0.20, 1.0)
+			spark_col2 = Color(1.0, 0.40, 0.10, 1.0)
+		"steel_container":
+			ring_col = Color(0.75, 0.88, 1.0, 0.95)
+			spark_col1 = Color(0.95, 0.98, 1.0, 1.0)
+			spark_col2 = Color(0.60, 0.75, 0.95, 1.0)
 
 	# Expanding shockwave ring
 	goal_effects.append({
 		"type": "ring",
 		"pos": center,
 		"radius": 4.0,
-		"max_radius": tile_size * 0.85,
-		"color": Color(1.0, 0.88, 0.25, 0.95),
+		"max_radius": tile_size * 0.88,
+		"color": ring_col,
 		"life": 0.35,
 		"max_life": 0.35
 	})
 
-	# 8 radiating golden sparks
+	# 10 radiating thematic sparks
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.randomize()
-	for i in range(8):
-		var angle: float = (float(i) / 8.0) * TAU + rng.randf_range(-0.15, 0.15)
-		var spd: float = rng.randf_range(110.0, 190.0)
+	for i in range(10):
+		var angle: float = (float(i) / 10.0) * TAU + rng.randf_range(-0.15, 0.15)
+		var spd: float = rng.randf_range(110.0, 200.0)
 		goal_effects.append({
 			"type": "spark",
 			"pos": center,
 			"vel": Vector2(cos(angle), sin(angle)) * spd,
 			"size": rng.randf_range(3.5, 6.5),
-			"color": Color(1.0, 0.92, 0.40, 1.0) if i % 2 == 0 else Color(1.0, 0.65, 0.20, 1.0),
-			"life": rng.randf_range(0.28, 0.42),
-			"max_life": 0.42
+			"color": spark_col1 if i % 2 == 0 else spark_col2,
+			"life": rng.randf_range(0.28, 0.44),
+			"max_life": 0.44
 		})
 
 

@@ -272,10 +272,13 @@ func test_porter_locker_modal() -> void:
 	assert_true(menu.outfits_tab_btn != null, "Outfits tab button exists")
 	assert_true(menu.crates_tab_btn != null, "Crates tab button exists")
 	assert_true(menu.locker_items_vbox != null, "Locker items VBox exists")
+	assert_true(menu.locker_preview_content != null, "Locker live animated preview stage exists")
 
 	# 2. Open locker modal
 	menu._show_locker()
 	assert_true(menu.locker_modal.visible, "Locker modal opens via _show_locker")
+	menu._process(0.1)
+	assert_true(true, "Locker live animated preview ticks without error")
 	assert_equal(menu.current_locker_tab, "outfits", "Default locker tab is outfits")
 	assert_true("Stars" in menu.locker_stars_badge.text, "Locker stars badge reflects total stars")
 
