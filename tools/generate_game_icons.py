@@ -399,40 +399,53 @@ def make_hint():
 # 6. Star, Trophy, Settings, Locker
 # ==========================================
 def make_star(is_full=True):
-    im = new_canvas()
-    d = ImageDraw.Draw(im)
-
-    pts = []
-    center = (128, 128)
-    r_outer = 105
-    r_inner = 44
-    for i in range(10):
-        angle = i * (math.pi / 5.0) - math.pi * 0.5
-        r = r_outer if i % 2 == 0 else r_inner
-        pts.append((center[0] + math.cos(angle) * r, center[1] + math.sin(angle) * r))
+    import subprocess
+    import shutil
+    import io
 
     if is_full:
-        # Shadow
-        d.polygon([(x+4, y+6) for x, y in pts], fill=(0, 0, 0, 90))
-        # Base fill
-        d.polygon(pts, fill=(245, 180, 25, 255), outline=(160, 100, 10, 255), width=6)
-        
-        # Faceted 3D shading
-        for i in range(5):
-            p_tip = pts[i * 2]
-            p_inner = pts[(i * 2 + 1) % 10]
-            # Left facet (light)
-            d.polygon([center, p_tip, p_inner], fill=(255, 235, 120, 255))
-            # Right facet (medium)
-            p_prev_inner = pts[(i * 2 - 1) % 10]
-            d.polygon([center, p_tip, p_prev_inner], fill=(235, 150, 15, 255))
-        d.polygon(pts, outline=(150, 95, 10, 255), width=5)
-        # Glint
-        d.ellipse([118, 70, 138, 90], fill=(255, 255, 255, 240))
-        save_icon(im, "icon_star_full.png")
+        svg_content = """<svg viewBox="-40 -40 592 592" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="glow" x="-20%" y="-20%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="#000000" flood-opacity="0.40"/>
+    </filter>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFDE7"/>
+      <stop offset="25%" stop-color="#FFEE58"/>
+      <stop offset="65%" stop-color="#FDD835"/>
+      <stop offset="100%" stop-color="#F57F17"/>
+    </linearGradient>
+    <linearGradient id="facet" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.75"/>
+      <stop offset="100%" stop-color="#FFF9C4" stop-opacity="0.1"/>
+    </linearGradient>
+  </defs>
+  <g filter="url(#glow)">
+    <polygon fill="url(#gold)" stroke="#8D5B00" stroke-width="18" stroke-linejoin="round"
+             points="256,24 326,170 488,192 370,306 398,468 256,392 114,468 142,306 24,192 186,170"/>
+    <polygon fill="url(#facet)"
+             points="256,54 316,170 440,192 344,286 256,220"/>
+  </g>
+</svg>"""
+        out_name = "icon_star_full.png"
     else:
-        d.polygon(pts, fill=(30, 41, 59, 200), outline=(148, 163, 184, 220), width=6)
-        save_icon(im, "icon_star_empty.png")
+        svg_content = """<svg viewBox="-40 -40 592 592" xmlns="http://www.w3.org/2000/svg">
+  <polygon fill="#1E293B" stroke="#64748B" stroke-width="22" stroke-linejoin="round" opacity="0.8"
+           points="256,24 326,170 488,192 370,306 398,468 256,392 114,468 142,306 24,192 186,170"/>
+</svg>"""
+        out_name = "icon_star_empty.png"
+
+    if shutil.which("rsvg-convert"):
+        p = subprocess.Popen(["rsvg-convert", "-w", "256", "-h", "256"], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        out, _ = p.communicate(input=svg_content.encode("utf-8"))
+        im_large = Image.open(io.BytesIO(out))
+        res = im_large.resize((64, 64), Image.Resampling.LANCZOS)
+        path = os.path.join(OUT_DIR, out_name)
+        res.save(path, format="PNG")
+        print(f"Generated {path} (Crisp SVG Star)")
+    else:
+        im = new_canvas()
+        save_icon(im, out_name)
 
 def make_trophy():
     im = new_canvas()

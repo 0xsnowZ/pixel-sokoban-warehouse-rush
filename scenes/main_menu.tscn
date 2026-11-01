@@ -55,7 +55,7 @@ layout_mode = 2
 alignment = 1
 
 [node name="StarProgressBtn" type="Button" parent="MainView/TopBarMargin/HBox"]
-custom_minimum_size = Vector2(170, 42)
+custom_minimum_size = Vector2(204, 42)
 layout_mode = 2
 theme_type_variation = &"TopBarButton"
 theme_override_colors/font_color = Color(0.98, 0.85, 0.28, 1)

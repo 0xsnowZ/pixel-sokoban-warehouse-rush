@@ -222,12 +222,14 @@ func _ready() -> void:
 		achievements_btn.icon = icon_trophy
 		achievements_btn.expand_icon = true
 		achievements_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		achievements_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0))
+		achievements_btn.text = ""
+		achievements_btn.add_theme_constant_override("icon_max_width", 24)
 	if settings_btn:
 		settings_btn.icon = icon_settings
 		settings_btn.expand_icon = true
 		settings_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		settings_btn.add_theme_color_override("font_color", Color(1, 1, 1, 0))
+		settings_btn.text = ""
+		settings_btn.add_theme_constant_override("icon_max_width", 24)
 	if locker_btn:
 		locker_btn.icon = icon_locker
 		locker_btn.expand_icon = true
@@ -236,8 +238,8 @@ func _ready() -> void:
 	if star_progress_btn:
 		star_progress_btn.icon = icon_star_full
 		star_progress_btn.expand_icon = true
-		star_progress_btn.add_theme_constant_override("icon_max_width", 18)
-		star_progress_btn.add_theme_constant_override("h_separation", 6)
+		star_progress_btn.add_theme_constant_override("icon_max_width", 20)
+		star_progress_btn.add_theme_constant_override("h_separation", 8)
 	if continue_btn:
 		continue_btn.icon = icon_play
 		continue_btn.expand_icon = true
@@ -845,11 +847,13 @@ func _update_menu_state() -> void:
 			haptics_btn.text = loc_mgr.tr_text("MENU_HAPTICS", [haptic_status])
 
 		if settings_btn:
-			settings_btn.text = loc_mgr.tr_text("MENU_SETTINGS")
+			settings_btn.text = ""
+			settings_btn.tooltip_text = loc_mgr.tr_text("MENU_SETTINGS")
 		if locker_btn:
 			locker_btn.text = loc_mgr.tr_text("MENU_LOCKER")
 		if achievements_btn:
-			achievements_btn.text = loc_mgr.tr_text("MENU_ACHIEVEMENTS")
+			achievements_btn.text = ""
+			achievements_btn.tooltip_text = loc_mgr.tr_text("MENU_ACHIEVEMENTS")
 		language_btn.text = loc_mgr.tr_text("MENU_LANGUAGE", [loc_mgr.get_language_display_name()])
 		level_select_btn.text = loc_mgr.tr_text("MENU_LEVEL_SELECT")
 		credits_btn.text = loc_mgr.tr_text("MENU_CREDITS")
@@ -870,11 +874,13 @@ func _update_menu_state() -> void:
 			play_btn.text = "PLAY"
 			play_btn.theme_type_variation = &"PrimaryButton"
 		if settings_btn:
-			settings_btn.text = "SETTINGS"
+			settings_btn.text = ""
+			settings_btn.tooltip_text = "Settings"
 		if locker_btn:
 			locker_btn.text = "PORTER LOCKER"
 		if achievements_btn:
-			achievements_btn.text = "ACHIEVEMENTS"
+			achievements_btn.text = ""
+			achievements_btn.tooltip_text = "Achievements"
 		if sound_btn:
 			sound_btn.text = "SOUND: %s" % ("ON" if is_sound_on else "OFF")
 		if haptics_btn:
