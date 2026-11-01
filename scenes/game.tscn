@@ -429,23 +429,17 @@ layout_mode = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="Icon" type="Label" parent="WinModal/VBox/StatsGrid/MovesCard/VBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = ""
-horizontal_alignment = 1
-
 [node name="Title" type="Label" parent="WinModal/VBox/StatsGrid/MovesCard/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.55, 0.65, 0.75, 1)
-theme_override_font_sizes/font_size = 10
+theme_override_colors/font_color = Color(0.60, 0.72, 0.86, 1)
+theme_override_font_sizes/font_size = 11
 text = "MOVES"
 horizontal_alignment = 1
 
 [node name="Val" type="Label" parent="WinModal/VBox/StatsGrid/MovesCard/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.95, 0.97, 1, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.96, 0.98, 1, 1)
+theme_override_font_sizes/font_size = 20
 text = "0"
 horizontal_alignment = 1
 
@@ -459,23 +453,17 @@ layout_mode = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="Icon" type="Label" parent="WinModal/VBox/StatsGrid/TimeCard/VBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = ""
-horizontal_alignment = 1
-
 [node name="Title" type="Label" parent="WinModal/VBox/StatsGrid/TimeCard/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.55, 0.65, 0.75, 1)
-theme_override_font_sizes/font_size = 10
+theme_override_colors/font_color = Color(0.60, 0.72, 0.86, 1)
+theme_override_font_sizes/font_size = 11
 text = "TIME"
 horizontal_alignment = 1
 
 [node name="Val" type="Label" parent="WinModal/VBox/StatsGrid/TimeCard/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.95, 0.97, 1, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.96, 0.98, 1, 1)
+theme_override_font_sizes/font_size = 20
 text = "00:00"
 horizontal_alignment = 1
 
@@ -489,23 +477,17 @@ layout_mode = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="Icon" type="Label" parent="WinModal/VBox/StatsGrid/PushesCard/VBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = ""
-horizontal_alignment = 1
-
 [node name="Title" type="Label" parent="WinModal/VBox/StatsGrid/PushesCard/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.55, 0.65, 0.75, 1)
-theme_override_font_sizes/font_size = 10
+theme_override_colors/font_color = Color(0.60, 0.72, 0.86, 1)
+theme_override_font_sizes/font_size = 11
 text = "PUSHES"
 horizontal_alignment = 1
 
 [node name="Val" type="Label" parent="WinModal/VBox/StatsGrid/PushesCard/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.95, 0.97, 1, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.96, 0.98, 1, 1)
+theme_override_font_sizes/font_size = 20
 text = "0"
 horizontal_alignment = 1
 
@@ -522,27 +504,29 @@ theme_override_constants/separation = 10
 alignment = 1
 
 [node name="WinMenuBtn" type="Button" parent="WinModal/VBox/WinActions"]
-custom_minimum_size = Vector2(96, 54)
+custom_minimum_size = Vector2(92, 52)
 layout_mode = 2
-theme_type_variation = &"DangerButton"
 theme_override_constants/icon_max_width = 22
 theme_override_constants/h_separation = 8
+theme_override_font_sizes/font_size = 15
 text = "MENU"
 
 [node name="NextLevelBtn" type="Button" parent="WinModal/VBox/WinActions"]
-custom_minimum_size = Vector2(140, 54)
+custom_minimum_size = Vector2(148, 52)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"SuccessButton"
 theme_override_constants/icon_max_width = 22
 theme_override_constants/h_separation = 8
+theme_override_font_sizes/font_size = 16
 text = "NEXT"
 
 [node name="WinRetryBtn" type="Button" parent="WinModal/VBox/WinActions"]
-custom_minimum_size = Vector2(96, 54)
+custom_minimum_size = Vector2(92, 52)
 layout_mode = 2
 theme_type_variation = &"InfoButton"
 theme_override_constants/icon_max_width = 22
 theme_override_constants/h_separation = 8
+theme_override_font_sizes/font_size = 15
 text = "RETRY"
 

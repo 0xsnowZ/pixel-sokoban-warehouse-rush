@@ -1526,17 +1526,25 @@ func _spawn_celebration_particles() -> void:
 func _spawn_star_burst(center_pt: Vector2) -> void:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.randomize()
-	for i in range(14):
+	victory_radiance_rings.append({
+		"pos": center_pt,
+		"radius": 14.0,
+		"max_radius": 52.0,
+		"life": 0.36,
+		"max_life": 0.36,
+		"color": Color(1.0, 0.92, 0.35, 0.95)
+	})
+	for i in range(18):
 		var angle: float = rng.randf_range(0.0, TAU)
-		var speed: float = rng.randf_range(70.0, 220.0)
-		var life: float = rng.randf_range(0.35, 0.65)
-		var col: Color = Color(1.0, rng.randf_range(0.82, 0.98), rng.randf_range(0.20, 0.40))
+		var speed: float = rng.randf_range(80.0, 240.0)
+		var life: float = rng.randf_range(0.38, 0.70)
+		var col: Color = Color(1.0, rng.randf_range(0.85, 1.0), rng.randf_range(0.25, 0.50))
 		star_burst_particles.append({
 			"pos": center_pt,
 			"vel": Vector2(cos(angle), sin(angle)) * speed,
 			"life": life,
 			"max_life": life,
-			"size": rng.randf_range(3.5, 6.5),
+			"size": rng.randf_range(4.0, 7.5),
 			"color": col
 		})
 
@@ -2636,19 +2644,22 @@ func _spawn_goal_effect(goal_pos: Vector2i) -> void:
 func _attach_spring_physics(btn: Button) -> void:
 	if btn == null:
 		return
-	btn.pivot_offset = btn.size / 2.0
+	var calc_pivot = func():
+		var sz: Vector2 = btn.custom_minimum_size if btn.size == Vector2.ZERO else btn.size
+		btn.pivot_offset = sz / 2.0
+	calc_pivot.call()
 	btn.button_down.connect(func():
-		btn.pivot_offset = btn.size / 2.0
+		calc_pivot.call()
 		var tw: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		tw.tween_property(btn, "scale", Vector2(0.93, 0.93), 0.07)
 	)
 	btn.button_up.connect(func():
-		btn.pivot_offset = btn.size / 2.0
+		calc_pivot.call()
 		var tw: Tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		tw.tween_property(btn, "scale", Vector2.ONE, 0.15)
 	)
 	btn.mouse_exited.connect(func():
-		btn.pivot_offset = btn.size / 2.0
+		calc_pivot.call()
 		var tw: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		tw.tween_property(btn, "scale", Vector2.ONE, 0.10)
 	)

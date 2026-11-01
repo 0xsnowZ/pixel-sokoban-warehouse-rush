@@ -18,6 +18,7 @@ const MAIN_MENU_SCENE_PATH: String = "res://scenes/main_menu.tscn"
 var _is_transitioning: bool = false
 var _progress_tween: Tween
 var _pulse_tween: Tween
+var dust_motes: Array[Dictionary] = []
 
 
 func _ready() -> void:
@@ -25,9 +26,49 @@ func _ready() -> void:
 	if fade_overlay:
 		fade_overlay.modulate.a = 0.0
 
+	_init_dust_motes()
+
+	if background:
+		var vp_sz: Vector2 = background.size if background.size != Vector2.ZERO else Vector2(540, 960)
+		background.pivot_offset = vp_sz / 2.0
+		var bg_tw = create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		bg_tw.tween_property(background, "scale", Vector2(1.03, 1.03), duration)
+
 	_update_localized_text(0.0)
 	_start_loading_animation()
 	_start_prompt_pulse()
+
+
+func _init_dust_motes() -> void:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.randomize()
+	for i in range(24):
+		dust_motes.append({
+			"pos": Vector2(rng.randf_range(20.0, 520.0), rng.randf_range(100.0, 800.0)),
+			"vel": Vector2(rng.randf_range(-6.0, 6.0), rng.randf_range(-14.0, -4.0)),
+			"size": rng.randf_range(1.5, 3.2),
+			"alpha": rng.randf_range(0.20, 0.50),
+			"phase": rng.randf_range(0.0, TAU)
+		})
+
+
+func _process(delta: float) -> void:
+	if dust_motes.is_empty():
+		return
+	var vp_sz: Vector2 = size if size != Vector2.ZERO else Vector2(540, 960)
+	for m in dust_motes:
+		m["phase"] += delta * 1.5
+		m["pos"] += m["vel"] * delta + Vector2(sin(m["phase"]) * 4.0 * delta, 0)
+		if m["pos"].y < 0:
+			m["pos"].y = vp_sz.y
+			m["pos"].x = randf_range(20.0, vp_sz.x - 20.0)
+	queue_redraw()
+
+
+func _draw() -> void:
+	for m in dust_motes:
+		var col: Color = Color(1.0, 0.95, 0.80, m["alpha"] * (0.8 + 0.2 * sin(m["phase"])))
+		draw_circle(m["pos"], m["size"], col)
 
 
 func _ensure_node_refs() -> void:

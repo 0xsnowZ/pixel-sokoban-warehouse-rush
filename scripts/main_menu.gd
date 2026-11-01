@@ -55,6 +55,7 @@ var achievement_mgr: Node = null
 @onready var quick_lang_btn: Button = _find_button("QuickLangBtn", "MainView/TopBarMargin/HBox/QuickBar/QuickLangBtn")
 
 var current_locker_tab: String = "outfits"
+var current_level_pulse_tw: Tween = null
 
 # Achievements elements (Phase 4)
 @onready var achievements_btn: Button = _find_button("AchievementsBtn", "MainView/TopBarMargin/HBox/QuickBar/AchievementsBtn")
@@ -237,18 +238,34 @@ func _ready() -> void:
 		star_progress_btn.expand_icon = true
 		star_progress_btn.add_theme_constant_override("icon_max_width", 18)
 		star_progress_btn.add_theme_constant_override("h_separation", 6)
+	if continue_btn:
+		continue_btn.icon = icon_play
+		continue_btn.expand_icon = true
+		continue_btn.add_theme_constant_override("icon_max_width", 20)
+		continue_btn.add_theme_constant_override("h_separation", 10)
+	if play_btn:
+		play_btn.icon = icon_play
+		play_btn.expand_icon = true
+		play_btn.add_theme_constant_override("icon_max_width", 20)
+		play_btn.add_theme_constant_override("h_separation", 10)
 
 	_show_main_view()
 	_update_menu_state()
 	_build_level_grid()
 
-	# Ambient breathing animation on logo
+	# Ambient breathing animation on logo and subtitle
 	var logo: TextureRect = find_child("LogoRect", true, false) as TextureRect
 	if logo != null:
 		logo.pivot_offset = Vector2(150, 84)
 		var tw: Tween = create_tween().set_loops()
 		tw.tween_property(logo, "scale", Vector2(1.03, 1.03), 1.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		tw.tween_property(logo, "scale", Vector2(1.0, 1.0), 1.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+	var subtitle: Label = find_child("GameSubtitle", true, false) as Label
+	if subtitle != null:
+		var sub_tw: Tween = create_tween().set_loops()
+		sub_tw.tween_property(subtitle, "modulate:a", 0.72, 1.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		sub_tw.tween_property(subtitle, "modulate:a", 1.0, 1.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 	# Tactile arcade button physics
 	for b in [continue_btn, play_btn, level_select_btn, locker_btn, achievements_btn, settings_btn, sound_btn, haptics_btn, language_btn, credits_btn, back_btn, close_credits_btn, close_settings_btn, close_locker_btn, close_achievements_btn, outfits_tab_btn, crates_tab_btn, music_toggle_btn, track_cycle_btn, control_mode_btn, star_progress_btn, quick_lang_btn]:
@@ -279,6 +296,9 @@ func _on_safe_area_changed(_insets: Dictionary) -> void:
 func _show_main_view() -> void:
 	if audio_mgr:
 		audio_mgr.play_click()
+	if current_level_pulse_tw != null and current_level_pulse_tw.is_valid():
+		current_level_pulse_tw.kill()
+		current_level_pulse_tw = null
 	main_view.show()
 	level_select_view.hide()
 	credits_modal.hide()
@@ -466,6 +486,7 @@ func _refresh_locker_ui() -> void:
 
 	if current_locker_tab == "outfits":
 		var skins = save_mgr.get_all_worker_skins()
+		var player_tex: Texture2D = preload("res://assets/player_down.png")
 		for skin in skins:
 			var card = _create_locker_item_card(
 				skin["id"],
@@ -475,11 +496,14 @@ func _refresh_locker_ui() -> void:
 				skin.get("required_stars", 0),
 				total_stars,
 				save_mgr.selected_worker_skin == skin["id"],
-				Callable(self, "_on_equip_worker_skin").bind(skin["id"])
+				Callable(self, "_on_equip_worker_skin").bind(skin["id"]),
+				player_tex,
+				skin.get("sprite_tint", Color.WHITE)
 			)
 			locker_items_vbox.add_child(card)
 	else:
 		var crates = save_mgr.get_all_crate_skins()
+		var crate_tex: Texture2D = preload("res://assets/crate_normal.png")
 		for crate in crates:
 			var card = _create_locker_item_card(
 				crate["id"],
@@ -489,12 +513,14 @@ func _refresh_locker_ui() -> void:
 				crate.get("required_stars", 0),
 				total_stars,
 				save_mgr.selected_crate_skin == crate["id"],
-				Callable(self, "_on_equip_crate_skin").bind(crate["id"])
+				Callable(self, "_on_equip_crate_skin").bind(crate["id"]),
+				crate_tex,
+				crate.get("tint", Color.WHITE)
 			)
 			locker_items_vbox.add_child(card)
 
 
-func _create_locker_item_card(_item_id: String, icon: String, item_name: String, desc: String, req_stars: int, total_stars: int, is_equipped: bool, equip_callable: Callable) -> Control:
+func _create_locker_item_card(_item_id: String, icon: String, item_name: String, desc: String, req_stars: int, total_stars: int, is_equipped: bool, equip_callable: Callable, preview_texture: Texture2D = null, preview_tint: Color = Color.WHITE) -> Control:
 	var panel: PanelContainer = PanelContainer.new()
 	panel.custom_minimum_size = Vector2(0, 68)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -510,10 +536,23 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 	hbox.add_theme_constant_override("separation", 12)
 	margin.add_child(hbox)
 
-	var icon_lbl: Label = Label.new()
-	icon_lbl.text = icon
-	icon_lbl.add_theme_font_size_override("font_size", 26)
-	hbox.add_child(icon_lbl)
+	if preview_texture != null:
+		var preview_frame: PanelContainer = PanelContainer.new()
+		preview_frame.custom_minimum_size = Vector2(44, 44)
+		preview_frame.theme_type_variation = &"TopBarPanel"
+		var tex_rect: TextureRect = TextureRect.new()
+		tex_rect.custom_minimum_size = Vector2(32, 32)
+		tex_rect.texture = preview_texture
+		tex_rect.modulate = preview_tint
+		tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		preview_frame.add_child(tex_rect)
+		hbox.add_child(preview_frame)
+	else:
+		var icon_lbl: Label = Label.new()
+		icon_lbl.text = icon
+		icon_lbl.add_theme_font_size_override("font_size", 26)
+		hbox.add_child(icon_lbl)
 
 	var info_vbox: VBoxContainer = VBoxContainer.new()
 	info_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -789,10 +828,13 @@ func _update_menu_state() -> void:
 		if has_progress:
 			continue_btn.visible = true
 			continue_btn.text = loc_mgr.tr_text("MENU_CONTINUE", [last_lvl + 1])
+			continue_btn.theme_type_variation = &"PrimaryButton"
 			play_btn.text = loc_mgr.tr_text("MENU_NEW_GAME")
+			play_btn.theme_type_variation = &""
 		else:
 			continue_btn.visible = false
 			play_btn.text = loc_mgr.tr_text("MENU_PLAY")
+			play_btn.theme_type_variation = &"PrimaryButton"
 
 		if sound_btn:
 			var sound_status: String = loc_mgr.tr_text("MENU_SOUND_ON" if is_sound_on else "MENU_SOUND_OFF")
@@ -820,10 +862,13 @@ func _update_menu_state() -> void:
 		if has_progress:
 			continue_btn.visible = true
 			continue_btn.text = "CONTINUE (LEVEL %d)" % (last_lvl + 1)
+			continue_btn.theme_type_variation = &"PrimaryButton"
 			play_btn.text = "NEW GAME"
+			play_btn.theme_type_variation = &""
 		else:
 			continue_btn.visible = false
 			play_btn.text = "PLAY"
+			play_btn.theme_type_variation = &"PrimaryButton"
 		if settings_btn:
 			settings_btn.text = "SETTINGS"
 		if locker_btn:
@@ -926,6 +971,11 @@ func _build_level_grid() -> void:
 
 
 func _refresh_level_grid_buttons() -> void:
+	if current_level_pulse_tw != null and current_level_pulse_tw.is_valid():
+		current_level_pulse_tw.kill()
+		current_level_pulse_tw = null
+
+	var active_frontier_btn: Button = null
 	var unlocked_lvl: int = save_mgr.unlocked_level if save_mgr else 0
 	var total_stars: int = save_mgr.get_total_stars() if save_mgr != null else 0
 
@@ -988,6 +1038,8 @@ func _refresh_level_grid_buttons() -> void:
 			child.disabled = false
 			child.theme_type_variation = &"LevelBtnCurrent"
 			child.modulate = ch_col
+			if active_frontier_btn == null:
+				active_frontier_btn = child
 		else:
 			child.text = "%d" % [lvl_idx + 1]
 			if is_available:
@@ -1002,6 +1054,13 @@ func _refresh_level_grid_buttons() -> void:
 			child.theme_type_variation = &"LevelBtnLocked"
 			child.modulate = Color(0.68, 0.72, 0.82, 0.75).lerp(ch_col, 0.15)
 
+	if active_frontier_btn != null and active_frontier_btn.is_inside_tree():
+		var p_sz: Vector2 = active_frontier_btn.custom_minimum_size if active_frontier_btn.size == Vector2.ZERO else active_frontier_btn.size
+		active_frontier_btn.pivot_offset = p_sz / 2.0
+		current_level_pulse_tw = create_tween().set_loops()
+		current_level_pulse_tw.tween_property(active_frontier_btn, "scale", Vector2(1.05, 1.05), 0.75).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		current_level_pulse_tw.tween_property(active_frontier_btn, "scale", Vector2.ONE, 0.75).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
 
 func _on_level_button_pressed(level_index: int) -> void:
 	if level_index < AVAILABLE_LEVELS_COUNT:
@@ -1013,19 +1072,22 @@ func _on_level_button_pressed(level_index: int) -> void:
 func _attach_spring_physics(btn: Button) -> void:
 	if btn == null:
 		return
-	btn.pivot_offset = btn.size / 2.0
+	var calc_pivot = func():
+		var sz: Vector2 = btn.custom_minimum_size if btn.size == Vector2.ZERO else btn.size
+		btn.pivot_offset = sz / 2.0
+	calc_pivot.call()
 	btn.button_down.connect(func():
-		btn.pivot_offset = btn.size / 2.0
+		calc_pivot.call()
 		var tw: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		tw.tween_property(btn, "scale", Vector2(0.94, 0.94), 0.07)
 	)
 	btn.button_up.connect(func():
-		btn.pivot_offset = btn.size / 2.0
+		calc_pivot.call()
 		var tw: Tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		tw.tween_property(btn, "scale", Vector2.ONE, 0.15)
 	)
 	btn.mouse_exited.connect(func():
-		btn.pivot_offset = btn.size / 2.0
+		calc_pivot.call()
 		var tw: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		tw.tween_property(btn, "scale", Vector2.ONE, 0.10)
 	)
