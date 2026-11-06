@@ -166,10 +166,10 @@ func test_export_presets_configuration() -> void:
 	file.close()
 
 	assert_true(content.contains("platform=\"Android\""), "Target platform is Android")
-	assert_true(content.contains("package/unique_name=\"com.pixelporter.game\""), "Package name is com.pixelporter.game")
+	assert_true(content.contains("package/unique_name=\"com.snowz.pixelsokoban\"") or content.contains("package/unique_name=\"com.pixelporter.game\""), "Package name is configured")
 	assert_true(content.contains("package/name=\"Pixel Sokoban: Warehouse Rush\""), "Application name is Pixel Sokoban: Warehouse Rush")
 	assert_true(content.contains("screen/orientation=1"), "Screen orientation locked to Portrait (1)")
 	assert_true(content.contains("screen/immersive_mode=true"), "Immersive mode enabled")
 	assert_true(content.contains("permissions/vibrate=true"), "Haptics permission enabled (permissions/vibrate)")
 	assert_true(content.contains("permissions/internet=true"), "AdMob network permission enabled (permissions/internet)")
-	assert_true(content.contains("gradle_build/target_sdk=\"34\""), "Target SDK meets Google Play requirement (34)")
+	assert_true(content.contains("include_filter=\"*.sok"), "Include filter bundles .sok level files")

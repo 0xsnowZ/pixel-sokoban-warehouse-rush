@@ -175,19 +175,30 @@ func _compute_interior_floor() -> void:
 				queue.append(nxt)
 
 
+const LevelDataScript = preload("res://scripts/level_data.gd")
+
 ## Loads a level from a file containing standard Sokoban text.
+## Falls back to embedded LevelData if file is not directly readable.
 func load_from_file(file_path: String) -> bool:
-	if not FileAccess.file_exists(file_path):
-		push_error("GridLogic: File does not exist: %s" % file_path)
-		return false
+	if FileAccess.file_exists(file_path):
+		var file: FileAccess = FileAccess.open(file_path, FileAccess.READ)
+		if file:
+			var text: String = file.get_as_text()
+			if not text.is_empty():
+				return load_from_text(text)
 
-	var file: FileAccess = FileAccess.open(file_path, FileAccess.READ)
-	if not file:
-		push_error("GridLogic: Failed to open file: %s" % file_path)
-		return false
+	# Fallback to embedded LevelData
+	var regex: RegEx = RegEx.new()
+	regex.compile("level_(\\d+)\\.sok")
+	var result: RegExMatch = regex.search(file_path)
+	if result:
+		var lvl_num: int = result.get_string(1).to_int()
+		var fallback_text: String = LevelDataScript.get_level_text(lvl_num)
+		if not fallback_text.is_empty():
+			return load_from_text(fallback_text)
 
-	var text: String = file.get_as_text()
-	return load_from_text(text)
+	push_error("GridLogic: Failed to load level from file or fallback: %s" % file_path)
+	return false
 
 
 ## Converts a direction variant into a normalized cardinal Vector2i.
