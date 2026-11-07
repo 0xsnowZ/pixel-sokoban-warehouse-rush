@@ -1201,9 +1201,14 @@ func _update_menu_state() -> void:
 		language_btn.text = "LANGUAGE: English"
 
 	var total_stars: int = save_mgr.get_total_stars() if (save_mgr and save_mgr.has_method("get_total_stars")) else 0
-	var sector_num: int = (last_lvl + 1)
+	var sector_idx: int = save_mgr.get_chapter_index(last_lvl) if (save_mgr and save_mgr.has_method("get_chapter_index")) else (0 if last_lvl < 15 else (1 if last_lvl < 35 else 2))
 	if star_progress_btn:
-		star_progress_btn.text = "%d / 150 Stars • Sector %d" % [total_stars, sector_num]
+		var ch_title: String = "Cargo Bay"
+		if loc_mgr and loc_mgr.has_method("tr_text"):
+			ch_title = loc_mgr.tr_text("CHAPTER_%d_TITLE" % sector_idx)
+		elif save_mgr and save_mgr.has_method("get_chapter_info"):
+			ch_title = save_mgr.get_chapter_info(sector_idx).get("name", "Cargo Bay")
+		star_progress_btn.text = "%d / 150 Stars • Sector %d: %s" % [total_stars, sector_idx + 1, ch_title]
 	if quick_lang_btn:
 		var lang_code: String = loc_mgr.current_language.to_upper() if loc_mgr else "EN"
 		quick_lang_btn.text = lang_code
@@ -1321,6 +1326,22 @@ func _refresh_level_grid_buttons() -> void:
 		var pct: int = int((float(completed_count) / float(TOTAL_LEVELS_COUNT)) * 100.0)
 		completion_lbl.text = "%d/50 Cleared • %d%%" % [completed_count, pct]
 
+	var s1_stars: int = save_mgr.get_chapter_stars(0) if save_mgr else 0
+	var s2_stars: int = save_mgr.get_chapter_stars(1) if save_mgr else 0
+	var s3_stars: int = save_mgr.get_chapter_stars(2) if save_mgr else 0
+
+	var s1_badge: Label = find_child("Sector1Badge", true, false) as Label
+	if s1_badge != null:
+		s1_badge.text = "📦 S1: %d/45 ★" % s1_stars
+
+	var s2_badge: Label = find_child("Sector2Badge", true, false) as Label
+	if s2_badge != null:
+		s2_badge.text = "❄ S2: %d/60 ★" % s2_stars
+
+	var s3_badge: Label = find_child("Sector3Badge", true, false) as Label
+	if s3_badge != null:
+		s3_badge.text = "⚡ S3: %d/45 ★" % s3_stars
+
 	for child in level_grid.get_children():
 		if not child is Button:
 			continue
@@ -1332,6 +1353,11 @@ func _refresh_level_grid_buttons() -> void:
 		var ch_idx: int = save_mgr.get_chapter_index(lvl_idx) if (save_mgr != null and save_mgr.has_method("get_chapter_index")) else (0 if lvl_idx < 15 else (1 if lvl_idx < 35 else 2))
 		var ch_info: Dictionary = save_mgr.get_chapter_info(ch_idx) if (save_mgr != null and save_mgr.has_method("get_chapter_info")) else { "color": Color(1.0, 1.0, 1.0) }
 		var ch_col: Color = ch_info.get("color", Color(1.0, 1.0, 1.0))
+		var opt_moves: int = save_mgr.get_optimal_moves(lvl_idx) if save_mgr else 15
+		var ch_title_str: String = ch_info.get("name", "Cargo Bay")
+		if loc_mgr and loc_mgr.has_method("tr_text"):
+			ch_title_str = loc_mgr.tr_text("CHAPTER_%d_TITLE" % ch_idx)
+		child.tooltip_text = "Level %d • %s\nOptimal Par: ≤ %d moves" % [lvl_idx + 1, ch_title_str, opt_moves]
 
 		if is_completed:
 			var record: Dictionary = save_mgr.get_level_record(lvl_idx)

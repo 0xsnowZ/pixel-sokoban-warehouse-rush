@@ -831,7 +831,9 @@ func _on_level_won() -> void:
 	if pushes_val_lbl: pushes_val_lbl.text = str(grid.pushes_count)
 
 	if level_placard_label:
-		level_placard_label.text = "LEVEL %d" % [current_level_index + 1]
+		var ch_info: Dictionary = get_current_chapter_theme()
+		var ch_title_text: String = loc_mgr.tr_text("CHAPTER_%d_TITLE" % current_chapter_idx) if loc_mgr else ch_info.get("name", "Cargo Bay")
+		level_placard_label.text = "LEVEL %d  •  %s" % [current_level_index + 1, ch_title_text.to_upper()]
 
 	if loc_mgr:
 		if moves_title_lbl: moves_title_lbl.text = loc_mgr.tr_text("STAT_MOVES_TITLE")
