@@ -642,7 +642,7 @@ func test_touch_swipe_mechanics() -> void:
 	var init_player_pos: Vector2i = game.grid.get_player_pos()
 	assert_eq(init_player_pos, Vector2i(2, 3), "Player starts at (2, 3)")
 
-	# 1. Screen Touch Drag Down (> 24px)
+	# 1. Screen Touch Drag Down (> 42px)
 	var touch_down: InputEventScreenTouch = InputEventScreenTouch.new()
 	touch_down.position = Vector2(270, 500)
 	touch_down.pressed = true
@@ -652,14 +652,14 @@ func test_touch_swipe_mechanics() -> void:
 	assert_eq(game.active_touch_index, 0, "Active touch index is 0")
 
 	var touch_drag_down: InputEventScreenDrag = InputEventScreenDrag.new()
-	touch_drag_down.position = Vector2(270, 540) # 40px down
+	touch_drag_down.position = Vector2(270, 550) # 50px down (> 42px threshold)
 	touch_drag_down.index = 0
 	game._input(touch_drag_down)
 	assert_eq(game.grid.get_player_pos(), Vector2i(2, 4), "Player moved DOWN via screen drag swipe")
 	assert_eq(game.player_facing_dir, Vector2i.DOWN, "Player facing updated to DOWN")
 
 	var touch_up: InputEventScreenTouch = InputEventScreenTouch.new()
-	touch_up.position = Vector2(270, 540)
+	touch_up.position = Vector2(270, 550)
 	touch_up.pressed = false
 	touch_up.index = 0
 	game._input(touch_up)
@@ -669,7 +669,7 @@ func test_touch_swipe_mechanics() -> void:
 	# Wait for move animation to finish
 	game.is_animating = false
 
-	# 2. Quick Flick Swipe (Touch down at 500, Touch up at 450 = 50px UP)
+	# 2. Quick Flick Swipe (Touch down at 500, Touch up at 440 = 60px UP)
 	var flick_down: InputEventScreenTouch = InputEventScreenTouch.new()
 	flick_down.position = Vector2(270, 500)
 	flick_down.pressed = true
@@ -677,7 +677,7 @@ func test_touch_swipe_mechanics() -> void:
 	game._input(flick_down)
 
 	var flick_up: InputEventScreenTouch = InputEventScreenTouch.new()
-	flick_up.position = Vector2(270, 450) # 50px up flick
+	flick_up.position = Vector2(270, 440) # 60px up flick (> 42px threshold)
 	flick_up.pressed = false
 	flick_up.index = 0
 	game._input(flick_up)
@@ -686,7 +686,7 @@ func test_touch_swipe_mechanics() -> void:
 
 	game.is_animating = false
 
-	# 3. Micro Tap without drag (< 24px threshold) does NOT move the player
+	# 3. Micro Tap without drag (< 42px threshold) does NOT move the player
 	var tap_down: InputEventScreenTouch = InputEventScreenTouch.new()
 	tap_down.position = Vector2(270, 500)
 	tap_down.pressed = true
@@ -698,7 +698,7 @@ func test_touch_swipe_mechanics() -> void:
 	tap_up.pressed = false
 	tap_up.index = 0
 	game._input(tap_up)
-	assert_eq(game.grid.get_player_pos(), Vector2i(2, 3), "Micro tap (< 24px) ignored, player unmoved")
+	assert_eq(game.grid.get_player_pos(), Vector2i(2, 3), "Micro tap (< 42px) ignored, player unmoved")
 
 	# 4. Touch starting on TopBar UI is ignored for swipes
 	var ui_touch: InputEventScreenTouch = InputEventScreenTouch.new()
@@ -708,7 +708,7 @@ func test_touch_swipe_mechanics() -> void:
 	game._input(ui_touch)
 	assert_false(game.is_touching, "Touch on TopBar UI ignored for board swipe")
 
-	# 5. Desktop Mouse Swipe Left/Right
+	# 5. Desktop Mouse Swipe Left/Right (> 42px)
 	var mouse_down: InputEventMouseButton = InputEventMouseButton.new()
 	mouse_down.button_index = MOUSE_BUTTON_LEFT
 	mouse_down.pressed = true
@@ -717,7 +717,7 @@ func test_touch_swipe_mechanics() -> void:
 	assert_true(game.is_touching, "Mouse button down registered")
 
 	var mouse_motion: InputEventMouseMotion = InputEventMouseMotion.new()
-	mouse_motion.position = Vector2(230, 500) # 40px left
+	mouse_motion.position = Vector2(215, 500) # 55px left (> 42px threshold)
 	game._input(mouse_motion)
 	# Moving left from (2, 3): left is blocked by wall in level 1, so bump recoil occurs
 	assert_eq(game.player_facing_dir, Vector2i.LEFT, "Player facing updated to LEFT via mouse swipe")
@@ -725,7 +725,7 @@ func test_touch_swipe_mechanics() -> void:
 	var mouse_up: InputEventMouseButton = InputEventMouseButton.new()
 	mouse_up.button_index = MOUSE_BUTTON_LEFT
 	mouse_up.pressed = false
-	mouse_up.position = Vector2(230, 500)
+	mouse_up.position = Vector2(215, 500)
 	game._input(mouse_up)
 	assert_false(game.is_touching, "Mouse touch ended on release")
 

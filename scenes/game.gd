@@ -143,7 +143,9 @@ var hint_pulse_timer: float = 0.0
 var touch_start_pos: Vector2 = Vector2.ZERO
 var is_touching: bool = false
 var active_touch_index: int = -1
-const SWIPE_THRESHOLD_PIXELS: float = 24.0
+var swipe_triggered_in_gesture: bool = false
+const SWIPE_THRESHOLD_PIXELS: float = 42.0
+const CONTINUOUS_DRAG_THRESHOLD_PIXELS: float = 80.0
 
 var achievement_mgr: Node = null
 var ad_reward_modal: PanelContainer = null
@@ -447,7 +449,7 @@ func _ready() -> void:
 		initial_level = save_mgr.last_played_level
 	load_level(initial_level)
 	if get_viewport():
-		get_viewport().size_changed.connect(queue_redraw)
+		get_viewport().size_changed.connect(_on_viewport_size_changed)
 
 	# Tactile arcade button physics
 	if menu_button:
@@ -487,6 +489,13 @@ func _apply_safe_area() -> void:
 
 func _on_safe_area_changed(_insets: Dictionary) -> void:
 	_apply_safe_area()
+
+
+func _on_viewport_size_changed() -> void:
+	_layout_dirty = true
+	_apply_safe_area()
+	calculate_layout()
+	queue_redraw()
 
 
 func get_chapter_index(level_idx: int = -1) -> int:
@@ -1103,21 +1112,31 @@ func _process_game_input(event: InputEvent) -> void:
 					active_touch_index = event.index
 					touch_start_pos = event.position
 					is_touching = true
+					swipe_triggered_in_gesture = false
 		else:
 			if is_touching and event.index == active_touch_index:
-				var release_delta: Vector2 = event.position - touch_start_pos
-				if release_delta.length() >= SWIPE_THRESHOLD_PIXELS:
-					_handle_swipe(release_delta)
+				if not swipe_triggered_in_gesture:
+					var release_delta: Vector2 = event.position - touch_start_pos
+					if release_delta.length() >= SWIPE_THRESHOLD_PIXELS:
+						_handle_swipe(release_delta)
 				is_touching = false
 				active_touch_index = -1
+				swipe_triggered_in_gesture = false
 
-	# 2. Native Mobile Screen Drag (Continuous swipe gestures during dragging)
+	# 2. Native Mobile Screen Drag (Deliberate swipe gesture; limits runaway repeated inputs)
 	elif event is InputEventScreenDrag:
 		if is_touching and (active_touch_index == -1 or event.index == active_touch_index):
 			var drag_delta: Vector2 = event.position - touch_start_pos
-			if drag_delta.length() >= SWIPE_THRESHOLD_PIXELS:
-				_handle_swipe(drag_delta)
-				touch_start_pos = event.position
+			if not swipe_triggered_in_gesture:
+				if drag_delta.length() >= SWIPE_THRESHOLD_PIXELS:
+					_handle_swipe(drag_delta)
+					swipe_triggered_in_gesture = true
+					touch_start_pos = event.position
+			else:
+				# Continuous drag requires a large deliberate movement and finished animation
+				if drag_delta.length() >= CONTINUOUS_DRAG_THRESHOLD_PIXELS and not is_animating:
+					_handle_swipe(drag_delta)
+					touch_start_pos = event.position
 
 	# 3. Mouse Button (Desktop / Testing - ignored if physical screen touch is active)
 	elif event is InputEventMouseButton and active_touch_index == -1:
@@ -1126,19 +1145,28 @@ func _process_game_input(event: InputEvent) -> void:
 				if not _is_touch_on_ui(event.position):
 					is_touching = true
 					touch_start_pos = event.position
+					swipe_triggered_in_gesture = false
 			else:
 				if is_touching:
-					var release_delta: Vector2 = event.position - touch_start_pos
-					if release_delta.length() >= SWIPE_THRESHOLD_PIXELS:
-						_handle_swipe(release_delta)
+					if not swipe_triggered_in_gesture:
+						var release_delta: Vector2 = event.position - touch_start_pos
+						if release_delta.length() >= SWIPE_THRESHOLD_PIXELS:
+							_handle_swipe(release_delta)
 					is_touching = false
+					swipe_triggered_in_gesture = false
 
-	# 4. Mouse Motion (Desktop Drag - ignored if physical screen touch is active)
+	# 4. Mouse Motion (Desktop Drag - deliberate swipe gesture)
 	elif event is InputEventMouseMotion and is_touching and active_touch_index == -1:
 		var drag_delta: Vector2 = event.position - touch_start_pos
-		if drag_delta.length() >= SWIPE_THRESHOLD_PIXELS:
-			_handle_swipe(drag_delta)
-			touch_start_pos = event.position
+		if not swipe_triggered_in_gesture:
+			if drag_delta.length() >= SWIPE_THRESHOLD_PIXELS:
+				_handle_swipe(drag_delta)
+				swipe_triggered_in_gesture = true
+				touch_start_pos = event.position
+		else:
+			if drag_delta.length() >= CONTINUOUS_DRAG_THRESHOLD_PIXELS and not is_animating:
+				_handle_swipe(drag_delta)
+				touch_start_pos = event.position
 
 
 func _handle_swipe(delta: Vector2) -> void:
@@ -1778,18 +1806,31 @@ func calculate_layout(custom_viewport_size: Vector2 = Vector2.ZERO) -> void:
 	if not grid or grid.width == 0 or grid.height == 0:
 		return
 
-	var viewport_size: Vector2 = custom_viewport_size if custom_viewport_size != Vector2.ZERO else size
-	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
-		viewport_size = Vector2(720.0, 1280.0)
+	var viewport_size: Vector2 = custom_viewport_size
+	if viewport_size == Vector2.ZERO:
+		if is_inside_tree() and get_viewport() != null:
+			viewport_size = get_viewport_rect().size
+		elif size.x > 0.0 and size.y > 0.0:
+			viewport_size = size
+		else:
+			viewport_size = Vector2(540.0, 960.0)
 
 	var insets: Dictionary = safe_area_mgr.get_safe_insets(self) if safe_area_mgr else { "top": 0.0, "bottom": 0.0, "left": 0.0, "right": 0.0 }
 	var safe_top: float = insets.get("top", 0.0)
 	var safe_bottom: float = insets.get("bottom", 0.0)
 	var safe_horiz: float = insets.get("left", 0.0) + insets.get("right", 0.0)
 
-	var top_offset: float = 96.0 + safe_top
+	var top_bar_h: float = 96.0 + safe_top
+	if top_bar != null and top_bar.size.y > 0.0:
+		top_bar_h = maxf(top_bar_h, top_bar.size.y)
+	var top_offset: float = top_bar_h + 10.0
+
 	var dpad_allowance: float = 160.0 if (dpad_overlay and dpad_overlay.visible) else 0.0
-	var bottom_offset: float = 70.0 + safe_bottom + dpad_allowance
+	var bot_bar_h: float = 70.0 + safe_bottom
+	if bottom_bar != null and bottom_bar.size.y > 0.0:
+		bot_bar_h = maxf(bot_bar_h, bottom_bar.size.y)
+	var bottom_offset: float = bot_bar_h + 10.0 + dpad_allowance
+
 	var playable_height: float = viewport_size.y - (top_offset + bottom_offset)
 	var playable_width: float = viewport_size.x - (36.0 + safe_horiz)
 
