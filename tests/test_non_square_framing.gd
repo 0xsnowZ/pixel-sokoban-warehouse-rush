@@ -22,7 +22,23 @@ func _init() -> void:
 	game.save_mgr = save
 	game._ready()
 
-	# 1. Test Level 6 (Pinwheel Cross - the exact level from user screenshot)
+	# 1. Test Level 2 (Pinwheel Cross - from user screenshot media_1794021233769_da76b051.jpg)
+	# Index 1 in campaign (Level 2)
+	game.load_level(1)
+	print("Loaded Level 2 (width=%d, height=%d)..." % [game.grid.width, game.grid.height])
+
+	var is_non_sq_l2: bool = game.is_level_non_square()
+	print("  is_level_non_square(Level 2): %s" % str(is_non_sq_l2))
+	assert(is_non_sq_l2 == true, "Level 2 must be recognized as non-square shape")
+
+	# Verify exterior tile detection on corners of Level 2
+	assert(game.is_exterior_tile(Vector2i(0, 0)) == true, "Level 2 Corner (0, 0) is exterior void")
+	assert(game.is_exterior_tile(Vector2i(1, 0)) == true, "Level 2 (1, 0) is exterior void")
+	assert(game.is_exterior_tile(Vector2i(0, 7)) == true, "Level 2 Corner (0, 7) is exterior void")
+	assert(game.grid.is_wall(Vector2i(0, 0)) == false, "Corner (0, 0) must NOT be a wall")
+	assert(game.grid.is_wall(Vector2i(2, 0)) == true, "Wall at (2, 0) must be a single wall")
+
+	# 2. Test Level 6 (Pinwheel Cross)
 	# Index 5 in campaign
 	game.load_level(5)
 	print("Loaded Level 6 (width=%d, height=%d)..." % [game.grid.width, game.grid.height])
@@ -31,7 +47,7 @@ func _init() -> void:
 	print("  is_level_non_square(Level 6): %s" % str(is_non_sq_l6))
 	assert(is_non_sq_l6 == true, "Level 6 must be recognized as non-square shape")
 
-	# Verify exterior tile detection on corners of Level 6 (Pinwheel Cross)
+	# Verify exterior tile detection on corners of Level 6
 	assert(game.is_exterior_tile(Vector2i(0, 0)) == true, "Corner (0, 0) is exterior")
 	assert(game.is_exterior_tile(Vector2i(7, 0)) == true, "Corner (7, 0) is exterior")
 	assert(game.is_exterior_tile(Vector2i(0, 8)) == true, "Corner (0, 8) is exterior")

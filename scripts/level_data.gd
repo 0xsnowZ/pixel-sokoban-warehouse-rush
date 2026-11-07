@@ -1,4 +1,3 @@
-class_name LevelData
 ## Embedded fallback data for all 50 Sokoban levels.
 ## Ensures levels always load on any platform or export package.
 

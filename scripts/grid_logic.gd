@@ -175,7 +175,7 @@ func _compute_interior_floor() -> void:
 				queue.append(nxt)
 
 
-const LevelDataScript = preload("res://scripts/level_data.gd")
+const LevelData = preload("res://scripts/level_data.gd")
 
 ## Loads a level from a file containing standard Sokoban text.
 ## Falls back to embedded LevelData if file is not directly readable.
@@ -193,7 +193,7 @@ func load_from_file(file_path: String) -> bool:
 	var result: RegExMatch = regex.search(file_path)
 	if result:
 		var lvl_num: int = result.get_string(1).to_int()
-		var fallback_text: String = LevelDataScript.get_level_text(lvl_num)
+		var fallback_text: String = LevelData.get_level_text(lvl_num)
 		if not fallback_text.is_empty():
 			return load_from_text(fallback_text)
 

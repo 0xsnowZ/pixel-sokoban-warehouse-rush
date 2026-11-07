@@ -1935,38 +1935,53 @@ func _draw() -> void:
 	var board_pixel_size: Vector2 = Vector2(grid.width * tile_size, grid.height * tile_size)
 	var ch: Dictionary = get_current_chapter_theme()
 
+	var is_non_square: bool = is_level_non_square()
+
 	# 1. Industrial Warehouse Loading Bay Board Framing (PRD Section 4 & Phase 2 Themes)
-	# All levels (square and non-square) are encased in the unified industrial warehouse frame
-	var frame_margin: float = 12.0
-	var frame_rect: Rect2 = Rect2(
-		effective_origin - Vector2(frame_margin, frame_margin),
-		board_pixel_size + Vector2(frame_margin * 2.0, frame_margin * 2.0)
-	)
+	if is_non_square:
+		# Multi-stage cinematic silhouette 2.5D drop shadow under the non-square shape
+		for y in range(grid.height):
+			for x in range(grid.width):
+				var pos: Vector2i = Vector2i(x, y)
+				if not grid.is_exterior_void(pos):
+					var s_rect: Rect2 = Rect2(effective_origin + Vector2(x, y) * tile_size, Vector2(tile_size, tile_size))
+					# Layer 3: Distant soft ambient penumbra
+					draw_rect(Rect2(s_rect.position + Vector2(8, 12), s_rect.size + Vector2(6, 6)), Color(0.0, 0.0, 0.0, 0.12))
+					# Layer 2: Mid directional shadow
+					draw_rect(Rect2(s_rect.position + Vector2(5, 7), s_rect.size + Vector2(3, 3)), Color(0.0, 0.0, 0.0, 0.24))
+					# Layer 1: Tight perimeter contact depth
+					draw_rect(Rect2(s_rect.position + Vector2(2, 3), s_rect.size), Color(0.0, 0.0, 0.0, 0.45))
+	else:
+		var frame_margin: float = 12.0
+		var frame_rect: Rect2 = Rect2(
+			effective_origin - Vector2(frame_margin, frame_margin),
+			board_pixel_size + Vector2(frame_margin * 2.0, frame_margin * 2.0)
+		)
 
-	# Multi-stage drop shadow
-	draw_rect(Rect2(frame_rect.position + Vector2(10, 14), frame_rect.size + Vector2(6, 6)), Color(0.0, 0.0, 0.0, 0.22))
-	draw_rect(Rect2(frame_rect.position + Vector2(6, 9), frame_rect.size + Vector2(3, 3)), Color(0.0, 0.0, 0.0, 0.45))
-	draw_rect(Rect2(frame_rect.position + Vector2(2, 3), frame_rect.size), Color(0.0, 0.0, 0.0, 0.60))
+		# Multi-stage drop shadow
+		draw_rect(Rect2(frame_rect.position + Vector2(10, 14), frame_rect.size + Vector2(6, 6)), Color(0.0, 0.0, 0.0, 0.22))
+		draw_rect(Rect2(frame_rect.position + Vector2(6, 9), frame_rect.size + Vector2(3, 3)), Color(0.0, 0.0, 0.0, 0.45))
+		draw_rect(Rect2(frame_rect.position + Vector2(2, 3), frame_rect.size), Color(0.0, 0.0, 0.0, 0.60))
 
-	# Heavy chapter frame base
-	draw_rect(frame_rect, ch["frame_base"])
-	# Polished chapter bevel rim
-	draw_rect(frame_rect, ch["frame_rim"], false, 2.5)
-	# Inner dark groove
-	draw_rect(Rect2(effective_origin - Vector2(2, 2), board_pixel_size + Vector2(4, 4)), ch["frame_groove"], false, 2.0)
+		# Heavy chapter frame base
+		draw_rect(frame_rect, ch["frame_base"])
+		# Polished chapter bevel rim
+		draw_rect(frame_rect, ch["frame_rim"], false, 2.5)
+		# Inner dark groove
+		draw_rect(Rect2(effective_origin - Vector2(2, 2), board_pixel_size + Vector2(4, 4)), ch["frame_groove"], false, 2.0)
 
-	# 4 Corner industrial chapter bolts
-	var corner_offsets: Array[Vector2] = [
-		Vector2(frame_margin * 0.5, frame_margin * 0.5),
-		Vector2(frame_rect.size.x - frame_margin * 0.5, frame_margin * 0.5),
-		Vector2(frame_margin * 0.5, frame_rect.size.y - frame_margin * 0.5),
-		Vector2(frame_rect.size.x - frame_margin * 0.5, frame_rect.size.y - frame_margin * 0.5)
-	]
-	for c_offset in corner_offsets:
-		var bolt_center: Vector2 = frame_rect.position + c_offset
-		draw_circle(bolt_center, 4.5, ch["bolt_dark"])
-		draw_circle(bolt_center, 3.5, ch["bolt_core"])
-		draw_circle(bolt_center - Vector2(1.0, 1.0), 1.2, ch["bolt_specular"])
+		# 4 Corner industrial chapter bolts
+		var corner_offsets: Array[Vector2] = [
+			Vector2(frame_margin * 0.5, frame_margin * 0.5),
+			Vector2(frame_rect.size.x - frame_margin * 0.5, frame_margin * 0.5),
+			Vector2(frame_margin * 0.5, frame_rect.size.y - frame_margin * 0.5),
+			Vector2(frame_rect.size.x - frame_margin * 0.5, frame_rect.size.y - frame_margin * 0.5)
+		]
+		for c_offset in corner_offsets:
+			var bolt_center: Vector2 = frame_rect.position + c_offset
+			draw_circle(bolt_center, 4.5, ch["bolt_dark"])
+			draw_circle(bolt_center, 3.5, ch["bolt_core"])
+			draw_circle(bolt_center - Vector2(1.0, 1.0), 1.2, ch["bolt_specular"])
 
 	# 2. Draw Floor & Walls with Clean, Unified Architecture
 	for y in range(grid.height):
@@ -1974,13 +1989,16 @@ func _draw() -> void:
 			var pos: Vector2i = Vector2i(x, y)
 			var rect: Rect2 = Rect2(effective_origin + Vector2(x, y) * tile_size, Vector2(tile_size, tile_size))
 
-			if grid.is_interior_floor(pos) or (grid.interior_floor.is_empty() and not grid.is_wall(pos)):
-				_draw_floor_tile(rect, pos, ch)
-			else:
+			if grid.is_wall(pos):
 				_draw_wall(rect, pos)
+			elif grid.is_interior_floor(pos) or grid.interior_floor.is_empty():
+				_draw_floor_tile(rect, pos, ch)
 
-	# 2.5. Board Soft Ambient Framing Vignette
-	_draw_board_vignette(effective_origin, board_pixel_size, ch)
+	# 2.2. Perimeter Framing: Slim level border for irregular shapes; vignette for rectangular bays
+	if is_non_square:
+		_draw_slim_level_border(effective_origin, ch)
+	else:
+		_draw_board_vignette(effective_origin, board_pixel_size, ch)
 
 	# 3. Draw Goals with Clean, Contained Precision Docking (no vertical bleeding)
 	var time_sec: float = float(Time.get_ticks_msec()) / 1000.0
