@@ -41,7 +41,6 @@ var is_undo_held: bool = false
 var undo_hold_time: float = 0.0
 var undo_step_timer: float = 0.0
 var bump_offset: Vector2 = Vector2.ZERO
-var player_trail: Array[Vector2i] = []
 
 # Visual Atmosphere & Polish (Option B)
 var ambient_motes: Array[Dictionary] = []
@@ -591,7 +590,6 @@ func load_level(index: int) -> void:
 	dust_particles.clear()
 	goal_effects.clear()
 	crate_squash.clear()
-	player_trail.clear()
 	_init_ambient_motes()
 	player_idle_time = 0.0
 	consecutive_wall_bumps = 0
@@ -747,9 +745,6 @@ func _update_ui() -> void:
 func _on_player_moved(from_pos: Vector2i, to_pos: Vector2i) -> void:
 	consecutive_wall_bumps = 0
 	player_idle_time = 0.0
-	player_trail.append(from_pos)
-	if player_trail.size() > 5:
-		player_trail.pop_front()
 	_update_ui()
 	_animate_player(from_pos, to_pos)
 	if not grid.last_move_pushed_crate and audio_mgr:
@@ -943,7 +938,6 @@ func _on_level_reset() -> void:
 	current_walk_frame = 0
 	walk_step_count = 0
 	clear_hint()
-	player_trail.clear()
 	is_level_won = false
 	player_celebration_hop = 0.0
 	victory_radiance_rings.clear()
@@ -1417,8 +1411,6 @@ func _on_move_undone(p_pos: Vector2i, _had_crate: bool, _crate_from: Vector2i, _
 	queued_move_dir = Vector2i.ZERO
 	current_walk_frame = 0
 	clear_hint()
-	if not player_trail.is_empty():
-		player_trail.pop_back()
 	visual_player_pos = Vector2(p_pos)
 	visual_crates.clear()
 	for crate_pos in grid.crates.keys():
@@ -2058,7 +2050,6 @@ func _draw() -> void:
 
 	# 3.5. Draw Floating Ambient Warehouse Motes (Option B)
 	_draw_ambient_motes(effective_origin, board_pixel_size, ch)
-	_draw_player_trail(effective_origin, ch)
 
 	# 4. Draw Push Friction Dust Puffs
 	for dp in dust_particles:
@@ -2447,24 +2438,6 @@ func _draw_player_headlamp(effective_origin: Vector2) -> void:
 	draw_circle(p_center, tile_size * 0.35, Color(1.0, 0.96, 0.82, 0.025))
 
 
-func _draw_player_trail(effective_origin: Vector2, ch: Dictionary) -> void:
-	if player_trail.is_empty() or grid == null:
-		return
-	var badge_col: Color = ch.get("badge_color", Color(0.98, 0.82, 0.25))
-	var count: int = player_trail.size()
-	for i in range(count):
-		var p_tile: Vector2i = player_trail[i]
-		if p_tile == grid.player_pos or grid.is_wall(p_tile):
-			continue
-		var t: float = float(i + 1) / float(count)
-		var center: Vector2 = effective_origin + Vector2(p_tile) * tile_size + Vector2(tile_size * 0.5, tile_size * 0.5)
-		var radius: float = lerpf(2.0, 3.6, t)
-		var col: Color = badge_col
-		col.a = lerpf(0.10, 0.30, t)
-		draw_circle(center, radius + 1.2, Color(col.r, col.g, col.b, col.a * 0.35))
-		draw_circle(center, radius, col)
-
-
 func _draw_ambient_motes(_effective_origin: Vector2, _board_pixel_size: Vector2, _ch: Dictionary) -> void:
 	# Clean clutter-free design: motes simulation is active in background for tests, screen kept clean
 	pass
@@ -2693,38 +2666,6 @@ func _draw_player(rect: Rect2) -> void:
 
 	# Skin Accessory & Visual Accent Overlays
 	match skin_id:
-		"safety_vest":
-			# High-vis reflective horizontal safety chest stripes
-			var stripe_y: float = rect.position.y + rect.size.y * 0.54
-			var stripe_w: float = rect.size.x * 0.42
-			var stripe_x: float = center.x - stripe_w * 0.5
-			draw_line(Vector2(stripe_x, stripe_y), Vector2(stripe_x + stripe_w, stripe_y), Color(0.95, 0.98, 1.0, 0.85), 2.2)
-			draw_line(Vector2(stripe_x, stripe_y - 2), Vector2(stripe_x + stripe_w, stripe_y - 2), Color(1.0, 0.55, 0.10, 0.70), 1.2)
-		"mechanic":
-			# Dark utility tool belt strap with silver wrench / tool clip
-			var belt_y: float = rect.position.y + rect.size.y * 0.58
-			var belt_w: float = rect.size.x * 0.44
-			var belt_x: float = center.x - belt_w * 0.5
-			draw_line(Vector2(belt_x, belt_y), Vector2(belt_x + belt_w, belt_y), Color(0.18, 0.20, 0.25, 0.90), 2.4)
-			var clip_x: float = belt_x + belt_w * 0.78
-			draw_line(Vector2(clip_x, belt_y - 2), Vector2(clip_x, belt_y + 4), Color(0.80, 0.85, 0.92, 0.95), 1.8)
-			draw_line(Vector2(clip_x - 1, belt_y + 4), Vector2(clip_x + 2, belt_y + 4), Color(0.80, 0.85, 0.92, 0.95), 1.8)
-		"foreman":
-			# Foreman hardhat brim highlight
-			var brim_y: float = rect.position.y + rect.size.y * 0.28
-			var brim_w: float = rect.size.x * 0.50
-			var brim_x: float = center.x - brim_w * 0.5
-			draw_line(Vector2(brim_x, brim_y), Vector2(brim_x + brim_w, brim_y), Color(1.0, 0.90, 0.25, 0.90), 2.0)
-		"hazmat":
-			# Glowing cyan protective visor
-			var visor_y: float = rect.position.y + rect.size.y * 0.32
-			var visor_w: float = rect.size.x * 0.38
-			var visor_x: float = center.x - visor_w * 0.5
-			draw_line(Vector2(visor_x, visor_y), Vector2(visor_x + visor_w, visor_y), Color(0.20, 0.95, 1.0, 0.92), 2.2)
-			draw_line(Vector2(visor_x + 2, visor_y), Vector2(visor_x + visor_w - 2, visor_y), Color(1.0, 1.0, 1.0, 0.85), 1.0)
-			# Chest biohazard breather regulator
-			draw_circle(Vector2(center.x, rect.position.y + rect.size.y * 0.52), 2.2, Color(0.15, 0.18, 0.22, 0.90))
-			draw_circle(Vector2(center.x, rect.position.y + rect.size.y * 0.52), 1.2, Color(0.30, 0.95, 0.40, 0.95))
 		"golden_porter":
 			# Radiant golden sparkles & prestige shimmer
 			var time_sec: float = float(Time.get_ticks_msec()) / 1000.0
