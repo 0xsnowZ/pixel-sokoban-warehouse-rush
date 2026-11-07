@@ -2020,13 +2020,9 @@ func _draw() -> void:
 			# 5. Clean self-contained docking illumination (inside tile)
 			_draw_goal_light_pillar(rect, goal_pos, ch, time_sec)
 		else:
-			# --- Filled Goal: Radiant Docking Under-Glow beneath crate ---
+			# --- Filled Goal: Clean Docking Under-Glow beneath crate ---
 			_draw_goal_hazard_brackets(rect, ch)
-			draw_texture_rect(tex_goal, rect, false, Color(1.0, 1.0, 1.0, 0.50))
-			var aura_glow: Color = aura_col_base
-			aura_glow.a = 0.35 + pulse * 0.10
-			draw_circle(center, tile_size * 0.44, aura_glow)
-			draw_arc(center, tile_size * 0.40, 0.0, TAU, 36, Color(1.0, 0.92, 0.45, 0.70), 2.0, true)
+			draw_texture_rect(tex_goal, rect, false, Color(1.0, 1.0, 1.0, 0.45))
 
 	# 3.5. Draw Floating Ambient Warehouse Motes (Option B)
 	_draw_ambient_motes(effective_origin, board_pixel_size, ch)
@@ -2558,34 +2554,10 @@ func _draw_crate(rect: Rect2, on_goal: bool, logical_pos: Vector2i = Vector2i.ZE
 		var star_pulse: float = sin(time_sec * 4.0) * 0.15
 		var aura_spark: Color = ch["goal_aura"]
 		aura_spark.a = 0.50
-
-		# 1. Radiant energetic outer halo around crate (matches splash art glowing crate!)
-		var glow_r: float = draw_r.size.x * 0.62 * (1.0 + star_pulse * 0.35)
-		draw_circle(c_center, glow_r, Color(1.0, 0.88, 0.25, 0.16 + star_pulse * 0.04))
-		draw_circle(c_center, glow_r * 0.72, Color(1.0, 0.76, 0.18, 0.24 + star_pulse * 0.06))
-
-		# 2. Glowing delivery chevron / upward arrow on crate face (Hero visual from splash key art)
-		var arrow_col: Color = Color(1.0, 0.98, 0.85, 0.96)
-		var arrow_glow: Color = Color(1.0, 0.75, 0.15, 0.65)
-		var a_tip: Vector2 = c_center + Vector2(0.0, -draw_r.size.y * 0.20)
-		var a_left: Vector2 = c_center + Vector2(-draw_r.size.x * 0.18, draw_r.size.y * 0.02)
-		var a_right: Vector2 = c_center + Vector2(draw_r.size.x * 0.18, draw_r.size.y * 0.02)
-		var a_base: Vector2 = c_center + Vector2(0.0, draw_r.size.y * 0.22)
-
-		# Outer glow strokes
-		draw_line(a_left, a_tip, arrow_glow, 4.5)
-		draw_line(a_right, a_tip, arrow_glow, 4.5)
-		draw_line(a_tip, a_base, arrow_glow, 4.5)
-
-		# Crisp bright inner core strokes
-		draw_line(a_left, a_tip, arrow_col, 2.2)
-		draw_line(a_right, a_tip, arrow_col, 2.2)
-		draw_line(a_tip, a_base, arrow_col, 2.5)
-
-		# Central delivery power core
+		draw_circle(c_center, 9.5 * (1.0 + star_pulse), aura_spark)
 		draw_circle(c_center, 4.0, Color(1.0, 1.0, 0.92, 0.95))
 
-		# 3. Radiant metallic lock-in corner power pins
+		# 4 Radiant metallic lock-in corner rivets
 		var r_pad: float = draw_r.size.x * 0.14
 		var corners: Array[Vector2] = [
 			draw_r.position + Vector2(r_pad, r_pad),
