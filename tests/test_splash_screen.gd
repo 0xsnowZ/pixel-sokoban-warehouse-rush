@@ -21,6 +21,7 @@ func _init() -> void:
 	run_suite("Splash Screen Scene Node Hierarchy & Assets", test_splash_scene_structure)
 	run_suite("Splash Loading Progress & Localization", test_splash_loading_logic)
 	run_suite("Splash Skip & Transition Logic", test_splash_skip_logic)
+	run_suite("Splash Mobile Safe Area & Aspect Ratio Adaptation", test_splash_mobile_adaptation)
 
 	print("\n==================================================")
 	print("Test Suites: %d passed, %d failed" % [_passed_suites, _failed_suites])
@@ -83,9 +84,13 @@ func test_splash_scene_structure() -> void:
 	var splash = SplashScreenScene.instantiate()
 	assert_true(splash != null, "SplashScreen instantiated successfully")
 
+	var base_col = splash.get_node_or_null("BaseColor")
+	assert_true(base_col != null, "BaseColor ColorRect exists for seamless startup")
+
 	var bg = splash.get_node_or_null("Background")
 	assert_true(bg != null, "Background TextureRect exists")
 	assert_true(bg.texture != null, "Background has valid texture assigned")
+	assert_eq(bg.stretch_mode, TextureRect.STRETCH_KEEP_ASPECT_COVERED, "Background uses STRETCH_KEEP_ASPECT_COVERED (5) for fullscreen mobile display")
 
 	var bar = splash.get_node_or_null("Margin/BottomVBox/LoadingBar")
 	assert_true(bar != null, "Loading ProgressBar exists")
@@ -134,5 +139,25 @@ func test_splash_skip_logic() -> void:
 	# Test skip
 	splash.skip_to_main_menu()
 	assert_true(splash._is_transitioning, "skip_to_main_menu() initiates transition")
+
+	splash.free()
+
+
+func test_splash_mobile_adaptation() -> void:
+	var splash = SplashScreenScene.instantiate()
+	root.add_child(splash)
+	splash._ready()
+
+	assert_true(splash.dust_motes.size() >= 24, "Dust motes spawned across screen")
+
+	# Simulate safe area cutout (e.g. 36px bottom navigation gesture bar)
+	var simulated_insets: Dictionary = { "bottom": 36.0, "left": 12.0, "right": 12.0, "top": 48.0 }
+	splash._on_safe_area_changed(simulated_insets)
+
+	var margin_bottom: int = splash.margin.get_theme_constant("margin_bottom")
+	assert_true(margin_bottom >= 52, "Margin bottom elevates above 36px gesture bar (got %d)" % margin_bottom)
+
+	var margin_left: int = splash.margin.get_theme_constant("margin_left")
+	assert_true(margin_left >= 48, "Margin left provides safe inset padding (got %d)" % margin_left)
 
 	splash.free()

@@ -7,10 +7,11 @@ extends Control
 
 const MAIN_MENU_SCENE_PATH: String = "res://scenes/main_menu.tscn"
 
-@export var duration: float = 1.8
+@export var duration: float = 1.6
 
 @onready var background: TextureRect = get_node_or_null("Background")
 @onready var fade_overlay: ColorRect = get_node_or_null("FadeOverlay")
+@onready var margin: MarginContainer = get_node_or_null("Margin")
 @onready var progress_bar: ProgressBar = get_node_or_null("Margin/BottomVBox/LoadingBar")
 @onready var status_label: Label = get_node_or_null("Margin/BottomVBox/StatusLabel")
 @onready var prompt_label: Label = get_node_or_null("Margin/BottomVBox/PromptLabel")
@@ -26,25 +27,76 @@ func _ready() -> void:
 	if fade_overlay:
 		fade_overlay.modulate.a = 0.0
 
+	_update_viewport_layout()
 	_init_dust_motes()
 
+	if is_inside_tree() and get_viewport() != null:
+		get_viewport().size_changed.connect(_on_viewport_size_changed)
+
+	var safe_mgr = null
+	if is_inside_tree() and get_tree() and get_tree().root:
+		safe_mgr = get_tree().root.get_node_or_null("SafeAreaManager")
+	if safe_mgr and safe_mgr.has_signal("safe_area_changed"):
+		if not safe_mgr.safe_area_changed.is_connected(_on_safe_area_changed):
+			safe_mgr.safe_area_changed.connect(_on_safe_area_changed)
+
 	if background:
-		var vp_sz: Vector2 = background.size if background.size != Vector2.ZERO else Vector2(540, 960)
+		var vp_sz: Vector2 = get_viewport_rect().size if is_inside_tree() and get_viewport() != null else Vector2(540.0, 960.0)
 		background.pivot_offset = vp_sz / 2.0
 		var bg_tw = create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-		bg_tw.tween_property(background, "scale", Vector2(1.03, 1.03), duration)
+		bg_tw.tween_property(background, "scale", Vector2(1.035, 1.035), duration)
 
 	_update_localized_text(0.0)
 	_start_loading_animation()
 	_start_prompt_pulse()
 
 
+func _update_viewport_layout() -> void:
+	_ensure_node_refs()
+	var vp_sz: Vector2 = get_viewport_rect().size if is_inside_tree() and get_viewport() != null else (size if size != Vector2.ZERO else Vector2(540.0, 960.0))
+	if background:
+		background.pivot_offset = vp_sz / 2.0
+	_apply_safe_area()
+
+
+func _apply_safe_area(custom_insets: Dictionary = {}) -> void:
+	_ensure_node_refs()
+	if not margin:
+		return
+	var insets: Dictionary = custom_insets
+	if insets.is_empty():
+		var safe_mgr = null
+		if is_inside_tree() and get_tree() and get_tree().root:
+			safe_mgr = get_tree().root.get_node_or_null("SafeAreaManager")
+		if safe_mgr and safe_mgr.has_method("get_safe_insets"):
+			insets = safe_mgr.get_safe_insets(self)
+		else:
+			insets = { "bottom": 0.0, "left": 0.0, "right": 0.0, "top": 0.0 }
+	var bottom_pad: int = int(maxf(28.0, insets.get("bottom", 0.0) + 16.0))
+	var left_pad: int = int(maxf(48.0, insets.get("left", 0.0) + 24.0))
+	var right_pad: int = int(maxf(48.0, insets.get("right", 0.0) + 24.0))
+	margin.add_theme_constant_override("margin_bottom", bottom_pad)
+	margin.add_theme_constant_override("margin_left", left_pad)
+	margin.add_theme_constant_override("margin_right", right_pad)
+
+
+func _on_safe_area_changed(insets: Dictionary = {}) -> void:
+	_apply_safe_area(insets)
+
+
+func _on_viewport_size_changed() -> void:
+	_update_viewport_layout()
+	queue_redraw()
+
+
 func _init_dust_motes() -> void:
+	var vp_sz: Vector2 = get_viewport_rect().size if is_inside_tree() and get_viewport() != null else (size if size != Vector2.ZERO else Vector2(540.0, 960.0))
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.randomize()
-	for i in range(24):
+	dust_motes.clear()
+	for i in range(28):
 		dust_motes.append({
-			"pos": Vector2(rng.randf_range(20.0, 520.0), rng.randf_range(100.0, 800.0)),
+			"pos": Vector2(rng.randf_range(20.0, vp_sz.x - 20.0), rng.randf_range(30.0, vp_sz.y - 40.0)),
 			"vel": Vector2(rng.randf_range(-6.0, 6.0), rng.randf_range(-14.0, -4.0)),
 			"size": rng.randf_range(1.5, 3.2),
 			"alpha": rng.randf_range(0.20, 0.50),
@@ -55,7 +107,7 @@ func _init_dust_motes() -> void:
 func _process(delta: float) -> void:
 	if dust_motes.is_empty():
 		return
-	var vp_sz: Vector2 = size if size != Vector2.ZERO else Vector2(540, 960)
+	var vp_sz: Vector2 = get_viewport_rect().size if is_inside_tree() and get_viewport() != null else (size if size != Vector2.ZERO else Vector2(540.0, 960.0))
 	for m in dust_motes:
 		m["phase"] += delta * 1.5
 		m["pos"] += m["vel"] * delta + Vector2(sin(m["phase"]) * 4.0 * delta, 0)
@@ -76,6 +128,8 @@ func _ensure_node_refs() -> void:
 		background = get_node_or_null("Background")
 	if not fade_overlay:
 		fade_overlay = get_node_or_null("FadeOverlay")
+	if not margin:
+		margin = get_node_or_null("Margin")
 	if not progress_bar:
 		progress_bar = get_node_or_null("Margin/BottomVBox/LoadingBar")
 	if not status_label:
@@ -167,6 +221,7 @@ func _start_prompt_pulse() -> void:
 
 func _on_loading_finished() -> void:
 	if not _is_transitioning:
+		_trigger_haptic()
 		_transition_to_menu()
 
 
@@ -175,12 +230,21 @@ func skip_to_main_menu() -> void:
 	if _is_transitioning:
 		return
 
+	_trigger_haptic()
 	if _progress_tween and _progress_tween.is_valid():
 		_progress_tween.kill()
 	if _pulse_tween and _pulse_tween.is_valid():
 		_pulse_tween.kill()
 
 	_transition_to_menu(0.15)
+
+
+func _trigger_haptic() -> void:
+	var haptic_mgr = null
+	if is_inside_tree() and get_tree() and get_tree().root:
+		haptic_mgr = get_tree().root.get_node_or_null("HapticManager")
+	if haptic_mgr and haptic_mgr.has_method("play_click"):
+		haptic_mgr.play_click()
 
 
 func _transition_to_menu(fade_time: float = 0.35) -> void:
