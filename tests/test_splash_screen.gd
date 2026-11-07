@@ -77,7 +77,7 @@ func test_boot_splash_settings() -> void:
 	assert_eq(main_scene, "res://scenes/splash_screen.tscn", "Main scene starts on splash screen")
 
 	var stretch_mode: int = ProjectSettings.get_setting("application/boot_splash/stretch_mode", 0)
-	assert_eq(stretch_mode, 1, "Boot splash stretch mode is set to Keep (1)")
+	assert_eq(stretch_mode, 4, "Boot splash stretch mode is set to Cover (4) for seamless full-screen mobile startup")
 
 
 func test_splash_scene_structure() -> void:

@@ -46,6 +46,12 @@ func _ready() -> void:
 		var bg_tw = create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 		bg_tw.tween_property(background, "scale", Vector2(1.035, 1.035), duration)
 
+	if margin:
+		margin.modulate.a = 0.0
+		var margin_fade: Tween = create_tween()
+		if margin_fade:
+			margin_fade.tween_property(margin, "modulate:a", 1.0, 0.25).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
 	_update_localized_text(0.0)
 	_start_loading_animation()
 	_start_prompt_pulse()
