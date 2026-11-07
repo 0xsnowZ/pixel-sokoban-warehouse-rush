@@ -929,7 +929,17 @@ func _animate_player(from_pos: Vector2i, to_pos: Vector2i) -> void:
 	walk_step_count += 1
 	var step_base: int = 1 if (walk_step_count % 2 == 1) else 2
 	current_walk_frame = step_base
-	var tween: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+	var was_push: bool = (grid != null and grid.last_move_pushed_crate)
+	# Heavy pushing uses deliberate cubic ease-out curve; walking uses swift quad ease-out
+	var trans_mode: Tween.TransitionType = Tween.TRANS_CUBIC if was_push else Tween.TRANS_QUAD
+	var anim_duration: float = 0.135 if was_push else 0.11
+
+	# Footstep floor dust puff when walking on empty floor (every 2 steps)
+	if not was_push and (walk_step_count % 2 == 0):
+		_spawn_footstep_dust(from_pos, to_pos)
+
+	var tween: Tween = create_tween().set_trans(trans_mode).set_ease(Tween.EASE_OUT)
 	visual_player_pos = Vector2(from_pos)
 	tween.tween_method(func(pos: Vector2):
 		visual_player_pos = pos
@@ -939,7 +949,7 @@ func _animate_player(from_pos: Vector2i, to_pos: Vector2i) -> void:
 		else:
 			current_walk_frame = step_base
 		queue_redraw()
-	, Vector2(from_pos), Vector2(to_pos), 0.12)
+	, Vector2(from_pos), Vector2(to_pos), anim_duration)
 	tween.tween_callback(func():
 		is_animating = false
 		current_walk_frame = 0
@@ -953,14 +963,31 @@ func _animate_player(from_pos: Vector2i, to_pos: Vector2i) -> void:
 	)
 
 
+func _spawn_footstep_dust(from_pos: Vector2i, _to_pos: Vector2i) -> void:
+	var base_origin: Vector2 = grid_origin + Vector2(from_pos) * tile_size
+	var foot_pos: Vector2 = base_origin + Vector2(tile_size * 0.5, tile_size * 0.80)
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.randomize()
+	for i in range(2):
+		dust_particles.append({
+			"pos": foot_pos + Vector2(rng.randf_range(-4.0, 4.0), rng.randf_range(-2.0, 2.0)),
+			"vel": Vector2(rng.randf_range(-14.0, 14.0), rng.randf_range(-8.0, 4.0)),
+			"size": rng.randf_range(1.6, 2.6),
+			"color": Color(0.70, 0.65, 0.58, 0.40),
+			"life": rng.randf_range(0.18, 0.25),
+			"max_life": 0.25
+		})
+
+
 func _animate_crate(from_pos: Vector2i, to_pos: Vector2i) -> void:
 	visual_crates.erase(from_pos)
 	visual_crates[to_pos] = Vector2(from_pos)
-	var tween: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	# Crate uses weighty cubic ease-out curve for heavy industrial mass
+	var tween: Tween = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	tween.tween_method(func(val: Vector2):
 		visual_crates[to_pos] = val
 		queue_redraw()
-	, Vector2(from_pos), Vector2(to_pos), 0.12)
+	, Vector2(from_pos), Vector2(to_pos), 0.135)
 
 	# Squash & stretch deformation along push axis (Option A: Juicy Magnetic Goal Snap)
 	var push_dir: Vector2i = to_pos - from_pos
@@ -1017,8 +1044,25 @@ func _trigger_bump_recoil(dir: Vector2i) -> void:
 
 	var recoil_vec: Vector2 = Vector2(dir) * 4.5
 	bump_offset = recoil_vec
+
+	# Micro contact dust specks kicking back from wall impact
+	var p_center: Vector2 = grid_origin + visual_player_pos * tile_size + Vector2(tile_size * 0.5, tile_size * 0.5)
+	var contact_pt: Vector2 = p_center + Vector2(dir) * (tile_size * 0.44)
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.randomize()
+	for i in range(3):
+		var lateral: Vector2 = Vector2(-dir.y, dir.x) * rng.randf_range(-20.0, 20.0) - Vector2(dir) * rng.randf_range(15.0, 35.0)
+		dust_particles.append({
+			"pos": contact_pt + Vector2(rng.randf_range(-3.0, 3.0), rng.randf_range(-3.0, 3.0)),
+			"vel": lateral,
+			"size": rng.randf_range(1.8, 3.2),
+			"color": Color(0.80, 0.75, 0.68, 0.60),
+			"life": rng.randf_range(0.18, 0.28),
+			"max_life": 0.28
+		})
+
 	var tw: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tw.tween_property(self, "bump_offset", Vector2.ZERO, 0.11)
+	tw.tween_property(self, "bump_offset", Vector2.ZERO, 0.12)
 	tw.tween_callback(queue_redraw)
 
 
@@ -2819,9 +2863,16 @@ func _draw_crate(rect: Rect2, on_goal: bool, logical_pos: Vector2i = Vector2i.ZE
 	var c_mod: Color = Color(1.0, 1.0, 1.0) if on_goal else (ch["crate_tint"] * crate_tint)
 	draw_texture_rect(c_tex, draw_r, false, c_mod)
 
-	# 2. 3D Volume Bevel Highlights matching warehouse overhead light
-	draw_line(draw_r.position + Vector2(2.0, 1.0), draw_r.position + Vector2(draw_r.size.x - 2.0, 1.0), Color(1.0, 1.0, 1.0, 0.24), 1.2)
-	draw_line(draw_r.position + Vector2(2.0, draw_r.size.y - 1.0), draw_r.end - Vector2(2.0, 1.0), Color(0.0, 0.0, 0.0, 0.32), 1.5)
+	# 2. 3D Volume Key-Light & Ambient Occlusion Shading
+	# Top & left specular key-light rims from overhead warehouse lamps
+	draw_line(draw_r.position + Vector2(2.0, 1.0), draw_r.position + Vector2(draw_r.size.x - 2.0, 1.0), Color(1.0, 1.0, 1.0, 0.38), 1.6)
+	draw_line(draw_r.position + Vector2(1.0, 2.0), draw_r.position + Vector2(1.0, draw_r.size.y - 2.0), Color(1.0, 1.0, 1.0, 0.26), 1.4)
+	# Top-left specular glint
+	draw_circle(draw_r.position + Vector2(3.0, 3.0), 1.2, Color(1.0, 1.0, 1.0, 0.65))
+
+	# Bottom & right ambient occlusion shadows
+	draw_line(draw_r.position + Vector2(2.0, draw_r.size.y - 1.0), draw_r.end - Vector2(2.0, 1.0), Color(0.0, 0.0, 0.0, 0.45), 2.0)
+	draw_line(Vector2(draw_r.end.x - 1.0, draw_r.position.y + 2.0), draw_r.end - Vector2(1.0, 2.0), Color(0.0, 0.0, 0.0, 0.35), 1.8)
 
 	# Crate custom skin accessories (only when not on goal so goal star is unobstructed)
 	if not on_goal:
@@ -2939,8 +2990,13 @@ func _draw_player(rect: Rect2) -> void:
 	if not is_animating and not is_level_won and player_idle_time > 2.0:
 		idle_breath_y = sin((player_idle_time - 2.0) * 3.5) * 1.2
 
+	# Heavy crate push stance lean: worker visibly leans into the crate during push strides
+	var push_lean: Vector2 = Vector2.ZERO
+	if is_animating and grid != null and grid.last_move_pushed_crate:
+		push_lean = Vector2(player_facing_dir) * (rect.size.x * 0.07)
+
 	var hopped_rect: Rect2 = Rect2(
-		rect.position + bump_offset + Vector2(0.0, player_celebration_hop + idle_breath_y),
+		rect.position + bump_offset + push_lean + Vector2(0.0, player_celebration_hop + idle_breath_y),
 		rect.size
 	)
 	var center: Vector2 = hopped_rect.get_center()
