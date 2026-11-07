@@ -122,6 +122,7 @@ var crate_squash: Dictionary = {} # Vector2i -> Vector2 scale
 var dust_particles: Array[Dictionary] = []
 var goal_effects: Array[Dictionary] = []
 var _last_hud_moves: int = 0
+var is_star_tension: bool = false
 
 # Animation state
 var is_animating: bool = false
@@ -476,6 +477,12 @@ func _ready() -> void:
 		if b != null:
 			_attach_spring_physics(b)
 
+	# Industrial Operator Console Hardware Overlays
+	if top_bar != null and not top_bar.draw.is_connected(_on_top_bar_draw):
+		top_bar.draw.connect(_on_top_bar_draw)
+	if bottom_bar != null and not bottom_bar.draw.is_connected(_on_bottom_bar_draw):
+		bottom_bar.draw.connect(_on_bottom_bar_draw)
+
 
 func _apply_safe_area() -> void:
 	if safe_area_mgr != null:
@@ -616,12 +623,15 @@ func _update_ui() -> void:
 		if cur_moves <= s3:
 			live_stars = 3
 			star_target_sub = " (≤%d)" % s3
+			is_star_tension = (cur_moves >= s3 - 1)
 		elif cur_moves <= s2:
 			live_stars = 2
 			star_target_sub = " (≤%d)" % s2
+			is_star_tension = (cur_moves >= s2 - 1)
 		else:
 			live_stars = 1
 			star_target_sub = ""
+			is_star_tension = false
 
 	if star_gauge != null:
 		match live_stars:
@@ -635,7 +645,7 @@ func _update_ui() -> void:
 				star_gauge.text = "★☆☆"
 				star_gauge.modulate = Color(0.85, 0.65, 0.35)
 
-		# Star change juicing animation
+		# Star change juicing animation & tactile spark feedback
 		if live_stars < _prev_live_stars and star_gauge.is_inside_tree():
 			star_gauge.pivot_offset = star_gauge.size / 2.0
 			var tw_sg: Tween = create_tween().set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
@@ -644,6 +654,20 @@ func _update_ui() -> void:
 			add_trauma(0.12)
 			if audio_mgr and audio_mgr.has_method("play_bump"):
 				audio_mgr.play_bump()
+
+			# Micro electrical sparks popping from lost star
+			var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+			rng.randomize()
+			var sg_pos: Vector2 = star_gauge.global_position + star_gauge.size * 0.5
+			for i in range(6):
+				dust_particles.append({
+					"pos": sg_pos + Vector2(rng.randf_range(-14.0, 14.0), rng.randf_range(-4.0, 4.0)),
+					"vel": Vector2(rng.randf_range(-45.0, 45.0), rng.randf_range(20.0, 95.0)),
+					"size": rng.randf_range(2.0, 3.8),
+					"color": Color(1.0, 0.78, 0.22, 0.95),
+					"life": rng.randf_range(0.20, 0.35),
+					"max_life": 0.35
+				})
 		elif live_stars > _prev_live_stars and star_gauge.is_inside_tree():
 			star_gauge.pivot_offset = star_gauge.size / 2.0
 			var tw_sg: Tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -1712,6 +1736,15 @@ func _process(delta: float) -> void:
 					grid.undo()
 				else:
 					is_undo_held = false
+
+	# Dynamic LED Tension Pulse on Star Gauge when nearing move limit
+	if star_gauge != null and star_gauge.is_inside_tree():
+		if is_star_tension:
+			needs_redraw = true
+			var tension_t: float = 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.009)
+			var base_col: Color = Color(1.0, 0.85, 0.25) if _prev_live_stars == 3 else Color(0.95, 0.72, 0.20)
+			var warn_col: Color = Color(1.0, 0.42, 0.12)
+			star_gauge.modulate = base_col.lerp(warn_col, tension_t)
 
 	# Update hint ghost timer
 	if hint_time_remaining > 0.0:
@@ -3159,6 +3192,11 @@ func _draw_hint_ghost(effective_origin: Vector2) -> void:
 	)
 	draw_texture_rect(p_ghost_tex, p_ghost_draw_rect, false, Color(1.0, 1.0, 1.0, 0.72 * base_alpha))
 
+	# Holographic horizontal scanlines across player ghost
+	for s in range(3):
+		var s_y: float = p_ghost_draw_rect.position.y + fmod(p_ghost_draw_rect.size.y * (0.25 + s * 0.30) + hint_pulse_timer * 35.0, p_ghost_draw_rect.size.y)
+		draw_line(Vector2(p_ghost_draw_rect.position.x, s_y), Vector2(p_ghost_draw_rect.end.x, s_y), Color(0.40, 0.85, 1.0, 0.45 * base_alpha), 1.2)
+
 	# 2. Crate Target Ghost Tile (if move is a push)
 	if hint_has_crate:
 		var c_target_rect: Rect2 = Rect2(
@@ -3178,12 +3216,27 @@ func _draw_hint_ghost(effective_origin: Vector2) -> void:
 		)
 		draw_texture_rect(c_ghost_tex, c_ghost_draw_rect, false, Color(1.0, 1.0, 1.0, 0.72 * base_alpha))
 
-	# 3. Dynamic Directional Trajectory Arrow
+		# Holographic horizontal scanlines across crate ghost
+		for s in range(3):
+			var s_y: float = c_ghost_draw_rect.position.y + fmod(c_ghost_draw_rect.size.y * (0.25 + s * 0.30) + hint_pulse_timer * 35.0, c_ghost_draw_rect.size.y)
+			draw_line(Vector2(c_ghost_draw_rect.position.x, s_y), Vector2(c_ghost_draw_rect.end.x, s_y), Color(1.0, 0.85, 0.30, 0.45 * base_alpha), 1.2)
+
+	# 3. Dynamic Directional Trajectory Laser Beam
 	var current_player_center: Vector2 = effective_origin + visual_player_pos * tile_size + Vector2(tile_size * 0.5, tile_size * 0.5)
 	var arrow_start: Vector2 = current_player_center + Vector2(active_hint_dir) * (tile_size * 0.32)
 	var arrow_end: Vector2 = p_center - Vector2(active_hint_dir) * (tile_size * 0.22)
-	var arrow_col: Color = Color(1.0, 0.92, 0.35, 0.85 * base_alpha)
-	draw_line(arrow_start, arrow_end, arrow_col, 3.5)
+
+	# Holographic laser multi-tier glow
+	draw_line(arrow_start, arrow_end, Color(0.20, 0.65, 1.0, 0.35 * base_alpha), 7.0)
+	draw_line(arrow_start, arrow_end, Color(0.55, 0.90, 1.0, 0.75 * base_alpha), 3.5)
+	draw_line(arrow_start, arrow_end, Color(1.0, 1.0, 1.0, 0.95 * base_alpha), 1.5)
+
+	# Flowing energy pulse bead along trajectory
+	var arrow_line_vec: Vector2 = arrow_end - arrow_start
+	var flow_t: float = fmod(hint_pulse_timer * 2.4, 1.0)
+	var bead_pos: Vector2 = arrow_start + arrow_line_vec * flow_t
+	draw_circle(bead_pos, 3.0, Color(1.0, 1.0, 1.0, 0.95 * base_alpha))
+	draw_circle(bead_pos, 5.5, Color(0.40, 0.85, 1.0, 0.40 * base_alpha))
 
 	# Arrow head
 	var arrow_norm: Vector2 = Vector2(active_hint_dir).normalized()
@@ -3193,20 +3246,29 @@ func _draw_hint_ghost(effective_origin: Vector2) -> void:
 	var p1: Vector2 = arrow_end
 	var p2: Vector2 = arrow_end - arrow_norm * head_len + arrow_perp * head_width
 	var p3: Vector2 = arrow_end - arrow_norm * head_len - arrow_perp * head_width
-	draw_colored_polygon(PackedVector2Array([p1, p2, p3]), arrow_col)
+	draw_colored_polygon(PackedVector2Array([p1, p2, p3]), Color(0.55, 0.90, 1.0, 0.90 * base_alpha))
 
 	# 4. Secondary Crate Push Trajectory (shows crate sliding to target beacon)
 	if hint_has_crate:
 		var c_dest_center: Vector2 = effective_origin + Vector2(hint_crate_target) * tile_size + Vector2(tile_size * 0.5, tile_size * 0.5)
 		var c_arrow_start: Vector2 = p_center + Vector2(active_hint_dir) * (tile_size * 0.28)
 		var c_arrow_end: Vector2 = c_dest_center - Vector2(active_hint_dir) * (tile_size * 0.20)
-		var c_arrow_col: Color = Color(1.0, 0.80, 0.25, 0.85 * base_alpha)
-		draw_line(c_arrow_start, c_arrow_end, c_arrow_col, 3.0)
+
+		# Amber laser multi-tier glow
+		draw_line(c_arrow_start, c_arrow_end, Color(1.0, 0.65, 0.15, 0.35 * base_alpha), 6.5)
+		draw_line(c_arrow_start, c_arrow_end, Color(1.0, 0.85, 0.35, 0.75 * base_alpha), 3.0)
+		draw_line(c_arrow_start, c_arrow_end, Color(1.0, 0.98, 0.85, 0.95 * base_alpha), 1.5)
+
+		# Flowing energy pulse bead along crate trajectory
+		var c_line_vec: Vector2 = c_arrow_end - c_arrow_start
+		var c_bead_pos: Vector2 = c_arrow_start + c_line_vec * flow_t
+		draw_circle(c_bead_pos, 3.0, Color(1.0, 0.95, 0.70, 0.95 * base_alpha))
+		draw_circle(c_bead_pos, 5.5, Color(1.0, 0.75, 0.20, 0.40 * base_alpha))
 
 		var c_p1: Vector2 = c_arrow_end
 		var c_p2: Vector2 = c_arrow_end - arrow_norm * head_len + arrow_perp * head_width
 		var c_p3: Vector2 = c_arrow_end - arrow_norm * head_len - arrow_perp * head_width
-		draw_colored_polygon(PackedVector2Array([c_p1, c_p2, c_p3]), c_arrow_col)
+		draw_colored_polygon(PackedVector2Array([c_p1, c_p2, c_p3]), Color(1.0, 0.85, 0.35, 0.90 * base_alpha))
 
 
 func add_trauma(amount: float) -> void:
@@ -3408,6 +3470,64 @@ func _attach_spring_physics(btn: Button) -> void:
 		var tw: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		tw.tween_property(btn, "scale", Vector2.ONE, 0.10)
 	)
+
+
+func _on_top_bar_draw() -> void:
+	if top_bar == null:
+		return
+	var sz: Vector2 = top_bar.size
+	# Industrial Corner Hex Screws
+	_draw_terminal_bolt(top_bar, Vector2(10.0, 10.0))
+	_draw_terminal_bolt(top_bar, Vector2(sz.x - 10.0, 10.0))
+
+	# Industrial hazard caution stripes along bottom edge
+	var bar_h: float = 3.0
+	var num_stripes: int = 5
+	# Left hazard bracket
+	for i in range(num_stripes):
+		var sx: float = 14.0 + i * 8.0
+		var col: Color = Color(0.96, 0.78, 0.20, 0.85) if (i % 2 == 0) else Color(0.12, 0.14, 0.18, 0.90)
+		top_bar.draw_line(Vector2(sx, sz.y - 1.5), Vector2(sx + 5.0, sz.y - 1.5), col, bar_h)
+	# Right hazard bracket
+	for i in range(num_stripes):
+		var sx: float = sz.x - 14.0 - (num_stripes - i) * 8.0
+		var col: Color = Color(0.96, 0.78, 0.20, 0.85) if (i % 2 == 0) else Color(0.12, 0.14, 0.18, 0.90)
+		top_bar.draw_line(Vector2(sx, sz.y - 1.5), Vector2(sx + 5.0, sz.y - 1.5), col, bar_h)
+
+
+func _on_bottom_bar_draw() -> void:
+	if bottom_bar == null:
+		return
+	var sz: Vector2 = bottom_bar.size
+	# Industrial Corner Hex Screws
+	_draw_terminal_bolt(bottom_bar, Vector2(10.0, sz.y - 10.0))
+	_draw_terminal_bolt(bottom_bar, Vector2(sz.x - 10.0, sz.y - 10.0))
+
+	# Industrial hazard caution stripes along top edge
+	var bar_h: float = 3.0
+	var num_stripes: int = 5
+	# Left hazard bracket
+	for i in range(num_stripes):
+		var sx: float = 14.0 + i * 8.0
+		var col: Color = Color(0.96, 0.78, 0.20, 0.85) if (i % 2 == 0) else Color(0.12, 0.14, 0.18, 0.90)
+		bottom_bar.draw_line(Vector2(sx, 1.5), Vector2(sx + 5.0, 1.5), col, bar_h)
+	# Right hazard bracket
+	for i in range(num_stripes):
+		var sx: float = sz.x - 14.0 - (num_stripes - i) * 8.0
+		var col: Color = Color(0.96, 0.78, 0.20, 0.85) if (i % 2 == 0) else Color(0.12, 0.14, 0.18, 0.90)
+		bottom_bar.draw_line(Vector2(sx, 1.5), Vector2(sx + 5.0, 1.5), col, bar_h)
+
+
+func _draw_terminal_bolt(ci: CanvasItem, pos: Vector2) -> void:
+	# Outer dark recessed washer ring
+	ci.draw_circle(pos, 4.2, Color(0.04, 0.05, 0.08, 0.95))
+	# Beveled metallic hex screw head
+	ci.draw_circle(pos, 3.2, Color(0.38, 0.42, 0.50, 0.95))
+	# Specular glint
+	ci.draw_circle(pos + Vector2(-0.8, -0.8), 1.2, Color(0.85, 0.90, 0.98, 0.90))
+	# Inset cross drive slot
+	ci.draw_line(pos + Vector2(-1.5, 0.0), pos + Vector2(1.5, 0.0), Color(0.12, 0.14, 0.18, 0.95), 1.0)
+	ci.draw_line(pos + Vector2(0.0, -1.5), pos + Vector2(0.0, 1.5), Color(0.12, 0.14, 0.18, 0.95), 1.0)
 
 
 func _update_hint_button_text() -> void:
