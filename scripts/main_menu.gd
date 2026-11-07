@@ -1382,6 +1382,8 @@ func _refresh_level_grid_buttons() -> void:
 		if is_completed:
 			var record: Dictionary = save_mgr.get_level_record(lvl_idx)
 			var stars: int = record.get("stars", 1)
+			var best_moves: int = record.get("moves", 0)
+			child.tooltip_text = "Level %d • %s\nBest: %d moves (Par: ≤ %d)" % [lvl_idx + 1, ch_title_str, best_moves, opt_moves]
 			var star_str: String = ""
 			match stars:
 				3: star_str = "★★★"
