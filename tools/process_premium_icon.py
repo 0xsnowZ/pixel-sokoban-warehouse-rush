@@ -2,7 +2,7 @@
 """
 tools/process_premium_icon.py
 
-Processes the AAA-grade Hero & Golden Crate artwork into exact production icon assets:
+Processes the iconic Golden Sokoban Delivery Crate artwork into exact production icon assets:
 1. assets/store_icon_512.png (512x512 32-bit PNG, Google Play Store)
 2. icon.png (512x512 32-bit PNG, Godot Project Icon)
 3. assets/icon_192.png (192x192 32-bit PNG, Legacy Launcher Icon)
@@ -46,13 +46,14 @@ def process_premium_store_icons():
     print(f"Saved {out_ad_fg}")
 
     # 4. assets/adaptive_background_432.png (432x432, 32-bit PNG)
-    bg_432 = Image.new("RGBA", (432, 432), (11, 22, 36, 255))
+    # Deep indigo/navy gradient matching the crate backdrop: rgb(11, 14, 59) -> rgb(0, 13, 45)
+    bg_432 = Image.new("RGBA", (432, 432), (11, 14, 59, 255))
     bg_draw = ImageDraw.Draw(bg_432)
     for y in range(432):
         t = y / 432.0
-        r = int(12 * (1.0 - t * 0.4))
-        g = int(24 * (1.0 - t * 0.35))
-        b = int(38 * (1.0 - t * 0.3))
+        r = int(11 * (1.0 - t))
+        g = int(14 * (1.0 - t) + 13 * t)
+        b = int(59 * (1.0 - t) + 45 * t)
         bg_draw.line([(0, y), (432, y)], fill=(r, g, b, 255))
     out_ad_bg = os.path.join(ASSETS_DIR, "adaptive_background_432.png")
     bg_432.save(out_ad_bg, "PNG", optimize=True)
@@ -61,4 +62,4 @@ def process_premium_store_icons():
 
 if __name__ == "__main__":
     process_premium_store_icons()
-    print("Production icons updated with AAA Hero & Golden Crate artwork!")
+    print("Production icons updated with Golden Sokoban Delivery Crate artwork!")
