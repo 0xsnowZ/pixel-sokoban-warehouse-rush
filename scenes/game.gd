@@ -1858,55 +1858,38 @@ func _draw() -> void:
 	var board_pixel_size: Vector2 = Vector2(grid.width * tile_size, grid.height * tile_size)
 	var ch: Dictionary = get_current_chapter_theme()
 
-	var is_non_square: bool = is_level_non_square()
-
 	# 1. Industrial Warehouse Loading Bay Board Framing (PRD Section 4 & Phase 2 Themes)
-	if is_non_square:
-		# Multi-stage cinematic silhouette 2.5D drop shadow under the non-square shape
-		for y in range(grid.height):
-			for x in range(grid.width):
-				var pos: Vector2i = Vector2i(x, y)
-				if not grid.is_exterior_void(pos):
-					var s_rect: Rect2 = Rect2(effective_origin + Vector2(x, y) * tile_size, Vector2(tile_size, tile_size))
-					# Layer 4: Distant soft ambient penumbra
-					draw_rect(Rect2(s_rect.position + Vector2(10, 14), s_rect.size + Vector2(8, 8)), Color(0.0, 0.0, 0.0, 0.08))
-					# Layer 3: Mid ambient spread
-					draw_rect(Rect2(s_rect.position + Vector2(6, 9), s_rect.size + Vector2(4, 4)), Color(0.0, 0.0, 0.0, 0.18))
-					# Layer 2: Directional elevation shadow
-					draw_rect(Rect2(s_rect.position + Vector2(4, 5), s_rect.size + Vector2(2, 2)), Color(0.0, 0.0, 0.0, 0.32))
-					# Layer 1: Tight perimeter contact depth
-					draw_rect(Rect2(s_rect.position + Vector2(1, 2), s_rect.size), Color(0.0, 0.0, 0.0, 0.48))
-	else:
-		var frame_margin: float = 12.0
-		var frame_rect: Rect2 = Rect2(
-			effective_origin - Vector2(frame_margin, frame_margin),
-			board_pixel_size + Vector2(frame_margin * 2.0, frame_margin * 2.0)
-		)
+	# All levels (square and non-square) are encased in the unified industrial warehouse frame
+	var frame_margin: float = 12.0
+	var frame_rect: Rect2 = Rect2(
+		effective_origin - Vector2(frame_margin, frame_margin),
+		board_pixel_size + Vector2(frame_margin * 2.0, frame_margin * 2.0)
+	)
 
-		# Multi-stage drop shadow
-		draw_rect(Rect2(frame_rect.position + Vector2(10, 14), frame_rect.size + Vector2(6, 6)), Color(0.0, 0.0, 0.0, 0.22))
-		draw_rect(Rect2(frame_rect.position + Vector2(6, 9), frame_rect.size + Vector2(3, 3)), Color(0.0, 0.0, 0.0, 0.45))
-		draw_rect(Rect2(frame_rect.position + Vector2(2, 3), frame_rect.size), Color(0.0, 0.0, 0.0, 0.60))
+	# Multi-stage drop shadow
+	draw_rect(Rect2(frame_rect.position + Vector2(10, 14), frame_rect.size + Vector2(6, 6)), Color(0.0, 0.0, 0.0, 0.22))
+	draw_rect(Rect2(frame_rect.position + Vector2(6, 9), frame_rect.size + Vector2(3, 3)), Color(0.0, 0.0, 0.0, 0.45))
+	draw_rect(Rect2(frame_rect.position + Vector2(2, 3), frame_rect.size), Color(0.0, 0.0, 0.0, 0.60))
 
-		# Heavy chapter frame base
-		draw_rect(frame_rect, ch["frame_base"])
-		# Polished chapter bevel rim
-		draw_rect(frame_rect, ch["frame_rim"], false, 2.5)
-		# Inner dark groove
-		draw_rect(Rect2(effective_origin - Vector2(2, 2), board_pixel_size + Vector2(4, 4)), ch["frame_groove"], false, 2.0)
+	# Heavy chapter frame base
+	draw_rect(frame_rect, ch["frame_base"])
+	# Polished chapter bevel rim
+	draw_rect(frame_rect, ch["frame_rim"], false, 2.5)
+	# Inner dark groove
+	draw_rect(Rect2(effective_origin - Vector2(2, 2), board_pixel_size + Vector2(4, 4)), ch["frame_groove"], false, 2.0)
 
-		# 4 Corner industrial chapter bolts
-		var corner_offsets: Array[Vector2] = [
-			Vector2(frame_margin * 0.5, frame_margin * 0.5),
-			Vector2(frame_rect.size.x - frame_margin * 0.5, frame_margin * 0.5),
-			Vector2(frame_margin * 0.5, frame_rect.size.y - frame_margin * 0.5),
-			Vector2(frame_rect.size.x - frame_margin * 0.5, frame_rect.size.y - frame_margin * 0.5)
-		]
-		for c_offset in corner_offsets:
-			var bolt_center: Vector2 = frame_rect.position + c_offset
-			draw_circle(bolt_center, 4.5, ch["bolt_dark"])
-			draw_circle(bolt_center, 3.5, ch["bolt_core"])
-			draw_circle(bolt_center - Vector2(1.0, 1.0), 1.2, ch["bolt_specular"])
+	# 4 Corner industrial chapter bolts
+	var corner_offsets: Array[Vector2] = [
+		Vector2(frame_margin * 0.5, frame_margin * 0.5),
+		Vector2(frame_rect.size.x - frame_margin * 0.5, frame_margin * 0.5),
+		Vector2(frame_margin * 0.5, frame_rect.size.y - frame_margin * 0.5),
+		Vector2(frame_rect.size.x - frame_margin * 0.5, frame_rect.size.y - frame_margin * 0.5)
+	]
+	for c_offset in corner_offsets:
+		var bolt_center: Vector2 = frame_rect.position + c_offset
+		draw_circle(bolt_center, 4.5, ch["bolt_dark"])
+		draw_circle(bolt_center, 3.5, ch["bolt_core"])
+		draw_circle(bolt_center - Vector2(1.0, 1.0), 1.2, ch["bolt_specular"])
 
 	# 2. Draw Floor & Walls with 3D Depth & Chapter Tinting
 	for y in range(grid.height):
@@ -1941,17 +1924,11 @@ func _draw() -> void:
 				if has_top_wall and has_left_wall:
 					draw_circle(rect.position, tile_size * 0.22, Color(0.0, 0.0, 0.0, 0.20))
 			else:
-				# Exterior void tile: only draw for solid rectangular boards (no empty spaces on irregular levels)
-				if not is_non_square:
-					_draw_exterior_void_tile(rect, pos, ch)
+				# Exterior void tile: draws dark warehouse perimeter floor base with blueprint grid & wall drop shadows
+				_draw_exterior_void_tile(rect, pos, ch)
 
-	# 2.2. Slim Level Border along outer perimeter walls (Non-Square Levels)
-	if is_non_square:
-		_draw_slim_level_border(effective_origin, ch)
-
-	# 2.5. Board Peripheral Vignette (Option B: Soft atmospheric edge darkening for solid rectangular boards)
-	if not is_non_square:
-		_draw_board_vignette(effective_origin, board_pixel_size)
+	# 2.5. Board Peripheral Vignette (Soft atmospheric edge darkening for framed boards)
+	_draw_board_vignette(effective_origin, board_pixel_size)
 
 	# 3. Draw Goals with Chapter Pressure Plate, Hazard Markings & Pulsing Aura (Option B)
 	var time_sec: float = float(Time.get_ticks_msec()) / 1000.0
@@ -2351,14 +2328,8 @@ func _draw_player_headlamp(effective_origin: Vector2) -> void:
 
 
 func _draw_ambient_motes(effective_origin: Vector2, board_pixel_size: Vector2, _ch: Dictionary) -> void:
-	var is_non_sq: bool = is_level_non_square()
 	for mote in ambient_motes:
 		var norm: Vector2 = mote.get("pos_norm", Vector2.ZERO)
-		if is_non_sq and grid != null and grid.width > 0 and grid.height > 0:
-			var gx: int = clampi(int(floor(norm.x * float(grid.width))), 0, grid.width - 1)
-			var gy: int = clampi(int(floor(norm.y * float(grid.height))), 0, grid.height - 1)
-			if grid.is_exterior_void(Vector2i(gx, gy)):
-				continue
 		var m_pos: Vector2 = effective_origin + Vector2(norm.x * board_pixel_size.x, norm.y * board_pixel_size.y)
 		var phase: float = mote.get("phase", 0.0)
 		var sz: float = mote.get("size", 2.0)
