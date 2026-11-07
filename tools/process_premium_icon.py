@@ -2,7 +2,7 @@
 """
 tools/process_premium_icon.py
 
-Processes the AAA-grade Golden Crate artwork into exact production icon assets:
+Processes the AAA-grade Hero & Golden Crate artwork into exact production icon assets:
 1. assets/store_icon_512.png (512x512 32-bit PNG, Google Play Store)
 2. icon.png (512x512 32-bit PNG, Godot Project Icon)
 3. assets/icon_192.png (192x192 32-bit PNG, Legacy Launcher Icon)
@@ -13,58 +13,52 @@ Processes the AAA-grade Golden Crate artwork into exact production icon assets:
 import os
 from PIL import Image, ImageFilter, ImageDraw
 
-ARTIFACT_DIR = "/home/snowz/.gemini/antigravity-ide/brain/585b805d-dc89-49ec-9d75-7dca930224d1"
-ASSETS_DIR = "/home/snowz/godot/assets"
-ROOT_DIR = "/home/snowz/godot"
-
-CRATE_ICON_SRC = os.path.join(ARTIFACT_DIR, "premium_store_icon_crate_1792868731528.jpg")
-PORTER_ICON_SRC = os.path.join(ARTIFACT_DIR, "premium_store_icon_porter_1792868780645.jpg")
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ASSETS_DIR = os.path.join(ROOT_DIR, "assets")
+MASTER_SRC = os.path.join(ASSETS_DIR, "store_icon_master_1024.jpg")
 
 
-def process_golden_crate_icons():
-    print("Loading Golden Crate master artwork (1024x1024)...")
-    img = Image.open(CRATE_ICON_SRC).convert("RGBA")
-    
-    # 1. Store Icon (512x512)
-    icon_512 = img.resize((512, 512), Image.Resampling.LANCZOS)
+def process_premium_store_icons():
+    print(f"Loading master icon artwork from {MASTER_SRC}...")
+    master = Image.open(MASTER_SRC).convert("RGBA")
+
+    # 1. assets/store_icon_512.png and icon.png (512x512, 32-bit PNG)
+    icon_512 = master.resize((512, 512), Image.Resampling.LANCZOS)
+    icon_512_sharp = icon_512.filter(ImageFilter.UnsharpMask(radius=1.2, percent=110, threshold=2))
     out_store = os.path.join(ASSETS_DIR, "store_icon_512.png")
     out_root = os.path.join(ROOT_DIR, "icon.png")
-    out_art_512 = os.path.join(ARTIFACT_DIR, "store_icon_512.png")
-    
-    icon_512.save(out_store, "PNG")
-    icon_512.save(out_root, "PNG")
-    icon_512.save(out_art_512, "PNG")
+    icon_512_sharp.save(out_store, "PNG", optimize=True)
+    icon_512_sharp.save(out_root, "PNG", optimize=True)
     print(f"Saved {out_store} and {out_root}")
 
-    # 2. Legacy Launcher Icon (192x192)
-    icon_192 = img.resize((192, 192), Image.Resampling.LANCZOS)
+    # 2. assets/icon_192.png (192x192, 32-bit PNG)
+    icon_192 = master.resize((192, 192), Image.Resampling.LANCZOS)
+    icon_192_sharp = icon_192.filter(ImageFilter.UnsharpMask(radius=1.0, percent=120, threshold=2))
     out_192 = os.path.join(ASSETS_DIR, "icon_192.png")
-    icon_192.save(out_192, "PNG")
+    icon_192_sharp.save(out_192, "PNG", optimize=True)
     print(f"Saved {out_192}")
 
-    # 3. Android Adaptive Background (432x432)
-    # Scaled down full-bleed warehouse atmosphere
-    bg_432 = img.resize((432, 432), Image.Resampling.LANCZOS)
-    out_ad_bg = os.path.join(ASSETS_DIR, "adaptive_background_432.png")
-    bg_432.save(out_ad_bg, "PNG")
-    print(f"Saved {out_ad_bg}")
-
-    # 4. Android Adaptive Foreground (432x432)
-    # The crate and glowing rune pad cropped/centered cleanly within the 264px safe diameter
-    # In Android, foreground is often combined with background, or can be transparent.
-    # To support layered parallax animations on Pixel & Samsung launchers,
-    # we provide a clean foreground with the crate & rune pad floating with subtle glow:
-    fg_432 = Image.new("RGBA", (432, 432), (0, 0, 0, 0))
-    # Crop central focal region from 1024x1024 (center 800x800)
-    crop_box = (112, 112, 912, 912)
-    focal = img.crop(crop_box).resize((320, 320), Image.Resampling.LANCZOS)
-    pos = ((432 - 320) // 2, (432 - 320) // 2)
-    fg_432.paste(focal, pos, focal)
+    # 3. assets/adaptive_foreground_432.png (432x432, 32-bit PNG)
+    icon_432 = master.resize((432, 432), Image.Resampling.LANCZOS)
+    icon_432_sharp = icon_432.filter(ImageFilter.UnsharpMask(radius=1.1, percent=115, threshold=2))
     out_ad_fg = os.path.join(ASSETS_DIR, "adaptive_foreground_432.png")
-    fg_432.save(out_ad_fg, "PNG")
+    icon_432_sharp.save(out_ad_fg, "PNG", optimize=True)
     print(f"Saved {out_ad_fg}")
+
+    # 4. assets/adaptive_background_432.png (432x432, 32-bit PNG)
+    bg_432 = Image.new("RGBA", (432, 432), (11, 22, 36, 255))
+    bg_draw = ImageDraw.Draw(bg_432)
+    for y in range(432):
+        t = y / 432.0
+        r = int(12 * (1.0 - t * 0.4))
+        g = int(24 * (1.0 - t * 0.35))
+        b = int(38 * (1.0 - t * 0.3))
+        bg_draw.line([(0, y), (432, y)], fill=(r, g, b, 255))
+    out_ad_bg = os.path.join(ASSETS_DIR, "adaptive_background_432.png")
+    bg_432.save(out_ad_bg, "PNG", optimize=True)
+    print(f"Saved {out_ad_bg}")
 
 
 if __name__ == "__main__":
-    process_golden_crate_icons()
-    print("Production icons updated with AAA Golden Crate artwork!")
+    process_premium_store_icons()
+    print("Production icons updated with AAA Hero & Golden Crate artwork!")
