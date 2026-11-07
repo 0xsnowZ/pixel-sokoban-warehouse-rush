@@ -109,10 +109,12 @@ func test_chapter_atmospherics(game: Node) -> void:
 
 
 func test_headlamp_and_vignette(game: Node) -> void:
-	print("--- Running Suite: Headlamp & Vignette Methods ---")
+	print("--- Running Suite: Headlamp, Vignette & Goal Docking Methods ---")
 	assert_true(game.has_method("_draw_player_headlamp"), "Game implements _draw_player_headlamp")
 	assert_true(game.has_method("_draw_board_vignette"), "Game implements _draw_board_vignette")
 	assert_true(game.has_method("_draw_goal_hazard_brackets"), "Game implements _draw_goal_hazard_brackets")
+	assert_true(game.has_method("_draw_goal_light_pillar"), "Game implements _draw_goal_light_pillar")
+	assert_true(game.has_method("_draw_floor_tile"), "Game implements _draw_floor_tile")
 	assert_true(game.has_method("_draw_ambient_motes"), "Game implements _draw_ambient_motes")
 
 

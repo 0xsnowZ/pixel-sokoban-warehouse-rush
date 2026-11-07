@@ -1908,7 +1908,7 @@ func _draw() -> void:
 	# 2.5. Board Dynamic Lighting & Atmospheric Vignette (Overhead spotlight pool, god-rays & peripheral edge darkening)
 	_draw_board_vignette(effective_origin, board_pixel_size, ch)
 
-	# 3. Draw Goals with Chapter Pressure Plate, Hazard Markings & Pulsing Aura (Option B)
+	# 3. Draw Goals with Splash-Art Fidelity: Recessed Docking Pad, Hazard Framing & Holographic Light Pillar
 	var time_sec: float = float(Time.get_ticks_msec()) / 1000.0
 	var pulse: float = sin(time_sec * 3.5) * 0.12
 	var aura_col_base: Color = ch["goal_aura"]
@@ -1919,53 +1919,53 @@ func _draw() -> void:
 		var has_crate: bool = grid.crates.has(goal_pos)
 
 		if not has_crate:
-			# --- Empty Goal: Recessed Industrial Docking Station ---
-			var pad_inset: float = tile_size * 0.04
+			# --- Empty Goal: Splash-Screen Emerald Docking Station ---
+			var pad_inset: float = tile_size * 0.05
 			var pad_rect: Rect2 = rect.grow(-pad_inset)
 
-			# 1. Dark recessed floor plate
-			draw_rect(pad_rect, Color(0.09, 0.11, 0.15, 0.85))
-			# Inset shadow along top & left interior edges
-			draw_line(pad_rect.position, pad_rect.position + Vector2(pad_rect.size.x, 0.0), Color(0.0, 0.0, 0.0, 0.70), 1.8)
-			draw_line(pad_rect.position, pad_rect.position + Vector2(0.0, pad_rect.size.y), Color(0.0, 0.0, 0.0, 0.60), 1.8)
-			# Subtle specular lip along bottom & right edges
-			draw_line(pad_rect.position + Vector2(0.0, pad_rect.size.y), pad_rect.end, Color(0.40, 0.46, 0.54, 0.35), 1.2)
-			draw_line(pad_rect.position + Vector2(pad_rect.size.x, 0.0), pad_rect.end, Color(0.40, 0.46, 0.54, 0.35), 1.2)
+			# 1. Dark recessed industrial floor plate
+			draw_rect(pad_rect, Color(0.08, 0.10, 0.14, 0.90))
+			draw_line(pad_rect.position, pad_rect.position + Vector2(pad_rect.size.x, 0.0), Color(0.0, 0.0, 0.0, 0.80), 2.0)
+			draw_line(pad_rect.position, pad_rect.position + Vector2(0.0, pad_rect.size.y), Color(0.0, 0.0, 0.0, 0.70), 2.0)
+			draw_line(pad_rect.position + Vector2(0.0, pad_rect.size.y), pad_rect.end, Color(0.40, 0.50, 0.60, 0.35), 1.2)
+			draw_line(pad_rect.position + Vector2(pad_rect.size.x, 0.0), pad_rect.end, Color(0.40, 0.50, 0.60, 0.35), 1.2)
 
-			# 2. Industrial hazard caution corner brackets on the goal pad
+			# 2. Bold continuous industrial hazard caution framing
 			_draw_goal_hazard_brackets(rect, ch)
 
-			# 3. Integrated goal station graphic (harmonious splash-screen emerald / chapter modulate)
-			var goal_mod: Color = Color(0.25, 1.0, 0.55, 0.82)
+			# 3. Integrated docking station graphic (emerald / chapter modulate)
+			var goal_mod: Color = Color(0.18, 0.95, 0.55, 0.85)
 			if current_chapter_idx == 1:
-				goal_mod = Color(0.35, 0.85, 1.0, 0.82)
+				goal_mod = Color(0.35, 0.88, 1.0, 0.85)
 			elif current_chapter_idx == 2:
-				goal_mod = Color(1.0, 0.75, 0.25, 0.82)
+				goal_mod = Color(1.0, 0.75, 0.22, 0.85)
 			draw_texture_rect(tex_goal, rect, false, goal_mod)
 
-			# 4. Pulsing laser reticle & concentric target ring
+			# 4. Concentric optical target reticle & pulsing alignment chevrons
 			var ring_r: float = (tile_size * 0.28) * (1.0 + pulse * 0.35)
-			var ring_col: Color = Color(aura_col_base.r, aura_col_base.g, aura_col_base.b, 0.28 + pulse * 0.10)
-			draw_arc(center, ring_r, 0.0, TAU, 32, ring_col, 1.6, true)
+			var ring_col: Color = Color(goal_mod.r, goal_mod.g, goal_mod.b, 0.32 + pulse * 0.10)
+			draw_arc(center, ring_r, 0.0, TAU, 32, ring_col, 1.8, true)
 
-			# 4-direction alignment crosshair tick marks
-			var tick_in: float = tile_size * 0.16
-			var tick_out: float = tile_size * 0.32
-			var tick_c: Color = Color(aura_col_base.r, aura_col_base.g, aura_col_base.b, 0.35 + pulse * 0.12)
-			draw_line(center - Vector2(tick_out, 0.0), center - Vector2(tick_in, 0.0), tick_c, 1.5)
-			draw_line(center + Vector2(tick_in, 0.0), center + Vector2(tick_out, 0.0), tick_c, 1.5)
-			draw_line(center - Vector2(0.0, tick_out), center - Vector2(0.0, tick_in), tick_c, 1.5)
-			draw_line(center + Vector2(0.0, tick_in), center + Vector2(0.0, tick_out), tick_c, 1.5)
+			# Directional alignment chevrons pointing toward docking core
+			var phase_offset: float = float(goal_pos.x * 7 + goal_pos.y * 13) * 0.2
+			var chev_c: Vector2 = center + Vector2(0.0, sin(time_sec * 3.2 + phase_offset) * 1.5)
+			var c_arm: float = tile_size * 0.14
+			var ch_col: Color = Color(goal_mod.r, goal_mod.g, goal_mod.b, 0.65 + pulse * 0.15)
+			draw_line(chev_c + Vector2(-c_arm, c_arm * 0.6), chev_c + Vector2(0.0, -c_arm * 0.4), ch_col, 2.2)
+			draw_line(chev_c + Vector2(c_arm, c_arm * 0.6), chev_c + Vector2(0.0, -c_arm * 0.4), ch_col, 2.2)
 
-			draw_circle(center, 3.2, core_col)
+			draw_circle(center, 3.5, core_col)
+
+			# 5. Volumetric Vertical Light Pillar / Holographic Beam (rises up into warehouse air!)
+			_draw_goal_light_pillar(rect, goal_pos, ch, time_sec)
 		else:
 			# --- Filled Goal: Radiant Docking Under-Glow beneath crate ---
 			_draw_goal_hazard_brackets(rect, ch)
-			draw_texture_rect(tex_goal, rect, false, Color(1.0, 1.0, 1.0, 0.50))
+			draw_texture_rect(tex_goal, rect, false, Color(1.0, 1.0, 1.0, 0.55))
 			var aura_glow: Color = aura_col_base
-			aura_glow.a = 0.36 + pulse * 0.12
-			draw_circle(center, tile_size * 0.46, aura_glow)
-			draw_arc(center, tile_size * 0.42, 0.0, TAU, 36, Color(1.0, 0.92, 0.45, 0.70), 2.0, true)
+			aura_glow.a = 0.38 + pulse * 0.12
+			draw_circle(center, tile_size * 0.48, aura_glow)
+			draw_arc(center, tile_size * 0.44, 0.0, TAU, 36, Color(1.0, 0.92, 0.45, 0.75), 2.2, true)
 
 	# 3.5. Draw Floating Ambient Warehouse Motes (Option B)
 	_draw_ambient_motes(effective_origin, board_pixel_size, ch)
@@ -2613,49 +2613,125 @@ func _draw_board_vignette(effective_origin: Vector2, board_pixel_size: Vector2, 
 
 
 func _draw_goal_hazard_brackets(rect: Rect2, ch: Dictionary) -> void:
-	var arm: float = rect.size.x * 0.22
-	var m: float = 1.0
-	var steel_col: Color = Color(0.12, 0.14, 0.18, 0.88)
-	var accent_col: Color = ch.get("badge_color", Color(0.96, 0.80, 0.15, 0.85))
+	var steel_col: Color = Color(0.12, 0.14, 0.18, 0.95)
+	var accent_col: Color = ch.get("badge_color", Color(0.96, 0.80, 0.15, 0.90))
 	var rivet_col: Color = Color(0.90, 0.92, 0.95, 0.95)
+	var rim_w: float = 3.2
 
 	if current_chapter_idx == 1:
-		steel_col = Color(0.10, 0.16, 0.24, 0.90)
-		accent_col = Color(0.35, 0.85, 1.00, 0.85)
+		steel_col = Color(0.08, 0.12, 0.18, 0.95)
+		accent_col = Color(0.35, 0.88, 1.00, 0.90)
 	elif current_chapter_idx == 2:
 		steel_col = Color(0.06, 0.08, 0.12, 0.95)
-		accent_col = Color(1.00, 0.65, 0.20, 0.85)
+		accent_col = Color(1.00, 0.65, 0.20, 0.90)
+
+	# 1. Base dark steel docking collar around outer perimeter
+	draw_rect(rect, steel_col, false, rim_w)
+
+	# 2. Continuous diagonal hazard warning stripes along top, bottom, left, right edges
+	var seg_count: int = 5
+	var step_x: float = rect.size.x / float(seg_count)
+	var step_y: float = rect.size.y / float(seg_count)
+
+	# Top & bottom hazard stripe ticks
+	for i in range(seg_count):
+		if i % 2 == 0:
+			var x1: float = rect.position.x + float(i) * step_x + 1.0
+			var x2: float = x1 + step_x * 0.70
+			draw_line(Vector2(x1, rect.position.y), Vector2(x2, rect.position.y), accent_col, 2.2)
+			draw_line(Vector2(x1, rect.end.y), Vector2(x2, rect.end.y), accent_col, 2.2)
+
+	# Left & right hazard stripe ticks
+	for i in range(seg_count):
+		if i % 2 == 1:
+			var y1: float = rect.position.y + float(i) * step_y + 1.0
+			var y2: float = y1 + step_y * 0.70
+			draw_line(Vector2(rect.position.x, y1), Vector2(rect.position.x, y2), accent_col, 2.2)
+			draw_line(Vector2(rect.end.x, y1), Vector2(rect.end.x, y2), accent_col, 2.2)
+
+	# 3. Heavy corner reinforcement plates with steel anchor rivets
+	var arm: float = rect.size.x * 0.22
+	var m: float = 1.0
 
 	# Top-Left Bracket
 	draw_line(rect.position + Vector2(m, m), rect.position + Vector2(m + arm, m), steel_col, 2.5)
 	draw_line(rect.position + Vector2(m, m), rect.position + Vector2(m, m + arm), steel_col, 2.5)
-	draw_line(rect.position + Vector2(m + 1.2, m + 1.2), rect.position + Vector2(m + arm * 0.75, m + 1.2), accent_col, 1.4)
-	draw_line(rect.position + Vector2(m + 1.2, m + 1.2), rect.position + Vector2(m + 1.2, m + arm * 0.75), accent_col, 1.4)
-	draw_circle(rect.position + Vector2(m + 2.0, m + 2.0), 1.2, rivet_col)
+	draw_circle(rect.position + Vector2(m + 2.5, m + 2.5), 1.5, rivet_col)
 
 	# Top-Right Bracket
 	var tr: Vector2 = rect.position + Vector2(rect.size.x, 0.0)
 	draw_line(tr + Vector2(-m, m), tr + Vector2(-m - arm, m), steel_col, 2.5)
 	draw_line(tr + Vector2(-m, m), tr + Vector2(-m, m + arm), steel_col, 2.5)
-	draw_line(tr + Vector2(-m - 1.2, m + 1.2), tr + Vector2(-m - arm * 0.75, m + 1.2), accent_col, 1.4)
-	draw_line(tr + Vector2(-m - 1.2, m + 1.2), tr + Vector2(-m - 1.2, m + arm * 0.75), accent_col, 1.4)
-	draw_circle(tr + Vector2(-m - 2.0, m + 2.0), 1.2, rivet_col)
+	draw_circle(tr + Vector2(-m - 2.5, m + 2.5), 1.5, rivet_col)
 
 	# Bottom-Left Bracket
 	var bl: Vector2 = rect.position + Vector2(0.0, rect.size.y)
 	draw_line(bl + Vector2(m, -m), bl + Vector2(m + arm, -m), steel_col, 2.5)
 	draw_line(bl + Vector2(m, -m), bl + Vector2(m, -m - arm), steel_col, 2.5)
-	draw_line(bl + Vector2(m + 1.2, -m - 1.2), bl + Vector2(m + arm * 0.75, -m - 1.2), accent_col, 1.4)
-	draw_line(bl + Vector2(m + 1.2, -m - 1.2), bl + Vector2(m + 1.2, -m - arm * 0.75), accent_col, 1.4)
-	draw_circle(bl + Vector2(m + 2.0, -m - 2.0), 1.2, rivet_col)
+	draw_circle(bl + Vector2(m + 2.5, -m - 2.5), 1.5, rivet_col)
 
 	# Bottom-Right Bracket
 	var br: Vector2 = rect.end
 	draw_line(br + Vector2(-m, -m), br + Vector2(-m - arm, -m), steel_col, 2.5)
 	draw_line(br + Vector2(-m, -m), br + Vector2(-m, -m - arm), steel_col, 2.5)
-	draw_line(br + Vector2(-m - 1.2, -m - 1.2), br + Vector2(-m - arm * 0.75, -m - 1.2), accent_col, 1.4)
-	draw_line(br + Vector2(-m - 1.2, -m - 1.2), br + Vector2(-m - 1.2, -m - arm * 0.75), accent_col, 1.4)
-	draw_circle(br + Vector2(-m - 2.0, -m - 2.0), 1.2, rivet_col)
+	draw_circle(br + Vector2(-m - 2.5, -m - 2.5), 1.5, rivet_col)
+
+
+func _draw_goal_light_pillar(rect: Rect2, goal_pos: Vector2i, _ch: Dictionary, time_sec: float) -> void:
+	var center: Vector2 = rect.get_center()
+	var base_w: float = rect.size.x * 0.70
+	var top_w: float = rect.size.x * 0.52
+	var beam_h: float = tile_size * 1.45
+	var base_y: float = rect.position.y + rect.size.y * 0.75
+	var top_y: float = base_y - beam_h
+
+	# Unique seed offset per goal position so beams shimmer organically
+	var phase_offset: float = float(goal_pos.x * 7 + goal_pos.y * 13) * 0.2
+	var wave: float = sin(time_sec * 3.2 + phase_offset) * 0.05
+	var breathe: float = sin(time_sec * 1.8 + phase_offset) * 2.0
+
+	var beam_col: Color = Color(0.18, 0.95, 0.55) # Chapter 0: Splash-art emerald
+	if current_chapter_idx == 1:
+		beam_col = Color(0.35, 0.88, 1.00) # Chapter 1: Sub-zero cryo cyan
+	elif current_chapter_idx == 2:
+		beam_col = Color(1.00, 0.70, 0.20) # Chapter 2: Cyber amber / laser
+
+	# 1. Outer volumetric beam polygon (soft ambient upward glow)
+	var p_bl: Vector2 = Vector2(center.x - base_w * 0.5, base_y)
+	var p_br: Vector2 = Vector2(center.x + base_w * 0.5, base_y)
+	var p_tr: Vector2 = Vector2(center.x + (top_w * 0.5 + breathe), top_y)
+	var p_tl: Vector2 = Vector2(center.x - (top_w * 0.5 + breathe), top_y)
+	var outer_poly: PackedVector2Array = PackedVector2Array([p_bl, p_br, p_tr, p_tl])
+	var outer_alpha: float = clampf(0.12 + wave * 0.5, 0.06, 0.22)
+	draw_colored_polygon(outer_poly, Color(beam_col.r, beam_col.g, beam_col.b, outer_alpha))
+
+	# 2. Inner core beam polygon (focused optical column)
+	var core_base_w: float = base_w * 0.45
+	var core_top_w: float = top_w * 0.32
+	var c_bl: Vector2 = Vector2(center.x - core_base_w * 0.5, base_y)
+	var c_br: Vector2 = Vector2(center.x + core_base_w * 0.5, base_y)
+	var c_tr: Vector2 = Vector2(center.x + core_top_w * 0.5, top_y + beam_h * 0.15)
+	var c_tl: Vector2 = Vector2(center.x - core_top_w * 0.5, top_y + beam_h * 0.15)
+	var inner_poly: PackedVector2Array = PackedVector2Array([c_bl, c_br, c_tr, c_tl])
+	var inner_alpha: float = clampf(0.20 + wave, 0.10, 0.35)
+	draw_colored_polygon(inner_poly, Color(beam_col.r, beam_col.g, beam_col.b, inner_alpha))
+
+	# 3. Center bright holographic laser spine
+	var spine_alpha: float = clampf(0.35 + wave * 1.5, 0.18, 0.55)
+	draw_line(Vector2(center.x, base_y), Vector2(center.x, top_y + beam_h * 0.25), Color(1.0, 1.0, 1.0, spine_alpha), 1.5)
+
+	# 4. Floating holographic scanline pulses (ascending upward)
+	for s_i in range(2):
+		var s_prog: float = fposmod(time_sec * 0.75 + float(s_i) * 0.5 + phase_offset * 0.15, 1.0)
+		var s_y: float = lerpf(base_y, top_y, s_prog)
+		var s_w: float = lerpf(base_w * 0.48, top_w * 0.35, s_prog)
+		var s_alpha: float = sin(s_prog * PI) * (0.28 + wave)
+		draw_line(Vector2(center.x - s_w, s_y), Vector2(center.x + s_w, s_y), Color(beam_col.r, beam_col.g, beam_col.b, s_alpha), 1.6)
+
+	# 5. Intense floor emitter lens glow
+	var lens_pulse: float = 0.40 + sin(time_sec * 4.0 + phase_offset) * 0.12
+	draw_line(Vector2(center.x - base_w * 0.42, base_y), Vector2(center.x + base_w * 0.42, base_y), Color(beam_col.r, beam_col.g, beam_col.b, lens_pulse), 2.4)
+	draw_line(Vector2(center.x - base_w * 0.22, base_y), Vector2(center.x + base_w * 0.22, base_y), Color(1.0, 1.0, 1.0, lens_pulse * 0.9), 1.2)
 
 
 func _draw_player_headlamp(effective_origin: Vector2) -> void:
@@ -2817,10 +2893,34 @@ func _draw_crate(rect: Rect2, on_goal: bool, logical_pos: Vector2i = Vector2i.ZE
 		var star_pulse: float = sin(time_sec * 4.0) * 0.15
 		var aura_spark: Color = ch["goal_aura"]
 		aura_spark.a = 0.50
-		draw_circle(c_center, 9.5 * (1.0 + star_pulse), aura_spark)
+
+		# 1. Radiant energetic outer halo around crate (matches splash art glowing crate!)
+		var glow_r: float = draw_r.size.x * 0.62 * (1.0 + star_pulse * 0.35)
+		draw_circle(c_center, glow_r, Color(1.0, 0.88, 0.25, 0.16 + star_pulse * 0.04))
+		draw_circle(c_center, glow_r * 0.72, Color(1.0, 0.76, 0.18, 0.24 + star_pulse * 0.06))
+
+		# 2. Glowing delivery chevron / upward arrow on crate face (Hero visual from splash key art)
+		var arrow_col: Color = Color(1.0, 0.98, 0.85, 0.96)
+		var arrow_glow: Color = Color(1.0, 0.75, 0.15, 0.65)
+		var a_tip: Vector2 = c_center + Vector2(0.0, -draw_r.size.y * 0.20)
+		var a_left: Vector2 = c_center + Vector2(-draw_r.size.x * 0.18, draw_r.size.y * 0.02)
+		var a_right: Vector2 = c_center + Vector2(draw_r.size.x * 0.18, draw_r.size.y * 0.02)
+		var a_base: Vector2 = c_center + Vector2(0.0, draw_r.size.y * 0.22)
+
+		# Outer glow strokes
+		draw_line(a_left, a_tip, arrow_glow, 4.5)
+		draw_line(a_right, a_tip, arrow_glow, 4.5)
+		draw_line(a_tip, a_base, arrow_glow, 4.5)
+
+		# Crisp bright inner core strokes
+		draw_line(a_left, a_tip, arrow_col, 2.2)
+		draw_line(a_right, a_tip, arrow_col, 2.2)
+		draw_line(a_tip, a_base, arrow_col, 2.5)
+
+		# Central delivery power core
 		draw_circle(c_center, 4.0, Color(1.0, 1.0, 0.92, 0.95))
 
-		# 4 Radiant metallic lock-in corner rivets
+		# 3. Radiant metallic lock-in corner power pins
 		var r_pad: float = draw_r.size.x * 0.14
 		var corners: Array[Vector2] = [
 			draw_r.position + Vector2(r_pad, r_pad),
@@ -3191,23 +3291,34 @@ func _spawn_goal_effect(goal_pos: Vector2i) -> void:
 			spark_col1 = Color(0.95, 0.98, 1.0, 1.0)
 			spark_col2 = Color(0.60, 0.75, 0.95, 1.0)
 
-	# Expanding shockwave ring
+	# Primary expanding shockwave ring
 	goal_effects.append({
 		"type": "ring",
 		"pos": center,
 		"radius": 4.0,
-		"max_radius": tile_size * 0.88,
+		"max_radius": tile_size * 0.95,
 		"color": ring_col,
-		"life": 0.35,
-		"max_life": 0.35
+		"life": 0.38,
+		"max_life": 0.38
 	})
 
-	# 10 radiating thematic sparks
+	# Secondary inner radiant shockwave halo
+	goal_effects.append({
+		"type": "ring",
+		"pos": center,
+		"radius": 2.0,
+		"max_radius": tile_size * 0.65,
+		"color": Color(1.0, 1.0, 0.92, 0.90),
+		"life": 0.25,
+		"max_life": 0.25
+	})
+
+	# 12 radiating thematic sparks
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.randomize()
-	for i in range(10):
-		var angle: float = (float(i) / 10.0) * TAU + rng.randf_range(-0.15, 0.15)
-		var spd: float = rng.randf_range(110.0, 200.0)
+	for i in range(12):
+		var angle: float = (float(i) / 12.0) * TAU + rng.randf_range(-0.15, 0.15)
+		var spd: float = rng.randf_range(120.0, 220.0)
 		goal_effects.append({
 			"type": "spark",
 			"pos": center,
