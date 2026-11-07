@@ -1395,11 +1395,7 @@ func _refresh_level_grid_buttons() -> void:
 			child.modulate = Color(1.0, 1.0, 1.0).lerp(ch_col, 0.28)
 		elif is_unlocked:
 			child.text = "%d" % [lvl_idx + 1]
-			child.icon = icon_play
-			child.expand_icon = true
-			child.add_theme_constant_override("icon_max_width", 14)
-			child.add_theme_constant_override("h_separation", 4)
-			child.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			child.icon = null
 			child.disabled = false
 			child.theme_type_variation = &"LevelBtnCurrent"
 			child.modulate = ch_col

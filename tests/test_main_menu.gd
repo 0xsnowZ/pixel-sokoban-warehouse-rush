@@ -145,7 +145,9 @@ func test_level_select_grid() -> void:
 
 	var btn1: Button = grid_buttons[1] as Button
 	assert_false(btn1.disabled, "Level 2 button is enabled (current unlocked)")
-	assert_true(btn1.icon != null, "Level 2 button shows playable arrow icon")
+	assert_true(btn1.icon == null, "Level 2 button has clean iconless layout to avoid text overlap")
+	assert_equal(btn1.text, "2", "Level 2 button displays clean level number")
+	assert_equal(btn1.theme_type_variation, &"LevelBtnCurrent", "Level 2 button uses LevelBtnCurrent theme variation")
 
 	var btn2: Button = grid_buttons[2] as Button
 	assert_true(btn2.disabled, "Level 3 button is locked until level 2 completed")
