@@ -506,94 +506,155 @@ func _synth_move(alt: bool = false) -> AudioStreamWAV:
 	return _create_wav(bytes)
 
 
-## Generates a heavy warehouse crate push with physical weight, friction texture, and chapter-specific acoustics
+## Generates a tactile, punchy crate push sound (woody contact knock, smooth sliding friction, and solid grid settle)
 func _synth_push(style: int = 0) -> AudioStreamWAV:
 	match style:
 		1:
-			# === Chapter 2: Cold Storage (Cryo Metal Skid & Resonant Chime) ===
-			var duration: float = 0.110
+			# === Chapter 2: Cold Storage (Cryo Metal Skid & Resonant Crystalline Latch) ===
+			var duration: float = 0.108
 			var total_samples: int = int(duration * MIX_RATE)
 			var bytes: PackedByteArray = PackedByteArray()
 			bytes.resize(total_samples * 2)
-			var phase_sub: float = 0.0
-			var phase_res: float = 0.0
+			var p_tap: float = 0.0
+			var p_skid: float = 0.0
+			var p_ring: float = 0.0
+			var lp_noise: float = 0.0
 			var seed_val: int = 555
 
 			for i in range(total_samples):
 				var t: float = float(i) / float(total_samples)
 				var t_sec: float = float(i) / float(MIX_RATE)
-				var f_sub: float = 110.0 - t * 45.0
-				phase_sub += (f_sub * TAU) / float(MIX_RATE)
-				var sub: float = sin(phase_sub)
 
-				seed_val = int((seed_val * 1103515245 + 12345) & 0x7FFFFFFF)
-				var noise: float = (float(seed_val & 0xFFFF) / 32768.0) - 1.0
-				var ice_fric: float = noise * pow(1.0 - t, 1.2) * 0.28
+				# 1. Metallic Contact Tap (0 to 28ms)
+				var tap: float = 0.0
+				if t_sec < 0.028:
+					var f_tap: float = 420.0 - (t_sec / 0.028) * 180.0
+					p_tap += (f_tap * TAU) / float(MIX_RATE)
+					tap = (sin(p_tap) + 0.35 * sin(p_tap * 2.1)) * exp(-t_sec * 110.0) * 0.70
 
-				phase_res += (880.0 * TAU) / float(MIX_RATE)
-				var ring: float = sin(phase_res) * exp(-t_sec * 40.0) * 0.22
+				# 2. Smooth Icy Gliding Skid (10 to 80ms)
+				var skid: float = 0.0
+				if t_sec >= 0.010 and t_sec <= 0.080:
+					var s_t: float = (t_sec - 0.010) / 0.070
+					var s_env: float = sin(s_t * PI)
+					seed_val = int((seed_val * 1103515245 + 12345) & 0x7FFFFFFF)
+					var raw_noise: float = (float(seed_val & 0xFFFF) / 32768.0) - 1.0
+					lp_noise += 0.20 * (raw_noise - lp_noise)
 
-				var att: float = minf(1.0, t_sec / 0.003)
-				var body: float = (sub * 0.50 + ice_fric + ring) * att * (1.0 - t * 0.25)
-				var sample_val: int = int(clampi(int(body * 21000.0), -32767, 32767))
+					p_skid += (310.0 * TAU) / float(MIX_RATE)
+					p_ring += (880.0 * TAU) / float(MIX_RATE)
+					var cryo_tone: float = sin(p_skid) * 0.45 + sin(p_ring) * 0.20
+					skid = (cryo_tone + lp_noise * 0.50) * s_env * 0.65
+
+				# 3. Chilled Metal Latch (70 to 108ms)
+				var latch: float = 0.0
+				if t_sec >= 0.070:
+					var dt: float = t_sec - 0.070
+					p_tap += (320.0 * TAU) / float(MIX_RATE)
+					latch = sin(p_tap) * exp(-dt * 120.0) * 0.60
+
+				var val: float = tap + skid + latch
+				var sample_val: int = int(clampi(int(val * 23000.0), -32767, 32767))
 				bytes.encode_s16(i * 2, sample_val)
 			return _create_wav(bytes)
 
 		2:
-			# === Chapter 3: Cyber Depot (Magnetic Servo Glide & Pneumatic Vent) ===
-			var duration: float = 0.115
+			# === Chapter 3: Cyber Depot (Pneumatic Solenoid Kick & Magnetic Servo Glide) ===
+			var duration: float = 0.112
 			var total_samples: int = int(duration * MIX_RATE)
 			var bytes: PackedByteArray = PackedByteArray()
 			bytes.resize(total_samples * 2)
-			var phase_servo: float = 0.0
+			var p_servo: float = 0.0
+			var p_snap: float = 0.0
+			var lp_noise: float = 0.0
 			var seed_val: int = 777
 
 			for i in range(total_samples):
 				var t: float = float(i) / float(total_samples)
 				var t_sec: float = float(i) / float(MIX_RATE)
-				var f_servo: float = 140.0 + sin(t * PI) * 80.0
-				phase_servo += (f_servo * TAU) / float(MIX_RATE)
-				var servo: float = (sin(phase_servo) + 0.3 * sin(phase_servo * 2.0)) * 0.50
 
-				seed_val = int((seed_val * 1103515245 + 12345) & 0x7FFFFFFF)
-				var noise: float = (float(seed_val & 0xFFFF) / 32768.0) - 1.0
-				var hiss: float = noise * pow(1.0 - t, 1.8) * 0.25
+				# 1. Solenoid Kick (0 to 30ms)
+				var kick: float = 0.0
+				if t_sec < 0.030:
+					p_snap += (360.0 * TAU) / float(MIX_RATE)
+					kick = (sin(p_snap) + 0.25 * sin(p_snap * 2.0)) * exp(-t_sec * 105.0) * 0.70
 
-				var att: float = minf(1.0, t_sec / 0.002)
-				var body: float = (servo + hiss) * att * (1.0 - t * 0.2)
-				var sample_val: int = int(clampi(int(body * 20000.0), -32767, 32767))
+				# 2. Magnetic Servo Glide & Pneumatic Vent (10 to 82ms)
+				var glide: float = 0.0
+				if t_sec >= 0.010 and t_sec <= 0.082:
+					var s_t: float = (t_sec - 0.010) / 0.072
+					var s_env: float = sin(s_t * PI)
+					var f_servo: float = 210.0 + sin(s_t * PI) * 70.0
+					p_servo += (f_servo * TAU) / float(MIX_RATE)
+
+					seed_val = int((seed_val * 1103515245 + 12345) & 0x7FFFFFFF)
+					var raw_noise: float = (float(seed_val & 0xFFFF) / 32768.0) - 1.0
+					lp_noise += 0.18 * (raw_noise - lp_noise)
+
+					var servo_tone: float = (sin(p_servo) + 0.30 * sin(p_servo * 2.0)) * 0.50
+					glide = (servo_tone + lp_noise * 0.45) * s_env * 0.65
+
+				# 3. Electromagnetic Lock Snap (72 to 112ms)
+				var em_lock: float = 0.0
+				if t_sec >= 0.072:
+					var dt: float = t_sec - 0.072
+					p_snap += (290.0 * TAU) / float(MIX_RATE)
+					em_lock = sin(p_snap) * exp(-dt * 115.0) * 0.60
+
+				var val: float = kick + glide + em_lock
+				var sample_val: int = int(clampi(int(val * 23000.0), -32767, 32767))
 				bytes.encode_s16(i * 2, sample_val)
 			return _create_wav(bytes)
 
 		_:
-			# === Chapter 1: Cargo Bay (Oak Crate on Concrete with Sub-Bass Impact) ===
-			var duration: float = 0.115
+			# === Chapter 1: Cargo Bay (Oak Crate on Concrete: Snappy Wood Knock, Filtered Friction, Solid Settle Tock) ===
+			var duration: float = 0.108
 			var total_samples: int = int(duration * MIX_RATE)
 			var bytes: PackedByteArray = PackedByteArray()
 			bytes.resize(total_samples * 2)
-			var phase_sub: float = 0.0
-			var seed_val: int = 999
+			var p_knock: float = 0.0
+			var p_slide: float = 0.0
+			var p_settle: float = 0.0
+			var lp_noise: float = 0.0
+			var seed_val: int = 12345
 
 			for i in range(total_samples):
-				var t: float = float(i) / float(total_samples)
 				var t_sec: float = float(i) / float(MIX_RATE)
-				var f_sub: float = 85.0 - t * 35.0
-				phase_sub += (f_sub * TAU) / float(MIX_RATE)
-				var sub: float = sin(phase_sub)
 
-				seed_val = int((seed_val * 1103515245 + 12345) & 0x7FFFFFFF)
-				var noise: float = (float(seed_val & 0xFFFF) / 32768.0) - 1.0
-				var fric_env: float = pow(1.0 - t, 1.4)
-				var friction: float = noise * fric_env * 0.32
+				# 1. Initial Woody Contact Knock (0 to 32ms) - Crisp impact transient
+				var knock: float = 0.0
+				if t_sec < 0.032:
+					var k_env: float = exp(-t_sec * 105.0)
+					var f_k: float = 340.0 - (t_sec / 0.032) * 180.0
+					p_knock += (f_k * TAU) / float(MIX_RATE)
+					knock = (sin(p_knock) + 0.35 * sin(p_knock * 2.1) + 0.15 * sin(p_knock * 3.0)) * k_env * 0.75
 
+				# 2. Resonant Wood Slide Friction (10ms to 82ms) - Low-pass filtered wood scraping (no static hiss!)
+				var slide: float = 0.0
+				if t_sec >= 0.010 and t_sec <= 0.082:
+					var s_t: float = (t_sec - 0.010) / 0.072
+					var s_env: float = sin(s_t * PI)
+					seed_val = int((seed_val * 1103515245 + 12345) & 0x7FFFFFFF)
+					var raw_noise: float = (float(seed_val & 0xFFFF) / 32768.0) - 1.0
+					# Low-pass filter noise at ~450 Hz to produce smooth physical sliding friction
+					lp_noise += 0.15 * (raw_noise - lp_noise)
+
+					var f_slide: float = 220.0 + sin(s_t * PI) * 45.0
+					p_slide += (f_slide * TAU) / float(MIX_RATE)
+					var wood_body: float = (sin(p_slide) + 0.30 * sin(p_slide * 1.8)) * 0.50
+					slide = (wood_body + lp_noise * 0.55) * s_env * 0.70
+
+				# 3. Solid Tile Settle 'Tock' (72ms to 108ms)
 				var settle: float = 0.0
-				if t_sec >= 0.080 and t_sec <= 0.110:
-					var dt: float = t_sec - 0.080
-					settle = sin(TAU * 380.0 * dt) * exp(-dt * 85.0) * 0.35
+				if t_sec >= 0.072:
+					var dt: float = t_sec - 0.072
+					var st_env: float = exp(-dt * 125.0)
+					var f_st: float = 260.0 - dt * 500.0
+					p_settle += (f_st * TAU) / float(MIX_RATE)
+					settle = (sin(p_settle) + 0.25 * sin(p_settle * 2.0)) * st_env * 0.65
 
-				var att: float = minf(1.0, t_sec / 0.003)
-				var body: float = (sub * 0.55 + friction + settle) * att * (1.0 - t * 0.3)
-				var sample_val: int = int(clampi(int(body * 22000.0), -32767, 32767))
+				var val: float = knock + slide + settle
+				var sample_val: int = int(clampi(int(val * 24000.0), -32767, 32767))
 				bytes.encode_s16(i * 2, sample_val)
 			return _create_wav(bytes)
 
