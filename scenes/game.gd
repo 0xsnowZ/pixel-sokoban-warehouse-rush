@@ -765,7 +765,10 @@ func _on_crate_pushed(from_pos: Vector2i, to_pos: Vector2i) -> void:
 				audio_mgr.play_push()
 	else:
 		if audio_mgr:
-			audio_mgr.play_push()
+			if grid != null and grid.goals.has(from_pos) and audio_mgr.has_method("play_goal_unlock"):
+				audio_mgr.play_goal_unlock()
+			elif audio_mgr.has_method("play_push"):
+				audio_mgr.play_push(current_chapter_idx)
 
 	if haptic_mgr:
 		if grid != null and grid.goals.has(to_pos):
@@ -1394,7 +1397,10 @@ func _on_undo_pressed() -> void:
 	clear_hint()
 	if grid != null and grid.can_undo():
 		if audio_mgr:
-			audio_mgr.play_click()
+			if audio_mgr.has_method("play_undo"):
+				audio_mgr.play_undo()
+			else:
+				audio_mgr.play_click()
 		if haptic_mgr:
 			haptic_mgr.vibrate_click()
 		grid.undo()

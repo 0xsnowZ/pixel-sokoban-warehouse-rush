@@ -82,8 +82,30 @@ func test_sfx_synthesis() -> void:
 	assert_true(audio_mgr.sfx_move.data.size() > 0, "sfx_move has audio sample data")
 	assert_equal(audio_mgr.sfx_move.mix_rate, 22050, "sfx_move has correct 22050Hz mix rate")
 
-	assert_true(audio_mgr.sfx_push != null, "sfx_push stream generated")
+	assert_true(audio_mgr.sfx_move_alt != null, "sfx_move_alt stream generated")
+	assert_true(audio_mgr.sfx_move_alt.data.size() > 0, "sfx_move_alt has audio sample data")
+
+	assert_true(audio_mgr.sfx_push != null, "sfx_push (Cargo Bay) stream generated")
 	assert_true(audio_mgr.sfx_push.data.size() > 0, "sfx_push has audio sample data")
+
+	assert_true(audio_mgr.sfx_push_cold != null, "sfx_push_cold (Cold Storage) stream generated")
+	assert_true(audio_mgr.sfx_push_cyber != null, "sfx_push_cyber (Cyber Depot) stream generated")
+
+	assert_true(audio_mgr.sfx_bump != null, "sfx_bump (Wall collision) stream generated")
+	assert_true(audio_mgr.sfx_undo != null, "sfx_undo (Time rewind) stream generated")
+
+	assert_true(audio_mgr.sfx_goal_lock != null, "sfx_goal_lock stream generated")
+	assert_true(audio_mgr.sfx_goal_unlock != null, "sfx_goal_unlock stream generated")
+
+	assert_true(audio_mgr.sfx_star1 != null, "sfx_star1 stream generated")
+	assert_true(audio_mgr.sfx_star2 != null, "sfx_star2 stream generated")
+	assert_true(audio_mgr.sfx_star3 != null, "sfx_star3 stream generated")
+
+	assert_true(audio_mgr.sfx_ui_click != null, "sfx_ui_click stream generated")
+	assert_true(audio_mgr.sfx_ui_back != null, "sfx_ui_back stream generated")
+	assert_true(audio_mgr.sfx_ui_equip != null, "sfx_ui_equip stream generated")
+	assert_true(audio_mgr.sfx_modal_open != null, "sfx_modal_open stream generated")
+	assert_true(audio_mgr.sfx_modal_close != null, "sfx_modal_close stream generated")
 
 	assert_true(audio_mgr.sfx_win != null, "sfx_win stream generated")
 	assert_true(audio_mgr.sfx_win.data.size() > 0, "sfx_win has audio sample data")
@@ -136,10 +158,31 @@ func test_safe_playback() -> void:
 
 	# Verify calling all play methods runs cleanly without runtime exception
 	audio_mgr.play_move()
-	audio_mgr.play_push()
+	assert_true(audio_mgr._footstep_toggle, "First step triggers left foot")
+	audio_mgr.play_move()
+	assert_false(audio_mgr._footstep_toggle, "Second step triggers right foot (alternating rhythm)")
+
+	audio_mgr.play_push(0)
+	audio_mgr.play_push(1)
+	audio_mgr.play_push(2)
+
+	audio_mgr.play_bump()
+	audio_mgr.play_undo()
+	audio_mgr.play_goal_lock()
+	audio_mgr.play_goal_unlock()
+
+	audio_mgr.play_star(1)
+	audio_mgr.play_star(2)
+	audio_mgr.play_star(3)
+
 	audio_mgr.play_win()
 	audio_mgr.play_restart()
 	audio_mgr.play_click()
+	audio_mgr.play_ui_click()
+	audio_mgr.play_ui_back()
+	audio_mgr.play_ui_equip()
+	audio_mgr.play_modal_open()
+	audio_mgr.play_modal_close()
 	audio_mgr.play_hint()
 	audio_mgr.play_deadlock()
 	assert_true(true, "All audio play methods executed safely")

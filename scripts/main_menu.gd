@@ -400,6 +400,8 @@ func _on_modal_backdrop_gui_input(event: InputEvent) -> void:
 func _animate_modal_open(modal: Control) -> void:
 	if modal == null:
 		return
+	if audio_mgr and audio_mgr.has_method("play_modal_open"):
+		audio_mgr.play_modal_open()
 	_show_modal_backdrop()
 	modal.show()
 	modal.pivot_offset = modal.size / 2.0
@@ -422,7 +424,10 @@ func _show_credits() -> void:
 
 func _hide_credits() -> void:
 	if audio_mgr:
-		audio_mgr.play_click()
+		if audio_mgr.has_method("play_ui_back"):
+			audio_mgr.play_ui_back()
+		else:
+			audio_mgr.play_click()
 	credits_modal.hide()
 	_hide_modal_backdrop()
 
@@ -442,7 +447,10 @@ func _show_settings() -> void:
 
 func _hide_settings() -> void:
 	if audio_mgr:
-		audio_mgr.play_click()
+		if audio_mgr.has_method("play_ui_back"):
+			audio_mgr.play_ui_back()
+		else:
+			audio_mgr.play_click()
 	if settings_modal:
 		settings_modal.hide()
 	_hide_modal_backdrop()
@@ -468,7 +476,10 @@ func _show_locker() -> void:
 
 func _hide_locker() -> void:
 	if audio_mgr:
-		audio_mgr.play_click()
+		if audio_mgr.has_method("play_ui_back"):
+			audio_mgr.play_ui_back()
+		else:
+			audio_mgr.play_click()
 	if haptic_mgr:
 		haptic_mgr.vibrate_click()
 	if locker_modal:
@@ -494,7 +505,10 @@ func _show_achievements() -> void:
 
 func _hide_achievements() -> void:
 	if audio_mgr:
-		audio_mgr.play_click()
+		if audio_mgr.has_method("play_ui_back"):
+			audio_mgr.play_ui_back()
+		else:
+			audio_mgr.play_click()
 	if haptic_mgr:
 		haptic_mgr.vibrate_click()
 	if achievements_modal:
@@ -521,7 +535,10 @@ func _on_equip_worker_skin(skin_id: String) -> void:
 		var ok: bool = save_mgr.equip_worker_skin(skin_id)
 		if ok:
 			if audio_mgr:
-				audio_mgr.play_star(3)
+				if audio_mgr.has_method("play_ui_equip"):
+					audio_mgr.play_ui_equip()
+				else:
+					audio_mgr.play_star(3)
 			if haptic_mgr:
 				haptic_mgr.vibrate_target()
 	_refresh_locker_ui()
@@ -532,7 +549,10 @@ func _on_equip_crate_skin(skin_id: String) -> void:
 		var ok: bool = save_mgr.equip_crate_skin(skin_id)
 		if ok:
 			if audio_mgr:
-				audio_mgr.play_star(3)
+				if audio_mgr.has_method("play_ui_equip"):
+					audio_mgr.play_ui_equip()
+				else:
+					audio_mgr.play_star(3)
 			if haptic_mgr:
 				haptic_mgr.vibrate_target()
 	_refresh_locker_ui()
