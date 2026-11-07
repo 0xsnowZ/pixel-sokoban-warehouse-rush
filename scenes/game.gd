@@ -142,12 +142,15 @@ var hint_pulse_timer: float = 0.0
 # Touch / Swipe handling (PRD Section 5)
 var touch_start_pos: Vector2 = Vector2.ZERO
 var is_touching: bool = false
-const SWIPE_THRESHOLD_PIXELS: float = 30.0
+var active_touch_index: int = -1
+const SWIPE_THRESHOLD_PIXELS: float = 24.0
 
 var achievement_mgr: Node = null
 var ad_reward_modal: PanelContainer = null
 
 # UI references
+@onready var top_bar: PanelContainer = $TopBar if has_node("TopBar") else null
+@onready var bottom_bar: PanelContainer = $BottomBar if has_node("BottomBar") else null
 @onready var top_bar_margin: MarginContainer = $TopBar/Margin
 @onready var bottom_bar_margin: MarginContainer = $BottomBar/Margin
 @onready var menu_button: Button = find_child("MenuBtn", true, false) as Button
@@ -226,6 +229,10 @@ func _initialize_nodes() -> void:
 		$Background.show_behind_parent = true
 	if has_node("DimOverlay"):
 		$DimOverlay.show_behind_parent = true
+	if top_bar == null and has_node("TopBar"):
+		top_bar = $TopBar
+	if bottom_bar == null and has_node("BottomBar"):
+		bottom_bar = $BottomBar
 	if top_bar_margin == null and has_node("TopBar/Margin"):
 		top_bar_margin = $TopBar/Margin
 		bottom_bar_margin = $BottomBar/Margin
@@ -1009,8 +1016,58 @@ func trigger_sweat_drop() -> void:
 	queue_redraw()
 
 
-func _unhandled_input(event: InputEvent) -> void:
+func _is_touch_on_ui(pos: Vector2) -> bool:
 	if win_modal != null and win_modal.visible:
+		return true
+	if restart_dialog != null and restart_dialog.visible:
+		return true
+	if ad_reward_modal != null and ad_reward_modal.visible:
+		return true
+
+	# Top bar region (TopBar header and status bar / cutout)
+	var top_h: float = 96.0
+	if safe_area_mgr != null:
+		var insets: Dictionary = safe_area_mgr.get_safe_insets(self)
+		top_h += insets.get("top", 0.0)
+	if pos.y <= top_h:
+		return true
+
+	# Bottom bar region (BottomBar actions and bottom inset)
+	var bot_h: float = 72.0
+	if safe_area_mgr != null:
+		var insets: Dictionary = safe_area_mgr.get_safe_insets(self)
+		bot_h += insets.get("bottom", 0.0)
+	var current_h: float = size.y if size.y > 0.0 else 960.0
+	if pos.y >= (current_h - bot_h):
+		return true
+
+	# D-Pad overlay (when visible in D-Pad or Dual mode)
+	if dpad_overlay != null and dpad_overlay.is_visible_in_tree() and dpad_overlay.get_global_rect().has_point(pos):
+		return true
+
+	return false
+
+
+func _input(event: InputEvent) -> void:
+	_process_game_input(event)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	# Fallback if unhandled input is triggered or called directly by test suites
+	_process_game_input(event)
+
+
+func _gui_input(event: InputEvent) -> void:
+	# Receives touch and drag events if captured by the root Game Control
+	_process_game_input(event)
+
+
+func _process_game_input(event: InputEvent) -> void:
+	if win_modal != null and win_modal.visible:
+		return
+	if restart_dialog != null and restart_dialog.visible:
+		return
+	if ad_reward_modal != null and ad_reward_modal.visible:
 		return
 
 	# Keyboard navigation (Desktop / Testing) with Rapid Rewind on Hold
@@ -1038,12 +1095,37 @@ func _unhandled_input(event: InputEvent) -> void:
 				KEY_R:
 					_on_restart_pressed()
 
-	# Touch & Mouse swipe detection (PRD Section 5)
-	if event is InputEventMouseButton:
+	# 1. Native Mobile Screen Touch (Primary on Android & iOS devices)
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			if not _is_touch_on_ui(event.position):
+				if active_touch_index == -1:
+					active_touch_index = event.index
+					touch_start_pos = event.position
+					is_touching = true
+		else:
+			if is_touching and event.index == active_touch_index:
+				var release_delta: Vector2 = event.position - touch_start_pos
+				if release_delta.length() >= SWIPE_THRESHOLD_PIXELS:
+					_handle_swipe(release_delta)
+				is_touching = false
+				active_touch_index = -1
+
+	# 2. Native Mobile Screen Drag (Continuous swipe gestures during dragging)
+	elif event is InputEventScreenDrag:
+		if is_touching and (active_touch_index == -1 or event.index == active_touch_index):
+			var drag_delta: Vector2 = event.position - touch_start_pos
+			if drag_delta.length() >= SWIPE_THRESHOLD_PIXELS:
+				_handle_swipe(drag_delta)
+				touch_start_pos = event.position
+
+	# 3. Mouse Button (Desktop / Testing - ignored if physical screen touch is active)
+	elif event is InputEventMouseButton and active_touch_index == -1:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.pressed:
-				is_touching = true
-				touch_start_pos = event.position
+				if not _is_touch_on_ui(event.position):
+					is_touching = true
+					touch_start_pos = event.position
 			else:
 				if is_touching:
 					var release_delta: Vector2 = event.position - touch_start_pos
@@ -1051,23 +1133,12 @@ func _unhandled_input(event: InputEvent) -> void:
 						_handle_swipe(release_delta)
 					is_touching = false
 
-	elif event is InputEventScreenTouch:
-		if event.pressed:
-			is_touching = true
+	# 4. Mouse Motion (Desktop Drag - ignored if physical screen touch is active)
+	elif event is InputEventMouseMotion and is_touching and active_touch_index == -1:
+		var drag_delta: Vector2 = event.position - touch_start_pos
+		if drag_delta.length() >= SWIPE_THRESHOLD_PIXELS:
+			_handle_swipe(drag_delta)
 			touch_start_pos = event.position
-		else:
-			if is_touching:
-				var release_delta: Vector2 = event.position - touch_start_pos
-				if release_delta.length() >= SWIPE_THRESHOLD_PIXELS:
-					_handle_swipe(release_delta)
-				is_touching = false
-
-	elif event is InputEventScreenDrag or (event is InputEventMouseMotion and is_touching):
-		if is_touching:
-			var drag_delta: Vector2 = event.position - touch_start_pos
-			if drag_delta.length() >= SWIPE_THRESHOLD_PIXELS:
-				_handle_swipe(drag_delta)
-				touch_start_pos = event.position
 
 
 func _handle_swipe(delta: Vector2) -> void:

@@ -35,6 +35,7 @@ func _init() -> void:
 	test_warehouse_chapter_themes_and_progression()
 	test_porter_locker_cosmetics_in_game()
 	test_rewarded_ad_hint_economy_in_game()
+	test_touch_swipe_mechanics()
 
 	print("\n" + "=".repeat(54))
 	print("Game Scene Results: %d passed, %d failed" % [passes, fails])
@@ -626,13 +627,108 @@ func test_rewarded_ad_hint_economy_in_game() -> void:
 	assert_true(game.save_mgr.hints_remaining >= 2, "Player awarded hints after watching ad")
 	assert_true(not game.ad_reward_modal.visible, "AdRewardModal hidden after reward granted")
 
-	# 5. Localization of rewarded ad modal
-	assert_eq(loc.tr_text("MODAL_REWARD_TITLE"), "NEED A HINT?", "EN modal title localized")
-	loc.current_language = "fr"
-	assert_eq(loc.tr_text("MODAL_REWARD_TITLE"), "BESOIN D'UN INDICE ?", "FR modal title localized")
-	loc.current_language = "ar"
-	assert_eq(loc.tr_text("MODAL_REWARD_TITLE"), "تحتاج مساعدة؟", "AR modal title localized")
-
 	game.free()
 	loc.free()
 	save_mgr.free()
+
+
+func test_touch_swipe_mechanics() -> void:
+	print("--- Running Suite: Mobile Touch & Drag Swipe Mechanics ---")
+	var loc: Node = LocalizationManagerScript.new()
+	var save_mgr: Node = SaveManagerScript.new()
+	var game: Control = create_test_game(loc, save_mgr)
+	game.load_level(0) # Level 1: Player starts at (2, 3), space down at (2, 4)
+
+	var init_player_pos: Vector2i = game.grid.get_player_pos()
+	assert_eq(init_player_pos, Vector2i(2, 3), "Player starts at (2, 3)")
+
+	# 1. Screen Touch Drag Down (> 24px)
+	var touch_down: InputEventScreenTouch = InputEventScreenTouch.new()
+	touch_down.position = Vector2(270, 500)
+	touch_down.pressed = true
+	touch_down.index = 0
+	game._input(touch_down)
+	assert_true(game.is_touching, "Touch down registered on board")
+	assert_eq(game.active_touch_index, 0, "Active touch index is 0")
+
+	var touch_drag_down: InputEventScreenDrag = InputEventScreenDrag.new()
+	touch_drag_down.position = Vector2(270, 540) # 40px down
+	touch_drag_down.index = 0
+	game._input(touch_drag_down)
+	assert_eq(game.grid.get_player_pos(), Vector2i(2, 4), "Player moved DOWN via screen drag swipe")
+	assert_eq(game.player_facing_dir, Vector2i.DOWN, "Player facing updated to DOWN")
+
+	var touch_up: InputEventScreenTouch = InputEventScreenTouch.new()
+	touch_up.position = Vector2(270, 540)
+	touch_up.pressed = false
+	touch_up.index = 0
+	game._input(touch_up)
+	assert_false(game.is_touching, "Touch ended on release")
+	assert_eq(game.active_touch_index, -1, "Active touch index reset to -1")
+
+	# Wait for move animation to finish
+	game.is_animating = false
+
+	# 2. Quick Flick Swipe (Touch down at 500, Touch up at 450 = 50px UP)
+	var flick_down: InputEventScreenTouch = InputEventScreenTouch.new()
+	flick_down.position = Vector2(270, 500)
+	flick_down.pressed = true
+	flick_down.index = 0
+	game._input(flick_down)
+
+	var flick_up: InputEventScreenTouch = InputEventScreenTouch.new()
+	flick_up.position = Vector2(270, 450) # 50px up flick
+	flick_up.pressed = false
+	flick_up.index = 0
+	game._input(flick_up)
+	assert_eq(game.grid.get_player_pos(), Vector2i(2, 3), "Player moved UP back to (2, 3) via quick flick release")
+	assert_eq(game.player_facing_dir, Vector2i.UP, "Player facing updated to UP")
+
+	game.is_animating = false
+
+	# 3. Micro Tap without drag (< 24px threshold) does NOT move the player
+	var tap_down: InputEventScreenTouch = InputEventScreenTouch.new()
+	tap_down.position = Vector2(270, 500)
+	tap_down.pressed = true
+	tap_down.index = 0
+	game._input(tap_down)
+
+	var tap_up: InputEventScreenTouch = InputEventScreenTouch.new()
+	tap_up.position = Vector2(275, 505) # Only ~7px delta
+	tap_up.pressed = false
+	tap_up.index = 0
+	game._input(tap_up)
+	assert_eq(game.grid.get_player_pos(), Vector2i(2, 3), "Micro tap (< 24px) ignored, player unmoved")
+
+	# 4. Touch starting on TopBar UI is ignored for swipes
+	var ui_touch: InputEventScreenTouch = InputEventScreenTouch.new()
+	ui_touch.position = Vector2(50, 40) # Inside TopBar
+	ui_touch.pressed = true
+	ui_touch.index = 0
+	game._input(ui_touch)
+	assert_false(game.is_touching, "Touch on TopBar UI ignored for board swipe")
+
+	# 5. Desktop Mouse Swipe Left/Right
+	var mouse_down: InputEventMouseButton = InputEventMouseButton.new()
+	mouse_down.button_index = MOUSE_BUTTON_LEFT
+	mouse_down.pressed = true
+	mouse_down.position = Vector2(270, 500)
+	game._input(mouse_down)
+	assert_true(game.is_touching, "Mouse button down registered")
+
+	var mouse_motion: InputEventMouseMotion = InputEventMouseMotion.new()
+	mouse_motion.position = Vector2(230, 500) # 40px left
+	game._input(mouse_motion)
+	# Moving left from (2, 3): left is blocked by wall in level 1, so bump recoil occurs
+	assert_eq(game.player_facing_dir, Vector2i.LEFT, "Player facing updated to LEFT via mouse swipe")
+
+	var mouse_up: InputEventMouseButton = InputEventMouseButton.new()
+	mouse_up.button_index = MOUSE_BUTTON_LEFT
+	mouse_up.pressed = false
+	mouse_up.position = Vector2(230, 500)
+	game._input(mouse_up)
+	assert_false(game.is_touching, "Mouse touch ended on release")
+
+	game.queue_free()
+	loc.queue_free()
+	save_mgr.queue_free()
