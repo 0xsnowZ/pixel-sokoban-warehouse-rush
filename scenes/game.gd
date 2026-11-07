@@ -1904,27 +1904,37 @@ func _draw() -> void:
 				var floor_tex: Texture2D = tex_floor_1 if is_alt else tex_floor_2
 				draw_texture_rect(floor_tex, rect, false, ch["floor_tint"])
 
+				# Concrete expansion joint / tile seam lines
+				draw_rect(rect, Color(0.0, 0.0, 0.0, 0.12), false, 1.0)
+				if current_chapter_idx == 1:
+					# Cold Storage: Frost-glaze sheen & diamond grip accents
+					draw_rect(rect, Color(0.35, 0.82, 1.0, 0.025), false, 1.0)
+					draw_line(rect.position, rect.position + Vector2(3.0, 3.0), Color(0.70, 0.90, 1.0, 0.30), 1.0)
+				elif current_chapter_idx == 2:
+					# Cyber Depot: Carbon cyber grid seams
+					draw_rect(rect, Color(0.20, 1.0, 0.55, 0.025), false, 1.0)
+
 				# Graduated 3D Ambient Depth Shadow: if cell above is a wall, cast soft drop shadow down
 				var has_top_wall: bool = (y > 0 and grid.is_wall(Vector2i(x, y - 1)))
 				var has_left_wall: bool = (x > 0 and grid.is_wall(Vector2i(x - 1, y)))
 
 				if has_top_wall:
 					# Multi-tier shadow gradient from wall base down onto floor
-					draw_rect(Rect2(rect.position, Vector2(rect.size.x, tile_size * 0.06)), Color(0.0, 0.0, 0.0, 0.45))
-					draw_rect(Rect2(rect.position, Vector2(rect.size.x, tile_size * 0.14)), Color(0.0, 0.0, 0.0, 0.26))
-					draw_rect(Rect2(rect.position, Vector2(rect.size.x, tile_size * 0.24)), Color(0.0, 0.0, 0.0, 0.12))
+					draw_rect(Rect2(rect.position, Vector2(rect.size.x, tile_size * 0.08)), Color(0.0, 0.0, 0.0, 0.50))
+					draw_rect(Rect2(rect.position, Vector2(rect.size.x, tile_size * 0.16)), Color(0.0, 0.0, 0.0, 0.30))
+					draw_rect(Rect2(rect.position, Vector2(rect.size.x, tile_size * 0.26)), Color(0.0, 0.0, 0.0, 0.14))
 
 				# Left-wall drop shadow for isometric ambient depth
 				if has_left_wall:
-					draw_rect(Rect2(rect.position, Vector2(tile_size * 0.05, rect.size.y)), Color(0.0, 0.0, 0.0, 0.36))
-					draw_rect(Rect2(rect.position, Vector2(tile_size * 0.12, rect.size.y)), Color(0.0, 0.0, 0.0, 0.20))
-					draw_rect(Rect2(rect.position, Vector2(tile_size * 0.20, rect.size.y)), Color(0.0, 0.0, 0.0, 0.08))
+					draw_rect(Rect2(rect.position, Vector2(tile_size * 0.06, rect.size.y)), Color(0.0, 0.0, 0.0, 0.40))
+					draw_rect(Rect2(rect.position, Vector2(tile_size * 0.14, rect.size.y)), Color(0.0, 0.0, 0.0, 0.22))
+					draw_rect(Rect2(rect.position, Vector2(tile_size * 0.22, rect.size.y)), Color(0.0, 0.0, 0.0, 0.10))
 
 				# Deep corner ambient occlusion when flanked by both top and left walls
 				if has_top_wall and has_left_wall:
-					draw_circle(rect.position, tile_size * 0.22, Color(0.0, 0.0, 0.0, 0.20))
+					draw_circle(rect.position, tile_size * 0.24, Color(0.0, 0.0, 0.0, 0.25))
 			else:
-				# Exterior void tile: draws dark warehouse perimeter floor base with blueprint grid & wall drop shadows
+				# Exterior void tile: draws solid dark warehouse perimeter service deck with wall drop shadows
 				_draw_exterior_void_tile(rect, pos, ch)
 
 	# 2.5. Board Peripheral Vignette (Soft atmospheric edge darkening for framed boards)
@@ -1946,10 +1956,10 @@ func _draw() -> void:
 			var pad_rect: Rect2 = rect.grow(-pad_inset)
 
 			# 1. Dark recessed floor plate
-			draw_rect(pad_rect, Color(0.09, 0.11, 0.15, 0.72))
+			draw_rect(pad_rect, Color(0.09, 0.11, 0.15, 0.85))
 			# Inset shadow along top & left interior edges
-			draw_line(pad_rect.position, pad_rect.position + Vector2(pad_rect.size.x, 0.0), Color(0.0, 0.0, 0.0, 0.65), 1.8)
-			draw_line(pad_rect.position, pad_rect.position + Vector2(0.0, pad_rect.size.y), Color(0.0, 0.0, 0.0, 0.55), 1.8)
+			draw_line(pad_rect.position, pad_rect.position + Vector2(pad_rect.size.x, 0.0), Color(0.0, 0.0, 0.0, 0.70), 1.8)
+			draw_line(pad_rect.position, pad_rect.position + Vector2(0.0, pad_rect.size.y), Color(0.0, 0.0, 0.0, 0.60), 1.8)
 			# Subtle specular lip along bottom & right edges
 			draw_line(pad_rect.position + Vector2(0.0, pad_rect.size.y), pad_rect.end, Color(0.40, 0.46, 0.54, 0.35), 1.2)
 			draw_line(pad_rect.position + Vector2(pad_rect.size.x, 0.0), pad_rect.end, Color(0.40, 0.46, 0.54, 0.35), 1.2)
@@ -1957,22 +1967,27 @@ func _draw() -> void:
 			# 2. Industrial hazard caution corner brackets on the goal pad
 			_draw_goal_hazard_brackets(rect, ch)
 
-			# 3. Integrated goal station graphic (harmonious modulate)
-			draw_texture_rect(tex_goal, rect, false, Color(1.0, 0.90, 0.60, 0.74))
+			# 3. Integrated goal station graphic (harmonious splash-screen emerald / chapter modulate)
+			var goal_mod: Color = Color(0.25, 1.0, 0.55, 0.82)
+			if current_chapter_idx == 1:
+				goal_mod = Color(0.35, 0.85, 1.0, 0.82)
+			elif current_chapter_idx == 2:
+				goal_mod = Color(1.0, 0.75, 0.25, 0.82)
+			draw_texture_rect(tex_goal, rect, false, goal_mod)
 
 			# 4. Pulsing laser reticle & concentric target ring
 			var ring_r: float = (tile_size * 0.28) * (1.0 + pulse * 0.35)
-			var ring_col: Color = Color(aura_col_base.r, aura_col_base.g, aura_col_base.b, 0.24 + pulse * 0.08)
-			draw_arc(center, ring_r, 0.0, TAU, 32, ring_col, 1.5, true)
+			var ring_col: Color = Color(aura_col_base.r, aura_col_base.g, aura_col_base.b, 0.28 + pulse * 0.10)
+			draw_arc(center, ring_r, 0.0, TAU, 32, ring_col, 1.6, true)
 
 			# 4-direction alignment crosshair tick marks
 			var tick_in: float = tile_size * 0.16
 			var tick_out: float = tile_size * 0.32
-			var tick_c: Color = Color(aura_col_base.r, aura_col_base.g, aura_col_base.b, 0.30 + pulse * 0.10)
-			draw_line(center - Vector2(tick_out, 0.0), center - Vector2(tick_in, 0.0), tick_c, 1.4)
-			draw_line(center + Vector2(tick_in, 0.0), center + Vector2(tick_out, 0.0), tick_c, 1.4)
-			draw_line(center - Vector2(0.0, tick_out), center - Vector2(0.0, tick_in), tick_c, 1.4)
-			draw_line(center + Vector2(0.0, tick_in), center + Vector2(0.0, tick_out), tick_c, 1.4)
+			var tick_c: Color = Color(aura_col_base.r, aura_col_base.g, aura_col_base.b, 0.35 + pulse * 0.12)
+			draw_line(center - Vector2(tick_out, 0.0), center - Vector2(tick_in, 0.0), tick_c, 1.5)
+			draw_line(center + Vector2(tick_in, 0.0), center + Vector2(tick_out, 0.0), tick_c, 1.5)
+			draw_line(center - Vector2(0.0, tick_out), center - Vector2(0.0, tick_in), tick_c, 1.5)
+			draw_line(center + Vector2(0.0, tick_in), center + Vector2(0.0, tick_out), tick_c, 1.5)
 
 			draw_circle(center, 3.2, core_col)
 		else:
@@ -2082,19 +2097,52 @@ func _draw_star_shape(center: Vector2, radius: float, color: Color) -> void:
 	draw_colored_polygon(pts, color)
 
 
-func _draw_exterior_void_tile(rect: Rect2, pos: Vector2i, ch: Dictionary) -> void:
-	# 1. Dark warehouse yard/perimeter floor base with clean subtle industrial tint
-	var void_bg: Color = ch.get("dim_color", Color(0.02, 0.03, 0.06, 0.45))
+func _draw_exterior_void_tile(rect: Rect2, pos: Vector2i, _ch: Dictionary) -> void:
+	# 1. Solid, opaque warehouse service yard deck: perfectly cohesive with the board frame (no background photo bleed!)
+	var void_bg: Color = Color(0.08, 0.09, 0.13, 1.0)
+	if current_chapter_idx == 1:
+		void_bg = Color(0.06, 0.09, 0.15, 1.0)
+	elif current_chapter_idx == 2:
+		void_bg = Color(0.04, 0.05, 0.09, 1.0)
 	draw_rect(rect, void_bg)
 
-	# 2. Outer wall drop shadow cast onto exterior void for 2.5D ambient depth
-	if pos.y > 0 and grid.is_wall(Vector2i(pos.x, pos.y - 1)):
-		draw_rect(Rect2(rect.position, Vector2(rect.size.x, tile_size * 0.26)), Color(0.0, 0.0, 0.0, 0.38))
-	if pos.x > 0 and grid.is_wall(Vector2i(pos.x - 1, pos.y)):
-		draw_rect(Rect2(rect.position, Vector2(tile_size * 0.22, rect.size.y)), Color(0.0, 0.0, 0.0, 0.34))
+	# 2. Industrial staging deck pattern (tread / service deck)
+	match current_chapter_idx:
+		1:
+			# Cold Storage: Crystalline steel freezer plating with cyan seams
+			draw_rect(rect, Color(0.35, 0.82, 1.0, 0.025), false, 1.0)
+			draw_line(rect.position, rect.end, Color(0.35, 0.82, 1.0, 0.03), 1.0)
+		2:
+			# Cyber Depot: Carbon-fiber micro-grid with subtle circuit lines
+			draw_rect(rect, Color(0.20, 1.0, 0.55, 0.025), false, 1.0)
+			draw_line(rect.position + Vector2(rect.size.x * 0.5, 0), rect.position + Vector2(rect.size.x * 0.5, rect.size.y), Color(1.0, 0.65, 0.20, 0.035), 1.0)
+		_:
+			# Cargo Bay: Diamond-plate industrial steel tread
+			draw_line(rect.position, rect.end, Color(1.0, 0.85, 0.40, 0.03), 1.0)
+			draw_line(rect.position + Vector2(rect.size.x, 0), rect.position + Vector2(0, rect.size.y), Color(1.0, 0.85, 0.40, 0.03), 1.0)
+			draw_rect(rect, Color(0.0, 0.0, 0.0, 0.25), false, 1.0)
 
-	# 3. Subtle architectural grid lines (faint warehouse blueprint grid)
-	draw_rect(rect, Color(1.0, 1.0, 1.0, 0.022), false, 1.0)
+	# 3. Outer wall drop shadow cast onto exterior void from all directions for 2.5D ambient depth
+	if grid != null:
+		var has_w_up: bool = (pos.y > 0 and grid.is_wall(Vector2i(pos.x, pos.y - 1)))
+		var has_w_down: bool = (pos.y < grid.height - 1 and grid.is_wall(Vector2i(pos.x, pos.y + 1)))
+		var has_w_left: bool = (pos.x > 0 and grid.is_wall(Vector2i(pos.x - 1, pos.y)))
+		var has_w_right: bool = (pos.x < grid.width - 1 and grid.is_wall(Vector2i(pos.x + 1, pos.y)))
+
+		if has_w_up:
+			draw_rect(Rect2(rect.position, Vector2(rect.size.x, tile_size * 0.32)), Color(0.0, 0.0, 0.0, 0.55))
+			draw_rect(Rect2(rect.position, Vector2(rect.size.x, tile_size * 0.16)), Color(0.0, 0.0, 0.0, 0.35))
+		if has_w_left:
+			draw_rect(Rect2(rect.position, Vector2(tile_size * 0.28, rect.size.y)), Color(0.0, 0.0, 0.0, 0.48))
+			draw_rect(Rect2(rect.position, Vector2(tile_size * 0.14, rect.size.y)), Color(0.0, 0.0, 0.0, 0.30))
+		if has_w_down:
+			draw_rect(Rect2(Vector2(rect.position.x, rect.position.y + rect.size.y - tile_size * 0.22), Vector2(rect.size.x, tile_size * 0.22)), Color(0.0, 0.0, 0.0, 0.38))
+		if has_w_right:
+			draw_rect(Rect2(Vector2(rect.position.x + rect.size.x - tile_size * 0.22, rect.position.y), Vector2(tile_size * 0.22, rect.size.y)), Color(0.0, 0.0, 0.0, 0.38))
+
+		# Deep corner ambient occlusion
+		if has_w_up and has_w_left:
+			draw_circle(rect.position, tile_size * 0.35, Color(0.0, 0.0, 0.0, 0.30))
 
 
 func _draw_warehouse_prop(rect: Rect2, _pos: Vector2i, _ch: Dictionary) -> void:
@@ -2123,39 +2171,131 @@ func _draw_cyber_pylon(rect: Rect2, center: Vector2) -> void:
 
 
 func _draw_wall(rect: Rect2, pos: Vector2i = Vector2i.ZERO) -> void:
-	var ch: Dictionary = get_current_chapter_theme()
-	draw_texture_rect(tex_wall, rect, false, ch["wall_tint"])
+	var is_top_edge: bool = (grid == null or pos.y == 0 or not grid.is_wall(pos + Vector2i.UP))
+	var is_bottom_edge: bool = (grid == null or pos.y >= grid.height - 1 or not grid.is_wall(pos + Vector2i.DOWN))
+	var is_left_edge: bool = (grid == null or pos.x == 0 or not grid.is_wall(pos + Vector2i.LEFT))
+	var is_right_edge: bool = (grid == null or pos.x >= grid.width - 1 or not grid.is_wall(pos + Vector2i.RIGHT))
 
-	if grid == null:
-		return
+	var cap_h: float = tile_size * 0.16
+	var kick_h: float = tile_size * 0.14
 
-	var is_top_edge: bool = (pos.y == 0 or not grid.is_wall(pos + Vector2i.UP))
-	var is_bottom_edge: bool = (pos.y >= grid.height - 1 or not grid.is_wall(pos + Vector2i.DOWN))
-	var is_left_edge: bool = (pos.x == 0 or not grid.is_wall(pos + Vector2i.LEFT))
-	var is_right_edge: bool = (pos.x >= grid.width - 1 or not grid.is_wall(pos + Vector2i.RIGHT))
+	match current_chapter_idx:
+		1:
+			# === Chapter 2: Cold Storage (Cryogenic Insulated Freezer Panels) ===
+			# 1. Base cryogenic brushed steel / insulated composite wall
+			draw_rect(rect, Color(0.20, 0.27, 0.36))
+			var panel_inset: Rect2 = rect.grow(-tile_size * 0.05)
+			draw_rect(panel_inset, Color(0.26, 0.35, 0.46))
 
-	# 1. Top coping stone / specular highlight (Option B)
-	if is_top_edge:
-		# Crisp specular edge on top of wall cap
-		draw_line(rect.position, rect.position + Vector2(rect.size.x, 0.0), Color(1.0, 1.0, 1.0, 0.38), 2.5)
-		draw_line(rect.position + Vector2(0.0, 2.5), rect.position + Vector2(rect.size.x, 2.5), Color(1.0, 1.0, 1.0, 0.14), 1.0)
-		# Demarcation shadow crease right below the coping edge
-		draw_line(rect.position + Vector2(0.0, 3.5), rect.position + Vector2(rect.size.x, 3.5), Color(0.0, 0.0, 0.0, 0.28), 1.0)
-	else:
-		# Subtle interior masonry course line
-		draw_line(rect.position, rect.position + Vector2(rect.size.x, 0.0), Color(0.0, 0.0, 0.0, 0.18), 1.0)
+			# Vertical corrugated insulation panel ribs
+			var mid_x: float = rect.position.x + rect.size.x * 0.5
+			draw_line(Vector2(mid_x, rect.position.y), Vector2(mid_x, rect.position.y + rect.size.y), Color(0.12, 0.17, 0.24), 1.6)
+			draw_line(Vector2(mid_x + 1.2, rect.position.y), Vector2(mid_x + 1.2, rect.position.y + rect.size.y), Color(0.48, 0.65, 0.82, 0.45), 1.0)
 
-	# 2. Left side specular highlight (top-left key lighting)
-	if is_left_edge:
-		draw_line(rect.position, rect.position + Vector2(0.0, rect.size.y), Color(1.0, 1.0, 1.0, 0.22), 1.5)
+			# Horizontal frost condensation line
+			var mid_y: float = rect.position.y + rect.size.y * 0.5
+			draw_line(Vector2(rect.position.x, mid_y), Vector2(rect.position.x + rect.size.x, mid_y), Color(0.14, 0.20, 0.28, 0.60), 1.0)
 
-	# 3. Right side ambient shadow edge
-	if is_right_edge:
-		draw_line(rect.position + Vector2(rect.size.x, 0.0), rect.position + rect.size, Color(0.0, 0.0, 0.0, 0.35), 2.0)
+			# Stainless steel freezer wall cap (Top Edge)
+			if is_top_edge:
+				draw_rect(Rect2(rect.position, Vector2(rect.size.x, cap_h)), Color(0.38, 0.52, 0.66))
+				draw_line(rect.position, rect.position + Vector2(rect.size.x, 0.0), Color(0.85, 0.96, 1.0, 0.95), 2.0)
+				draw_line(rect.position + Vector2(0.0, cap_h), rect.position + Vector2(rect.size.x, cap_h), Color(0.06, 0.10, 0.16, 0.80), 1.5)
+			else:
+				draw_line(rect.position, rect.position + Vector2(rect.size.x, 0.0), Color(0.10, 0.14, 0.20, 0.40), 1.0)
 
-	# 4. Bottom base shadow / footing depth
-	if is_bottom_edge:
-		draw_line(rect.position + Vector2(0.0, rect.size.y - 1.0), rect.end - Vector2(0.0, 1.0), Color(0.0, 0.0, 0.0, 0.48), 2.5)
+			# Sub-zero rubber compression gasket (Bottom Edge)
+			if is_bottom_edge:
+				var kick_y: float = rect.position.y + rect.size.y - kick_h
+				draw_rect(Rect2(Vector2(rect.position.x, kick_y), Vector2(rect.size.x, kick_h)), Color(0.08, 0.11, 0.16))
+				draw_line(Vector2(rect.position.x, kick_y), Vector2(rect.position.x + rect.size.x, kick_y), Color(0.35, 0.85, 1.0, 0.70), 1.5)
+				draw_line(rect.position + Vector2(0.0, rect.size.y - 1.0), rect.end - Vector2(0.0, 1.0), Color(0.0, 0.0, 0.0, 0.60), 2.0)
+
+			# Left specular & right shadow
+			if is_left_edge:
+				draw_line(rect.position, rect.position + Vector2(0.0, rect.size.y), Color(0.70, 0.90, 1.0, 0.35), 1.5)
+			if is_right_edge:
+				draw_line(rect.position + Vector2(rect.size.x, 0.0), rect.position + rect.size, Color(0.04, 0.07, 0.12, 0.50), 2.0)
+
+			# Corner freeze-lock rivets
+			if is_top_edge and is_left_edge:
+				draw_circle(rect.position + Vector2(3.5, 3.5), 1.8, Color(0.55, 0.90, 1.0))
+			if is_top_edge and is_right_edge:
+				draw_circle(rect.position + Vector2(rect.size.x - 3.5, 3.5), 1.8, Color(0.55, 0.90, 1.0))
+
+		2:
+			# === Chapter 3: Cyber Depot (Dark Obsidian Armor with Glowing Neon Power Conduits) ===
+			# 1. Base obsidian composite armor panel
+			draw_rect(rect, Color(0.08, 0.09, 0.13))
+			var armor_inset: Rect2 = rect.grow(-tile_size * 0.06)
+			draw_rect(armor_inset, Color(0.12, 0.14, 0.20))
+			draw_rect(armor_inset, Color(0.05, 0.06, 0.09), false, 1.0)
+
+			# Illuminated neon energy conduit lines running through wall
+			var conduit_col: Color = Color(1.00, 0.68, 0.20, 0.75)
+			var node_col: Color = Color(1.00, 0.90, 0.60, 0.95)
+			var cy: float = rect.position.y + rect.size.y * 0.5
+			draw_line(Vector2(rect.position.x, cy), Vector2(rect.position.x + rect.size.x, cy), conduit_col, 1.6)
+			draw_circle(rect.get_center(), 2.2, node_col)
+
+			# Titanium armor top coping with neon edge trim
+			if is_top_edge:
+				draw_rect(Rect2(rect.position, Vector2(rect.size.x, cap_h)), Color(0.18, 0.20, 0.27))
+				draw_line(rect.position, rect.position + Vector2(rect.size.x, 0.0), Color(1.00, 0.72, 0.25, 0.95), 2.0)
+				draw_line(rect.position + Vector2(0.0, cap_h), rect.position + Vector2(rect.size.x, cap_h), Color(0.03, 0.04, 0.06, 0.90), 1.6)
+			else:
+				draw_line(rect.position, rect.position + Vector2(rect.size.x, 0.0), Color(0.04, 0.05, 0.08, 0.50), 1.0)
+
+			# Heavy conduit base trunking (Bottom Edge)
+			if is_bottom_edge:
+				var kick_y: float = rect.position.y + rect.size.y - kick_h
+				draw_rect(Rect2(Vector2(rect.position.x, kick_y), Vector2(rect.size.x, kick_h)), Color(0.05, 0.06, 0.09))
+				draw_line(Vector2(rect.position.x, kick_y), Vector2(rect.position.x + rect.size.x, kick_y), Color(0.20, 1.00, 0.65, 0.70), 1.5)
+				draw_line(rect.position + Vector2(0.0, rect.size.y - 1.0), rect.end - Vector2(0.0, 1.0), Color(0.0, 0.0, 0.0, 0.70), 2.0)
+
+			# Left specular & right shadow
+			if is_left_edge:
+				draw_line(rect.position, rect.position + Vector2(0.0, rect.size.y), Color(0.40, 0.50, 0.65, 0.40), 1.5)
+			if is_right_edge:
+				draw_line(rect.position + Vector2(rect.size.x, 0.0), rect.position + rect.size, Color(0.02, 0.03, 0.05, 0.65), 2.0)
+
+			# Corner cyber pylons
+			if is_top_edge and is_left_edge:
+				draw_circle(rect.position + Vector2(3.5, 3.5), 2.0, Color(1.00, 0.72, 0.25))
+			if is_top_edge and is_right_edge:
+				draw_circle(rect.position + Vector2(rect.size.x - 3.5, 3.5), 2.0, Color(1.00, 0.72, 0.25))
+
+		_:
+			# === Chapter 1: Cargo Bay (Industrial Warehouse Reinforced Brickwork) ===
+			draw_texture_rect(tex_wall, rect, false, Color(1.0, 0.96, 0.92))
+
+			# 1. Galvanized steel coping cap (Top Edge)
+			if is_top_edge:
+				draw_rect(Rect2(rect.position, Vector2(rect.size.x, cap_h)), Color(0.32, 0.35, 0.42))
+				draw_line(rect.position, rect.position + Vector2(rect.size.x, 0.0), Color(0.92, 0.95, 1.0, 0.90), 2.0)
+				draw_line(rect.position + Vector2(0.0, cap_h), rect.position + Vector2(rect.size.x, cap_h), Color(0.05, 0.06, 0.09, 0.75), 1.6)
+			else:
+				draw_line(rect.position, rect.position + Vector2(rect.size.x, 0.0), Color(0.0, 0.0, 0.0, 0.22), 1.0)
+
+			# 2. Industrial safety hazard kickplate (Bottom Edge)
+			if is_bottom_edge:
+				var kick_y: float = rect.position.y + rect.size.y - kick_h
+				draw_rect(Rect2(Vector2(rect.position.x, kick_y), Vector2(rect.size.x, kick_h)), Color(0.12, 0.14, 0.18))
+				# Diagonal caution hazard stripe dashes
+				var s_col: Color = Color(0.96, 0.80, 0.15, 0.85)
+				for sx in [0.25, 0.55, 0.85]:
+					var p1: Vector2 = Vector2(rect.position.x + rect.size.x * sx - 3.0, kick_y + kick_h - 1.0)
+					var p2: Vector2 = Vector2(rect.position.x + rect.size.x * sx + 3.0, kick_y + 1.0)
+					draw_line(p1, p2, s_col, 2.0)
+				draw_line(rect.position + Vector2(0.0, rect.size.y - 1.0), rect.end - Vector2(0.0, 1.0), Color(0.0, 0.0, 0.0, 0.55), 2.2)
+
+			# 3. Left side key-light specular
+			if is_left_edge:
+				draw_line(rect.position, rect.position + Vector2(0.0, rect.size.y), Color(1.0, 1.0, 1.0, 0.26), 1.5)
+
+			# 4. Right side ambient shadow edge
+			if is_right_edge:
+				draw_line(rect.position + Vector2(rect.size.x, 0.0), rect.position + rect.size, Color(0.0, 0.0, 0.0, 0.38), 2.0)
 
 
 ## Returns true if the level has exterior void tiles outside its walls (irregular / non-square shape).
@@ -2282,42 +2422,49 @@ func _draw_board_vignette(effective_origin: Vector2, board_pixel_size: Vector2) 
 		draw_circle(c_pos, corner_r, Color(0.0, 0.0, 0.0, 0.12))
 
 
-func _draw_goal_hazard_brackets(rect: Rect2, _ch: Dictionary) -> void:
+func _draw_goal_hazard_brackets(rect: Rect2, ch: Dictionary) -> void:
 	var arm: float = rect.size.x * 0.22
 	var m: float = 1.0
 	var steel_col: Color = Color(0.12, 0.14, 0.18, 0.88)
-	var yellow_col: Color = Color(0.96, 0.80, 0.15, 0.85)
+	var accent_col: Color = ch.get("badge_color", Color(0.96, 0.80, 0.15, 0.85))
 	var rivet_col: Color = Color(0.90, 0.92, 0.95, 0.95)
+
+	if current_chapter_idx == 1:
+		steel_col = Color(0.10, 0.16, 0.24, 0.90)
+		accent_col = Color(0.35, 0.85, 1.00, 0.85)
+	elif current_chapter_idx == 2:
+		steel_col = Color(0.06, 0.08, 0.12, 0.95)
+		accent_col = Color(1.00, 0.65, 0.20, 0.85)
 
 	# Top-Left Bracket
 	draw_line(rect.position + Vector2(m, m), rect.position + Vector2(m + arm, m), steel_col, 2.5)
 	draw_line(rect.position + Vector2(m, m), rect.position + Vector2(m, m + arm), steel_col, 2.5)
-	draw_line(rect.position + Vector2(m + 1.2, m + 1.2), rect.position + Vector2(m + arm * 0.75, m + 1.2), yellow_col, 1.4)
-	draw_line(rect.position + Vector2(m + 1.2, m + 1.2), rect.position + Vector2(m + 1.2, m + arm * 0.75), yellow_col, 1.4)
+	draw_line(rect.position + Vector2(m + 1.2, m + 1.2), rect.position + Vector2(m + arm * 0.75, m + 1.2), accent_col, 1.4)
+	draw_line(rect.position + Vector2(m + 1.2, m + 1.2), rect.position + Vector2(m + 1.2, m + arm * 0.75), accent_col, 1.4)
 	draw_circle(rect.position + Vector2(m + 2.0, m + 2.0), 1.2, rivet_col)
 
 	# Top-Right Bracket
 	var tr: Vector2 = rect.position + Vector2(rect.size.x, 0.0)
 	draw_line(tr + Vector2(-m, m), tr + Vector2(-m - arm, m), steel_col, 2.5)
 	draw_line(tr + Vector2(-m, m), tr + Vector2(-m, m + arm), steel_col, 2.5)
-	draw_line(tr + Vector2(-m - 1.2, m + 1.2), tr + Vector2(-m - arm * 0.75, m + 1.2), yellow_col, 1.4)
-	draw_line(tr + Vector2(-m - 1.2, m + 1.2), tr + Vector2(-m - 1.2, m + arm * 0.75), yellow_col, 1.4)
+	draw_line(tr + Vector2(-m - 1.2, m + 1.2), tr + Vector2(-m - arm * 0.75, m + 1.2), accent_col, 1.4)
+	draw_line(tr + Vector2(-m - 1.2, m + 1.2), tr + Vector2(-m - 1.2, m + arm * 0.75), accent_col, 1.4)
 	draw_circle(tr + Vector2(-m - 2.0, m + 2.0), 1.2, rivet_col)
 
 	# Bottom-Left Bracket
 	var bl: Vector2 = rect.position + Vector2(0.0, rect.size.y)
 	draw_line(bl + Vector2(m, -m), bl + Vector2(m + arm, -m), steel_col, 2.5)
 	draw_line(bl + Vector2(m, -m), bl + Vector2(m, -m - arm), steel_col, 2.5)
-	draw_line(bl + Vector2(m + 1.2, -m - 1.2), bl + Vector2(m + arm * 0.75, -m - 1.2), yellow_col, 1.4)
-	draw_line(bl + Vector2(m + 1.2, -m - 1.2), bl + Vector2(m + 1.2, -m - arm * 0.75), yellow_col, 1.4)
+	draw_line(bl + Vector2(m + 1.2, -m - 1.2), bl + Vector2(m + arm * 0.75, -m - 1.2), accent_col, 1.4)
+	draw_line(bl + Vector2(m + 1.2, -m - 1.2), bl + Vector2(m + 1.2, -m - arm * 0.75), accent_col, 1.4)
 	draw_circle(bl + Vector2(m + 2.0, -m - 2.0), 1.2, rivet_col)
 
 	# Bottom-Right Bracket
 	var br: Vector2 = rect.end
 	draw_line(br + Vector2(-m, -m), br + Vector2(-m - arm, -m), steel_col, 2.5)
 	draw_line(br + Vector2(-m, -m), br + Vector2(-m, -m - arm), steel_col, 2.5)
-	draw_line(br + Vector2(-m - 1.2, -m - 1.2), br + Vector2(-m - arm * 0.75, -m - 1.2), yellow_col, 1.4)
-	draw_line(br + Vector2(-m - 1.2, -m - 1.2), br + Vector2(-m - 1.2, -m - arm * 0.75), yellow_col, 1.4)
+	draw_line(br + Vector2(-m - 1.2, -m - 1.2), br + Vector2(-m - arm * 0.75, -m - 1.2), accent_col, 1.4)
+	draw_line(br + Vector2(-m - 1.2, -m - 1.2), br + Vector2(-m - 1.2, -m - arm * 0.75), accent_col, 1.4)
 	draw_circle(br + Vector2(-m - 2.0, -m - 2.0), 1.2, rivet_col)
 
 
