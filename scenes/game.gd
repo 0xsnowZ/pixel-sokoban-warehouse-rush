@@ -2060,7 +2060,7 @@ func _draw() -> void:
 			if current_chapter_idx == 1:
 				goal_mod = Color(0.35, 0.88, 1.0, 0.85)
 			elif current_chapter_idx == 2:
-				goal_mod = Color(1.0, 0.75, 0.22, 0.85)
+				goal_mod = Color(0.20, 0.98, 0.60, 0.90)
 			draw_texture_rect(tex_goal, rect, false, goal_mod)
 
 			# 4. Concentric optical target reticle
@@ -2242,44 +2242,24 @@ func _draw_cyber_pylon(rect: Rect2, center: Vector2) -> void:
 
 
 func _draw_wall(rect: Rect2, pos: Vector2i = Vector2i.ZERO) -> void:
+	var wall_tint: Color = Color(1.0, 0.96, 0.92)
 	match current_chapter_idx:
 		1:
-			# === Chapter 2: Cold Storage (Cryogenic Insulated Freezer Panels) ===
-			draw_rect(rect, Color(0.22, 0.29, 0.38))
-			var inset: Rect2 = rect.grow(-2.0)
-			draw_rect(inset, Color(0.27, 0.36, 0.47))
-			draw_rect(inset, Color(0.18, 0.24, 0.32), false, 1.0)
-
-			# 4 Corner rivets
-			var rv_col: Color = Color(0.65, 0.82, 0.95, 0.70)
-			draw_rect(Rect2(inset.position + Vector2(2.0, 2.0), Vector2(1.5, 1.5)), rv_col)
-			draw_rect(Rect2(Vector2(inset.end.x - 3.5, inset.position.y + 2.0), Vector2(1.5, 1.5)), rv_col)
-			draw_rect(Rect2(Vector2(inset.position.x + 2.0, inset.end.y - 3.5), Vector2(1.5, 1.5)), rv_col)
-			draw_rect(Rect2(inset.end - Vector2(3.5, 3.5), Vector2(1.5, 1.5)), rv_col)
-
-			# Subtle dark baseline shadow only along playable interior floor boundary
-			if grid != null and pos.y < grid.height - 1 and grid.is_interior_floor(pos + Vector2i.DOWN):
-				draw_line(rect.position + Vector2(0.0, rect.size.y - 1.0), rect.end - Vector2(0.0, 1.0), Color(0.10, 0.14, 0.20, 0.90), 2.0)
-
+			# === Chapter 2: Cold Storage (Cryogenic Frosted Brickwork) ===
+			wall_tint = Color(0.68, 0.82, 0.96)
 		2:
-			# === Chapter 3: Cyber Depot (Dark Obsidian Armor Panels) ===
-			draw_rect(rect, Color(0.09, 0.10, 0.15))
-			var inset: Rect2 = rect.grow(-2.0)
-			draw_rect(inset, Color(0.13, 0.15, 0.22))
-			draw_rect(inset, Color(0.06, 0.07, 0.11), false, 1.0)
-			draw_circle(rect.get_center(), 1.5, Color(1.00, 0.75, 0.25, 0.45))
-
-			if grid != null and pos.y < grid.height - 1 and grid.is_interior_floor(pos + Vector2i.DOWN):
-				draw_line(rect.position + Vector2(0.0, rect.size.y - 1.0), rect.end - Vector2(0.0, 1.0), Color(0.03, 0.04, 0.06, 0.90), 2.0)
-
+			# === Chapter 3: Cyber Depot (Dark Obsidian Slate Brickwork) ===
+			wall_tint = Color(0.48, 0.52, 0.64)
 		_:
-			# === Chapter 1: Cargo Bay (Industrial Reinforced Brickwork) ===
-			draw_texture_rect(tex_wall, rect, false, Color(1.0, 0.96, 0.92))
-			draw_line(rect.position, rect.position + Vector2(rect.size.x, 0.0), Color(1.0, 1.0, 1.0, 0.12), 1.0)
-			draw_line(rect.position + Vector2(0.0, rect.size.y - 1.0), rect.end - Vector2(0.0, 1.0), Color(0.0, 0.0, 0.0, 0.20), 1.0)
+			# === Chapter 1: Cargo Bay (Industrial Terracotta Brickwork) ===
+			wall_tint = Color(1.0, 0.96, 0.92)
 
-			if grid != null and pos.y < grid.height - 1 and grid.is_interior_floor(pos + Vector2i.DOWN):
-				draw_line(rect.position + Vector2(0.0, rect.size.y - 1.0), rect.end - Vector2(0.0, 1.0), Color(0.0, 0.0, 0.0, 0.65), 2.0)
+	draw_texture_rect(tex_wall, rect, false, wall_tint)
+	draw_line(rect.position, rect.position + Vector2(rect.size.x, 0.0), Color(1.0, 1.0, 1.0, 0.12), 1.0)
+	draw_line(rect.position + Vector2(0.0, rect.size.y - 1.0), rect.end - Vector2(0.0, 1.0), Color(0.0, 0.0, 0.0, 0.25), 1.0)
+
+	if grid != null and pos.y < grid.height - 1 and grid.is_interior_floor(pos + Vector2i.DOWN):
+		draw_line(rect.position + Vector2(0.0, rect.size.y - 1.0), rect.end - Vector2(0.0, 1.0), Color(0.0, 0.0, 0.0, 0.70), 2.0)
 
 
 func is_level_non_square() -> bool:
@@ -2303,17 +2283,11 @@ func is_exterior_tile(pos: Vector2i) -> bool:
 	return grid.is_exterior_void(pos)
 
 
-## Draws a slim, snug chapter border directly along the outer perimeter walls for non-square levels,
-## eliminating empty corner voids while preserving polished industrial styling.
-func _draw_slim_level_border(effective_origin: Vector2, ch: Dictionary) -> void:
+## Draws a slim, snug architectural drop-shadow and soft rim lighting along outer perimeter walls
+## for non-square levels, seating the board naturally without harsh neon wireframe lines.
+func _draw_slim_level_border(effective_origin: Vector2, _ch: Dictionary = {}) -> void:
 	if grid == null:
 		return
-
-	var rim_col: Color = ch["frame_rim"]
-	var groove_col: Color = ch["frame_groove"]
-	var bolt_dark: Color = ch["bolt_dark"]
-	var bolt_core: Color = ch["bolt_core"]
-	var bolt_spec: Color = ch["bolt_specular"]
 
 	for wall_pos in grid.walls.keys():
 		var rect: Rect2 = Rect2(effective_origin + Vector2(wall_pos) * tile_size, Vector2(tile_size, tile_size))
@@ -2323,53 +2297,23 @@ func _draw_slim_level_border(effective_origin: Vector2, ch: Dictionary) -> void:
 		var ext_l: bool = is_exterior_tile(wall_pos + Vector2i.LEFT)
 		var ext_r: bool = is_exterior_tile(wall_pos + Vector2i.RIGHT)
 
-		# Top outer edge
+		# Top outer edge: subtle architectural masonry top-light
 		if ext_u:
-			draw_line(rect.position, rect.position + Vector2(rect.size.x, 0.0), rim_col, 2.5)
-			draw_line(rect.position + Vector2(0.0, 1.0), rect.position + Vector2(rect.size.x, 1.0), Color(1.0, 1.0, 1.0, 0.38), 1.0)
-			draw_line(rect.position + Vector2(0.0, 2.5), rect.position + Vector2(rect.size.x, 2.5), groove_col, 1.5)
+			draw_line(rect.position, rect.position + Vector2(rect.size.x, 0.0), Color(1.0, 1.0, 1.0, 0.18), 1.5)
 
-		# Left outer edge
+		# Left outer edge: subtle architectural light rim
 		if ext_l:
-			draw_line(rect.position, rect.position + Vector2(0.0, rect.size.y), rim_col, 2.5)
-			draw_line(rect.position + Vector2(1.0, 0.0), rect.position + Vector2(1.0, rect.size.y), Color(1.0, 1.0, 1.0, 0.30), 1.0)
-			draw_line(rect.position + Vector2(2.5, 0.0), rect.position + Vector2(2.5, rect.size.y), groove_col, 1.5)
+			draw_line(rect.position, rect.position + Vector2(0.0, rect.size.y), Color(1.0, 1.0, 1.0, 0.12), 1.5)
 
-		# Bottom outer edge
+		# Bottom outer edge: natural 2.5D warehouse wall drop shadow onto background
 		if ext_d:
-			draw_line(rect.position + Vector2(0.0, rect.size.y + 1.2), rect.end + Vector2(0.0, 1.2), Color(0.0, 0.0, 0.0, 0.45), 2.0)
-			draw_line(rect.position + Vector2(0.0, rect.size.y), rect.end, rim_col, 2.5)
-			draw_line(rect.position + Vector2(0.0, rect.size.y - 1.5), rect.end - Vector2(0.0, 1.5), groove_col, 1.5)
+			draw_line(rect.position + Vector2(0.0, rect.size.y + 1.0), rect.end + Vector2(0.0, 1.0), Color(0.0, 0.0, 0.0, 0.45), 2.0)
+			draw_line(rect.position + Vector2(0.0, rect.size.y + 3.0), rect.end + Vector2(0.0, 3.0), Color(0.0, 0.0, 0.0, 0.25), 2.0)
 
-		# Right outer edge
+		# Right outer edge: natural 2.5D warehouse wall drop shadow onto background
 		if ext_r:
-			draw_line(rect.position + Vector2(rect.size.x + 1.2, 0.0), rect.end + Vector2(1.2, 0.0), Color(0.0, 0.0, 0.0, 0.42), 2.0)
-			draw_line(rect.position + Vector2(rect.size.x, 0.0), rect.end, rim_col, 2.5)
-			draw_line(rect.position + Vector2(rect.size.x - 1.5, 0.0), rect.end - Vector2(1.5, 0.0), groove_col, 1.5)
-
-		# Outer convex corners: decorative industrial chapter bolts
-		if ext_u and ext_l:
-			draw_circle(rect.position, 3.2, bolt_dark)
-			draw_circle(rect.position, 2.2, bolt_core)
-			draw_circle(rect.position - Vector2(0.6, 0.6), 0.8, bolt_spec)
-
-		if ext_u and ext_r:
-			var c_tr: Vector2 = rect.position + Vector2(rect.size.x, 0.0)
-			draw_circle(c_tr, 3.2, bolt_dark)
-			draw_circle(c_tr, 2.2, bolt_core)
-			draw_circle(c_tr + Vector2(-0.6, 0.6), 0.8, bolt_spec)
-
-		if ext_d and ext_l:
-			var c_bl: Vector2 = rect.position + Vector2(0.0, rect.size.y)
-			draw_circle(c_bl, 3.2, bolt_dark)
-			draw_circle(c_bl, 2.2, bolt_core)
-			draw_circle(c_bl + Vector2(0.6, -0.6), 0.8, bolt_spec)
-
-		if ext_d and ext_r:
-			var c_br: Vector2 = rect.end
-			draw_circle(c_br, 3.2, bolt_dark)
-			draw_circle(c_br, 2.2, bolt_core)
-			draw_circle(c_br - Vector2(0.6, 0.6), 0.8, bolt_spec)
+			draw_line(rect.position + Vector2(rect.size.x + 1.0, 0.0), rect.end + Vector2(1.0, 0.0), Color(0.0, 0.0, 0.0, 0.40), 2.0)
+			draw_line(rect.position + Vector2(rect.size.x + 3.0, 0.0), rect.end + Vector2(3.0, 0.0), Color(0.0, 0.0, 0.0, 0.20), 2.0)
 
 
 func _draw_board_vignette(effective_origin: Vector2, board_pixel_size: Vector2, _ch_override: Dictionary = {}) -> void:
@@ -2393,7 +2337,7 @@ func _draw_goal_hazard_brackets(rect: Rect2, ch: Dictionary) -> void:
 		accent_col = Color(0.35, 0.88, 1.00, 0.90)
 	elif current_chapter_idx == 2:
 		steel_col = Color(0.06, 0.08, 0.12, 0.95)
-		accent_col = Color(1.00, 0.65, 0.20, 0.90)
+		accent_col = Color(0.20, 0.98, 0.60, 0.90)
 
 	var pad: Rect2 = rect.grow(-3.0)
 	var arm: float = pad.size.x * 0.22
@@ -2435,7 +2379,7 @@ func _draw_goal_light_pillar(rect: Rect2, goal_pos: Vector2i, _ch: Dictionary, t
 	if current_chapter_idx == 1:
 		beam_col = Color(0.35, 0.88, 1.00) # Chapter 1: cryo cyan
 	elif current_chapter_idx == 2:
-		beam_col = Color(1.00, 0.70, 0.20) # Chapter 2: cyber amber
+		beam_col = Color(0.20, 0.98, 0.60) # Chapter 2: cyber laser emerald
 
 	# Self-contained docking station illumination strictly inside the tile (no vertical polygon bleeding!)
 	# 1. Soft radial target illumination pool
@@ -2710,23 +2654,7 @@ func _draw_player(rect: Rect2) -> void:
 		_draw_star_shape(hopped_rect.position + Vector2(hopped_rect.size.x * 0.20, -8.0 + hop_bounce), 5.0, star_col)
 		_draw_star_shape(hopped_rect.position + Vector2(hopped_rect.size.x * 0.80, -11.0 - hop_bounce), 5.5, star_col)
 
-	# Option C: Anime-style thinking / perplexed sweat drop
-	if sweat_drop_timer > 0.0:
-		var s_alpha: float = clampf(sweat_drop_timer / 0.4, 0.0, 1.0)
-		var drip_progress: float = 1.0 - (sweat_drop_timer / 1.4)
-		var drip_y: float = drip_progress * 4.5
-		var drop_center: Vector2 = hopped_rect.position + Vector2(hopped_rect.size.x * 0.82, hopped_rect.size.y * 0.22 + drip_y)
-		var drop_r: float = 3.2
-		draw_circle(drop_center, drop_r, Color(0.22, 0.78, 1.0, s_alpha * 0.90))
-		var drop_tip: Vector2 = drop_center - Vector2(0.0, drop_r * 1.5)
-		var drop_pts: PackedVector2Array = [
-			drop_tip,
-			drop_center + Vector2(drop_r * 0.95, 0.0),
-			drop_center + Vector2(-drop_r * 0.95, 0.0)
-		]
-		draw_colored_polygon(drop_pts, Color(0.22, 0.78, 1.0, s_alpha * 0.90))
-		# Specular glint
-		draw_circle(drop_center - Vector2(0.9, 0.9), 1.1, Color(1.0, 1.0, 1.0, s_alpha * 0.95))
+
 
 
 
