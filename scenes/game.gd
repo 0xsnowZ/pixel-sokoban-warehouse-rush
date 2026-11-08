@@ -192,7 +192,10 @@ var ad_reward_modal: PanelContainer = null
 var level_start_time: int = 0
 
 # Board sprite textures
-var tex_wall: Texture2D = preload("res://assets/wall_brick.png")
+var tex_wall_cargo: Texture2D = preload("res://assets/wall_brick.png")
+var tex_wall_cold_storage: Texture2D = preload("res://assets/wall_cold_storage.png")
+var tex_wall_cyber_depot: Texture2D = preload("res://assets/wall_cyber_depot.png")
+var tex_wall: Texture2D = tex_wall_cargo
 var tex_floor_1: Texture2D = preload("res://assets/floor_tile_1.png")
 var tex_floor_2: Texture2D = preload("res://assets/floor_tile_2.png")
 var tex_goal: Texture2D = preload("res://assets/goal_pad.png")
@@ -2207,24 +2210,47 @@ func _draw_cyber_pylon(rect: Rect2, center: Vector2) -> void:
 
 
 func _draw_wall(rect: Rect2, pos: Vector2i = Vector2i.ZERO) -> void:
-	var wall_tint: Color = Color(1.0, 0.96, 0.92)
+	var active_wall_tex: Texture2D = tex_wall_cargo
+	var wall_tint: Color = Color(1.0, 1.0, 1.0)
+	var top_highlight: Color = Color(1.0, 1.0, 1.0, 0.12)
+	var bottom_shadow: Color = Color(0.0, 0.0, 0.0, 0.25)
+	var floor_contact_shadow: Color = Color(0.0, 0.0, 0.0, 0.70)
+
 	match current_chapter_idx:
 		1:
-			# === Chapter 2: Cold Storage (Cryogenic Frosted Brickwork) ===
-			wall_tint = Color(0.68, 0.82, 0.96)
+			# === Chapter 2: Cold Storage (Cryogenic Insulated Steel Bulkhead) ===
+			active_wall_tex = tex_wall_cold_storage
+			wall_tint = Color(1.0, 1.0, 1.0)
+			top_highlight = Color(0.65, 0.85, 1.0, 0.28)
+			bottom_shadow = Color(0.04, 0.08, 0.14, 0.45)
+			floor_contact_shadow = Color(0.02, 0.06, 0.12, 0.85)
 		2:
-			# === Chapter 3: Cyber Depot (Dark Obsidian Slate Brickwork) ===
-			wall_tint = Color(0.48, 0.52, 0.64)
+			# === Chapter 3: Cyber Depot (Futuristic Composite Armor & Laser Conduit) ===
+			active_wall_tex = tex_wall_cyber_depot
+			wall_tint = Color(1.0, 1.0, 1.0)
+			top_highlight = Color(0.0, 0.85, 1.0, 0.22)
+			bottom_shadow = Color(0.02, 0.04, 0.08, 0.55)
+			floor_contact_shadow = Color(0.0, 0.02, 0.06, 0.90)
 		_:
-			# === Chapter 1: Cargo Bay (Industrial Terracotta Brickwork) ===
+			# === Chapter 1: Cargo Bay (Traditional Terracotta Brickwork) ===
+			active_wall_tex = tex_wall_cargo
 			wall_tint = Color(1.0, 0.96, 0.92)
+			top_highlight = Color(1.0, 1.0, 1.0, 0.12)
+			bottom_shadow = Color(0.0, 0.0, 0.0, 0.25)
+			floor_contact_shadow = Color(0.0, 0.0, 0.0, 0.70)
 
-	draw_texture_rect(tex_wall, rect, false, wall_tint)
-	draw_line(rect.position, rect.position + Vector2(rect.size.x, 0.0), Color(1.0, 1.0, 1.0, 0.12), 1.0)
-	draw_line(rect.position + Vector2(0.0, rect.size.y - 1.0), rect.end - Vector2(0.0, 1.0), Color(0.0, 0.0, 0.0, 0.25), 1.0)
+	draw_texture_rect(active_wall_tex, rect, false, wall_tint)
+	draw_line(rect.position, rect.position + Vector2(rect.size.x, 0.0), top_highlight, 1.0)
+	draw_line(rect.position + Vector2(0.0, rect.size.y - 1.0), rect.end - Vector2(0.0, 1.0), bottom_shadow, 1.0)
 
 	if grid != null and pos.y < grid.height - 1 and grid.is_interior_floor(pos + Vector2i.DOWN):
-		draw_line(rect.position + Vector2(0.0, rect.size.y - 1.0), rect.end - Vector2(0.0, 1.0), Color(0.0, 0.0, 0.0, 0.70), 2.0)
+		draw_line(rect.position + Vector2(0.0, rect.size.y - 1.0), rect.end - Vector2(0.0, 1.0), floor_contact_shadow, 2.0)
+
+	# Chapter 3: Pulsing cybernetic diode node in central conduit
+	if current_chapter_idx == 2:
+		var pulse: float = sin(float(Time.get_ticks_msec()) * 0.003 + (pos.x * 1.5 + pos.y * 2.0)) * 0.5 + 0.5
+		var center_p: Vector2 = rect.get_center()
+		draw_circle(center_p, 1.8, Color(0.0, 0.95, 1.0, 0.30 + pulse * 0.40))
 
 
 func is_level_non_square() -> bool:

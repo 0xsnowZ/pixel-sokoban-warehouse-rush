@@ -12,7 +12,7 @@ import os
 import math
 from PIL import Image, ImageDraw, ImageFont
 
-ARTIFACT_DIR = "/home/snowz/.gemini/antigravity-ide/brain/9a93013c-7615-47d7-ae14-3f8a6be1d265"
+ARTIFACT_DIR = "/home/snowz/.gemini/antigravity/brain/f5ae7af8-879e-4866-bb7e-de37bc6d1ca9"
 ASSETS_DIR = "/home/snowz/godot/assets"
 W, H = 540, 960
 
@@ -188,14 +188,24 @@ def render_chapter_screen(ch_id, level_num, out_filename):
         draw.ellipse([bx - 4, by - 4, bx + 4, by + 4], fill=bolt_col, outline=(30, 20, 10))
 
     # Tile textures
-    tex_wall_raw = Image.open(os.path.join(ASSETS_DIR, "wall_brick.png")).convert("RGBA").resize((tile_sz, tile_sz))
+    if ch_id == 1:
+        wall_file = "wall_cold_storage.png"
+        tex_wall_raw = Image.open(os.path.join(ASSETS_DIR, wall_file)).convert("RGBA").resize((tile_sz, tile_sz))
+        tex_wall = tex_wall_raw
+    elif ch_id == 2:
+        wall_file = "wall_cyber_depot.png"
+        tex_wall_raw = Image.open(os.path.join(ASSETS_DIR, wall_file)).convert("RGBA").resize((tile_sz, tile_sz))
+        tex_wall = tex_wall_raw
+    else:
+        wall_file = "wall_brick.png"
+        tex_wall_raw = Image.open(os.path.join(ASSETS_DIR, wall_file)).convert("RGBA").resize((tile_sz, tile_sz))
+        tex_wall = tint_image(tex_wall_raw, wall_tint)
     tex_f1_raw = Image.open(os.path.join(ASSETS_DIR, "floor_tile_1.png")).convert("RGBA").resize((tile_sz, tile_sz))
     tex_f2_raw = Image.open(os.path.join(ASSETS_DIR, "floor_tile_2.png")).convert("RGBA").resize((tile_sz, tile_sz))
     tex_goal_raw = Image.open(os.path.join(ASSETS_DIR, "goal_pad.png")).convert("RGBA").resize((tile_sz, tile_sz))
     tex_crate_raw = Image.open(os.path.join(ASSETS_DIR, "crate_normal.png")).convert("RGBA").resize((tile_sz, tile_sz))
     tex_player = Image.open(os.path.join(ASSETS_DIR, "player_down.png")).convert("RGBA").resize((tile_sz, tile_sz))
 
-    tex_wall = tint_image(tex_wall_raw, wall_tint)
     tex_f1 = tint_image(tex_f1_raw, floor_tint)
     tex_f2 = tint_image(tex_f2_raw, floor_tint)
     tex_crate = tint_image(tex_crate_raw, crate_tint)
