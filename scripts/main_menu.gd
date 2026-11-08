@@ -1439,13 +1439,13 @@ func _refresh_level_grid_buttons() -> void:
 			child.icon = null
 			child.disabled = false
 			child.theme_type_variation = &"LevelBtnCompleted"
-			child.modulate = Color(1.0, 1.0, 1.0).lerp(ch_col, 0.28)
+			child.modulate = Color.WHITE
 		elif is_unlocked:
 			child.text = "%d" % [lvl_idx + 1]
 			child.icon = null
 			child.disabled = false
 			child.theme_type_variation = &"LevelBtnCurrent"
-			child.modulate = ch_col
+			child.modulate = Color.WHITE
 			if active_frontier_btn == null:
 				active_frontier_btn = child
 		else:
@@ -1460,7 +1460,7 @@ func _refresh_level_grid_buttons() -> void:
 				child.icon = null
 			child.disabled = true
 			child.theme_type_variation = &"LevelBtnLocked"
-			child.modulate = Color(0.68, 0.72, 0.82, 0.75).lerp(ch_col, 0.15)
+			child.modulate = Color.WHITE
 
 	if active_frontier_btn != null and active_frontier_btn.is_inside_tree():
 		var p_sz: Vector2 = active_frontier_btn.custom_minimum_size if active_frontier_btn.size == Vector2.ZERO else active_frontier_btn.size

@@ -1971,51 +1971,18 @@ func _draw() -> void:
 
 	var is_non_square: bool = is_level_non_square()
 
-	# 1. Industrial Warehouse Loading Bay Board Framing (PRD Section 4 & Phase 2 Themes)
-	if is_non_square:
-		# Multi-stage cinematic silhouette 2.5D drop shadow under the non-square shape
-		for y in range(grid.height):
-			for x in range(grid.width):
-				var pos: Vector2i = Vector2i(x, y)
-				if not grid.is_exterior_void(pos):
-					var s_rect: Rect2 = Rect2(effective_origin + Vector2(x, y) * tile_size, Vector2(tile_size, tile_size))
-					# Layer 3: Distant soft ambient penumbra
-					draw_rect(Rect2(s_rect.position + Vector2(8, 12), s_rect.size + Vector2(6, 6)), Color(0.0, 0.0, 0.0, 0.12))
-					# Layer 2: Mid directional shadow
-					draw_rect(Rect2(s_rect.position + Vector2(5, 7), s_rect.size + Vector2(3, 3)), Color(0.0, 0.0, 0.0, 0.24))
-					# Layer 1: Tight perimeter contact depth
-					draw_rect(Rect2(s_rect.position + Vector2(2, 3), s_rect.size), Color(0.0, 0.0, 0.0, 0.45))
-	else:
-		var frame_margin: float = 12.0
-		var frame_rect: Rect2 = Rect2(
-			effective_origin - Vector2(frame_margin, frame_margin),
-			board_pixel_size + Vector2(frame_margin * 2.0, frame_margin * 2.0)
-		)
-
-		# Multi-stage drop shadow
-		draw_rect(Rect2(frame_rect.position + Vector2(10, 14), frame_rect.size + Vector2(6, 6)), Color(0.0, 0.0, 0.0, 0.22))
-		draw_rect(Rect2(frame_rect.position + Vector2(6, 9), frame_rect.size + Vector2(3, 3)), Color(0.0, 0.0, 0.0, 0.45))
-		draw_rect(Rect2(frame_rect.position + Vector2(2, 3), frame_rect.size), Color(0.0, 0.0, 0.0, 0.60))
-
-		# Heavy chapter frame base
-		draw_rect(frame_rect, ch["frame_base"])
-		# Polished chapter bevel rim
-		draw_rect(frame_rect, ch["frame_rim"], false, 2.5)
-		# Inner dark groove
-		draw_rect(Rect2(effective_origin - Vector2(2, 2), board_pixel_size + Vector2(4, 4)), ch["frame_groove"], false, 2.0)
-
-		# 4 Corner industrial chapter bolts
-		var corner_offsets: Array[Vector2] = [
-			Vector2(frame_margin * 0.5, frame_margin * 0.5),
-			Vector2(frame_rect.size.x - frame_margin * 0.5, frame_margin * 0.5),
-			Vector2(frame_margin * 0.5, frame_rect.size.y - frame_margin * 0.5),
-			Vector2(frame_rect.size.x - frame_margin * 0.5, frame_rect.size.y - frame_margin * 0.5)
-		]
-		for c_offset in corner_offsets:
-			var bolt_center: Vector2 = frame_rect.position + c_offset
-			draw_circle(bolt_center, 4.5, ch["bolt_dark"])
-			draw_circle(bolt_center, 3.5, ch["bolt_core"])
-			draw_circle(bolt_center - Vector2(1.0, 1.0), 1.2, ch["bolt_specular"])
+	# 1. Industrial Warehouse 2.5D Silhouette Drop Shadow (Natural depth, no artificial border frames or screws)
+	for y in range(grid.height):
+		for x in range(grid.width):
+			var pos: Vector2i = Vector2i(x, y)
+			if not grid.is_exterior_void(pos):
+				var s_rect: Rect2 = Rect2(effective_origin + Vector2(x, y) * tile_size, Vector2(tile_size, tile_size))
+				# Layer 3: Distant soft ambient penumbra
+				draw_rect(Rect2(s_rect.position + Vector2(8, 12), s_rect.size + Vector2(6, 6)), Color(0.0, 0.0, 0.0, 0.12))
+				# Layer 2: Mid directional shadow
+				draw_rect(Rect2(s_rect.position + Vector2(5, 7), s_rect.size + Vector2(3, 3)), Color(0.0, 0.0, 0.0, 0.24))
+				# Layer 1: Tight perimeter contact depth
+				draw_rect(Rect2(s_rect.position + Vector2(2, 3), s_rect.size), Color(0.0, 0.0, 0.0, 0.45))
 
 	# 2. Draw Floor & Walls with Clean, Unified Architecture
 	for y in range(grid.height):
@@ -2028,11 +1995,9 @@ func _draw() -> void:
 			elif grid.is_interior_floor(pos) or grid.interior_floor.is_empty():
 				_draw_floor_tile(rect, pos, ch)
 
-	# 2.2. Perimeter Framing: Slim level border for irregular shapes; vignette for rectangular bays
+	# 2.2. Architectural Edge Depth (snug drop shadows on non-square shapes, no harsh borders)
 	if is_non_square:
 		_draw_slim_level_border(effective_origin, ch)
-	else:
-		_draw_board_vignette(effective_origin, board_pixel_size, ch)
 
 	# 3. Draw Goals with Clean, Contained Precision Docking (no vertical bleeding)
 	var time_sec: float = float(Time.get_ticks_msec()) / 1000.0
@@ -2316,15 +2281,9 @@ func _draw_slim_level_border(effective_origin: Vector2, _ch: Dictionary = {}) ->
 			draw_line(rect.position + Vector2(rect.size.x + 3.0, 0.0), rect.end + Vector2(3.0, 0.0), Color(0.0, 0.0, 0.0, 0.20), 2.0)
 
 
-func _draw_board_vignette(effective_origin: Vector2, board_pixel_size: Vector2, _ch_override: Dictionary = {}) -> void:
-	var board_rect: Rect2 = Rect2(effective_origin, board_pixel_size)
-	var v_thick: float = minf(tile_size * 0.35, 24.0)
-
-	# Clean peripheral edge darkening framing the board (no god-rays, no spotlight discs)
-	draw_rect(Rect2(board_rect.position, Vector2(board_rect.size.x, v_thick)), Color(0.0, 0.0, 0.0, 0.10))
-	draw_rect(Rect2(Vector2(board_rect.position.x, board_rect.end.y - v_thick), Vector2(board_rect.size.x, v_thick)), Color(0.0, 0.0, 0.0, 0.10))
-	draw_rect(Rect2(board_rect.position, Vector2(v_thick, board_rect.size.y)), Color(0.0, 0.0, 0.0, 0.10))
-	draw_rect(Rect2(Vector2(board_rect.end.x - v_thick, board_rect.position.y), Vector2(v_thick, board_rect.size.y)), Color(0.0, 0.0, 0.0, 0.10))
+func _draw_board_vignette(_effective_origin: Vector2, _board_pixel_size: Vector2, _ch_override: Dictionary = {}) -> void:
+	# Clean board presentation without edge darkening or artificial frames
+	pass
 
 
 func _draw_goal_hazard_brackets(rect: Rect2, ch: Dictionary) -> void:
