@@ -214,19 +214,19 @@ theme_type_variation = &"TopBarPanel"
 
 [node name="Margin" type="MarginContainer" parent="LevelSelectView/TopBar"]
 layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 10
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 8
 
 [node name="HBox" type="HBoxContainer" parent="LevelSelectView/TopBar/Margin"]
 layout_mode = 2
 
 [node name="BackBtn" type="Button" parent="LevelSelectView/TopBar/Margin/HBox"]
-custom_minimum_size = Vector2(96, 42)
+custom_minimum_size = Vector2(80, 36)
 layout_mode = 2
 theme_type_variation = &"TopBarButton"
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 14
 text = "Back"
 
 [node name="Title" type="Label" parent="LevelSelectView/TopBar/Margin/HBox"]
@@ -236,16 +236,16 @@ theme_override_colors/font_color = Color(0.98, 0.85, 0.28, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.85)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 18
 text = "SELECT LEVEL"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="TotalStarsLabel" type="Label" parent="LevelSelectView/TopBar/Margin/HBox"]
-custom_minimum_size = Vector2(106, 38)
+custom_minimum_size = Vector2(96, 34)
 layout_mode = 2
 theme_type_variation = &"StarBadgeLabel"
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 text = "0 / 150 Stars"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -258,15 +258,15 @@ horizontal_scroll_mode = 0
 [node name="Margin" type="MarginContainer" parent="LevelSelectView/Scroll"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/margin_left = 18
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 18
-theme_override_constants/margin_bottom = 24
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
 
 [node name="ContentVBox" type="VBoxContainer" parent="LevelSelectView/Scroll/Margin"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 16
+theme_override_constants/separation = 8
 
 [node name="CampaignBanner" type="PanelContainer" parent="LevelSelectView/Scroll/Margin/ContentVBox"]
 layout_mode = 2
@@ -274,14 +274,14 @@ theme_type_variation = &"CampaignCard"
 
 [node name="Margin" type="MarginContainer" parent="LevelSelectView/Scroll/Margin/ContentVBox/CampaignBanner"]
 layout_mode = 2
-theme_override_constants/margin_left = 14
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 14
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 8
 
 [node name="VBox" type="VBoxContainer" parent="LevelSelectView/Scroll/Margin/ContentVBox/CampaignBanner/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 5
 
 [node name="HeaderHBox" type="HBoxContainer" parent="LevelSelectView/Scroll/Margin/ContentVBox/CampaignBanner/Margin/VBox"]
 layout_mode = 2
@@ -290,17 +290,17 @@ layout_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.98, 0.85, 0.35, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 text = "WAREHOUSE CAMPAIGN"
 
 [node name="CampaignBadge" type="Label" parent="LevelSelectView/Scroll/Margin/ContentVBox/CampaignBanner/Margin/VBox/HeaderHBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.72, 0.80, 0.92, 1)
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 11
 text = "50 SECTORS"
 
 [node name="ProgressBar" type="ProgressBar" parent="LevelSelectView/Scroll/Margin/ContentVBox/CampaignBanner/Margin/VBox"]
-custom_minimum_size = Vector2(0, 10)
+custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 max_value = 150.0
 show_percentage = false
@@ -312,13 +312,13 @@ layout_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.85, 0.90, 0.98, 1)
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 11
 text = "0 / 150 Stars Collected"
 
 [node name="CompletionLabel" type="Label" parent="LevelSelectView/Scroll/Margin/ContentVBox/CampaignBanner/Margin/VBox/FooterHBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.55, 0.65, 0.78, 1)
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 11
 text = "0/50 Cleared • 0%"
 
 [node name="SectorsHBox" type="HBoxContainer" parent="LevelSelectView/Scroll/Margin/ContentVBox/CampaignBanner/Margin/VBox"]
@@ -329,7 +329,7 @@ theme_override_constants/separation = 6
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.98, 0.85, 0.28, 1)
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 10
 text = "📦 S1: 0/45 ★"
 horizontal_alignment = 1
 
@@ -337,7 +337,7 @@ horizontal_alignment = 1
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.35, 0.85, 1, 1)
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 10
 text = "❄ S2: 0/60 ★"
 horizontal_alignment = 1
 
@@ -345,15 +345,15 @@ horizontal_alignment = 1
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 0.65, 0.2, 1)
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 10
 text = "⚡ S3: 0/45 ★"
 horizontal_alignment = 1
 
 [node name="LevelGrid" type="GridContainer" parent="LevelSelectView/Scroll/Margin/ContentVBox"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/h_separation = 10
-theme_override_constants/v_separation = 10
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
 columns = 5
 
 [node name="ModalBlurOverlay" type="ColorRect" parent="."]

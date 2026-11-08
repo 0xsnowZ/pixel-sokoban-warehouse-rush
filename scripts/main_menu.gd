@@ -1340,7 +1340,7 @@ func _build_level_grid() -> void:
 
 	for i in range(TOTAL_LEVELS_COUNT):
 		var btn: Button = Button.new()
-		btn.custom_minimum_size = Vector2(86, 86)
+		btn.custom_minimum_size = Vector2(64, 64)
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		btn.add_theme_font_size_override("font_size", 14)
 		btn.set_meta("level_index", i)
@@ -1449,13 +1449,15 @@ func _refresh_level_grid_buttons() -> void:
 			if active_frontier_btn == null:
 				active_frontier_btn = child
 		else:
-			child.text = "%d" % [lvl_idx + 1]
+			child.text = ""
 			if is_available:
 				child.icon = icon_lock
 				child.expand_icon = true
-				child.add_theme_constant_override("icon_max_width", 14)
-				child.add_theme_constant_override("h_separation", 4)
+				child.add_theme_constant_override("icon_max_width", 24)
 				child.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+				child.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
+				child.add_theme_color_override("icon_disabled_color", Color(1.0, 1.0, 1.0, 0.75))
+				child.tooltip_text = "Level %d • %s (Locked)" % [lvl_idx + 1, ch_title_str]
 			else:
 				child.icon = null
 			child.disabled = true
@@ -1468,6 +1470,30 @@ func _refresh_level_grid_buttons() -> void:
 		current_level_pulse_tw = create_tween().set_loops()
 		current_level_pulse_tw.tween_property(active_frontier_btn, "scale", Vector2(1.05, 1.05), 0.75).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		current_level_pulse_tw.tween_property(active_frontier_btn, "scale", Vector2.ONE, 0.75).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_scroll_to_button(active_frontier_btn)
+
+
+func _scroll_to_button(btn: Button) -> void:
+	if not is_instance_valid(btn) or not btn.is_inside_tree() or get_tree() == null:
+		return
+	var scroll_cnt: ScrollContainer = find_child("Scroll", true, false) as ScrollContainer
+	if scroll_cnt == null or not is_instance_valid(scroll_cnt) or not scroll_cnt.is_inside_tree():
+		return
+	call_deferred("_do_scroll_to_button", scroll_cnt, btn)
+
+
+func _do_scroll_to_button(scroll_cnt: ScrollContainer, btn: Button) -> void:
+	if not is_instance_valid(scroll_cnt) or not is_instance_valid(btn) or not btn.is_inside_tree():
+		return
+	var v_scroll = scroll_cnt.get_v_scroll_bar()
+	if v_scroll != null and v_scroll.max_value > scroll_cnt.size.y:
+		var btn_y: float = btn.global_position.y - scroll_cnt.global_position.y + scroll_cnt.scroll_vertical
+		var target_scroll: float = btn_y - (scroll_cnt.size.y * 0.4)
+		var max_scroll: float = maxf(0.0, v_scroll.max_value - scroll_cnt.size.y)
+		target_scroll = clampf(target_scroll, 0.0, max_scroll)
+		var tw: Tween = create_tween()
+		if tw != null:
+			tw.tween_property(scroll_cnt, "scroll_vertical", int(target_scroll), 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
 func _on_level_button_pressed(level_index: int) -> void:
