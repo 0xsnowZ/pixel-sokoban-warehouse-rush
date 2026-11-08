@@ -67,6 +67,8 @@ var achievement_mgr: Node = null
 
 var current_locker_tab: String = "outfits"
 var current_level_pulse_tw: Tween = null
+var daily_shift_btn: Button = null
+var star_vault_modal: PanelContainer = null
 
 # Achievements elements (Phase 4)
 @onready var achievements_btn: Button = _find_button("AchievementsBtn", "MainView/TopBarMargin/HBox/QuickBar/AchievementsBtn")
@@ -335,6 +337,7 @@ func _show_main_view() -> void:
 	if modal_blur_overlay:
 		modal_blur_overlay.hide()
 	_update_menu_state()
+	_check_star_vault_milestones()
 
 
 func _show_level_select() -> void:
@@ -352,6 +355,7 @@ func _show_level_select() -> void:
 	if modal_blur_overlay:
 		modal_blur_overlay.hide()
 	_refresh_level_grid_buttons()
+	_check_star_vault_milestones()
 
 
 var _backdrop_tw: Tween = null
@@ -1233,6 +1237,39 @@ func _update_menu_state() -> void:
 		var lang_code: String = loc_mgr.current_language.to_upper() if loc_mgr else "EN"
 		quick_lang_btn.text = lang_code
 
+	# Breakout Retention Engine: Daily Shift Hero Card
+	if daily_shift_btn == null:
+		var deck: VBoxContainer = find_child("ActionDeck", true, false) as VBoxContainer
+		if deck != null:
+			daily_shift_btn = Button.new()
+			daily_shift_btn.name = "DailyShiftBtn"
+			daily_shift_btn.custom_minimum_size = Vector2(0, 48)
+			daily_shift_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			daily_shift_btn.theme_type_variation = &"SecondaryButton"
+			daily_shift_btn.add_theme_font_size_override("font_size", 14)
+			daily_shift_btn.pressed.connect(_on_daily_shift_pressed)
+			_attach_spring_physics(daily_shift_btn)
+			var dual_deck = deck.find_child("DualDeck", false, false)
+			if dual_deck != null:
+				deck.add_child(daily_shift_btn)
+				deck.move_child(daily_shift_btn, dual_deck.get_index())
+			else:
+				deck.add_child(daily_shift_btn)
+
+	if daily_shift_btn != null and save_mgr != null and save_mgr.has_method("get_daily_challenge_info"):
+		var d_info: Dictionary = save_mgr.get_daily_challenge_info()
+		var streak_count: int = d_info.get("streak", 0)
+		var is_done: bool = d_info.get("is_completed", false)
+		if is_done:
+			daily_shift_btn.text = "📅 DAILY SHIFT: CLEARED ✓ (STREAK: %d 🔥)" % streak_count
+			daily_shift_btn.modulate = Color(0.80, 1.0, 0.85)
+		else:
+			if streak_count > 0:
+				daily_shift_btn.text = "📅 DAILY SHIFT • %d STREAK 🔥 (+3 HINTS)" % streak_count
+			else:
+				daily_shift_btn.text = "📅 DAILY SHIFT • PLAY (+3 HINTS)"
+			daily_shift_btn.modulate = Color(1.0, 0.92, 0.55)
+
 
 func _on_language_pressed() -> void:
 	if loc_mgr:
@@ -1333,9 +1370,17 @@ func _refresh_level_grid_buttons() -> void:
 		pb.max_value = 150.0
 		pb.value = float(total_stars)
 
+	var next_vault_info: String = ""
+	if save_mgr != null and save_mgr.has_method("get_all_star_vaults"):
+		var vaults: Array[Dictionary] = save_mgr.get_all_star_vaults()
+		for v in vaults:
+			if total_stars < v["stars"]:
+				next_vault_info = " • Next Vault: %s %s (%d★)" % [v.get("icon", "📦"), v.get("name", ""), v["stars"]]
+				break
+
 	var stars_count_lbl: Label = find_child("StarsCountLabel", true, false) as Label
 	if stars_count_lbl != null:
-		stars_count_lbl.text = "%d / 150 Stars Collected" % total_stars
+		stars_count_lbl.text = "%d / 150 Stars Collected%s" % [total_stars, next_vault_info]
 
 	var completion_lbl: Label = find_child("CompletionLabel", true, false) as Label
 	if completion_lbl != null and save_mgr != null:
@@ -1454,3 +1499,164 @@ func _attach_spring_physics(btn: Button) -> void:
 		var tw: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		tw.tween_property(btn, "scale", Vector2.ONE, 0.10)
 	)
+
+
+# ==============================================================================
+# Breakout Retention Engine: Daily Shift & Star Vault Milestones
+# ==============================================================================
+
+func _on_daily_shift_pressed() -> void:
+	if audio_mgr:
+		audio_mgr.play_click()
+	if haptic_mgr:
+		haptic_mgr.vibrate_click()
+	if save_mgr != null and save_mgr.has_method("get_daily_challenge_info"):
+		var d_info: Dictionary = save_mgr.get_daily_challenge_info()
+		save_mgr.set_meta("is_daily_challenge", true)
+		save_mgr.last_played_level = d_info["level_index"]
+	get_tree().change_scene_to_file("res://scenes/game.tscn")
+
+
+func _check_star_vault_milestones() -> void:
+	if save_mgr == null or not save_mgr.has_method("get_unclaimed_star_vaults"):
+		return
+	var unclaimed: Array[Dictionary] = save_mgr.get_unclaimed_star_vaults()
+	if unclaimed.is_empty():
+		return
+	var target: Dictionary = unclaimed[0]
+	_show_star_vault_modal(target["index"], target["vault"])
+
+
+func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
+	if star_vault_modal == null:
+		star_vault_modal = _create_star_vault_modal()
+
+	_show_modal_backdrop()
+
+	var title_lbl: Label = star_vault_modal.find_child("VaultTitleLabel", true, false) as Label
+	var icon_lbl: Label = star_vault_modal.find_child("VaultIconLabel", true, false) as Label
+	var name_lbl: Label = star_vault_modal.find_child("VaultNameLabel", true, false) as Label
+	var desc_lbl: Label = star_vault_modal.find_child("VaultDescLabel", true, false) as Label
+	var claim_btn: Button = star_vault_modal.find_child("ClaimVaultBtn", true, false) as Button
+
+	if title_lbl:
+		title_lbl.text = "★ STAR VAULT UNLOCKED! ★"
+	if icon_lbl:
+		icon_lbl.text = vault.get("icon", "📦")
+	if name_lbl:
+		name_lbl.text = "%s (%d Stars)" % [vault.get("name", "Supply Cache"), vault.get("stars", 15)]
+	if desc_lbl:
+		if vault.get("reward_type") == "hints":
+			desc_lbl.text = "Congratulations! You earned +%d Free Solver Hints for your dedication!" % vault.get("amount", 5)
+		else:
+			desc_lbl.text = "Exclusive Outfit Unlocked! Visit the Supply Depot to equip your new gear!"
+
+	if claim_btn:
+		for conn in claim_btn.pressed.get_connections():
+			claim_btn.pressed.disconnect(conn.callable)
+		claim_btn.pressed.connect(func():
+			if save_mgr and save_mgr.has_method("claim_star_vault"):
+				save_mgr.claim_star_vault(vault_idx)
+			if audio_mgr:
+				audio_mgr.play_win()
+			if haptic_mgr:
+				haptic_mgr.vibrate_target()
+			_hide_star_vault_modal()
+			_update_menu_state()
+			_refresh_level_grid_buttons()
+		)
+
+	star_vault_modal.show()
+	star_vault_modal.modulate.a = 0.0
+	var tw = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(star_vault_modal, "modulate:a", 1.0, 0.20)
+	if audio_mgr:
+		audio_mgr.play_star(3)
+
+
+func _hide_star_vault_modal() -> void:
+	if star_vault_modal:
+		star_vault_modal.hide()
+	_hide_modal_backdrop()
+
+
+func _create_star_vault_modal() -> PanelContainer:
+	var modal: PanelContainer = PanelContainer.new()
+	modal.name = "StarVaultModal"
+	modal.anchors_preset = Control.PRESET_FULL_RECT
+	modal.anchor_right = 1.0
+	modal.anchor_bottom = 1.0
+	modal.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var center: CenterContainer = CenterContainer.new()
+	center.anchors_preset = Control.PRESET_FULL_RECT
+	center.anchor_right = 1.0
+	center.anchor_bottom = 1.0
+	modal.add_child(center)
+
+	var card: PanelContainer = PanelContainer.new()
+	card.custom_minimum_size = Vector2(360, 260)
+	card.theme_type_variation = &"ConsoleCard"
+	center.add_child(card)
+
+	var margin: MarginContainer = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_top", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_bottom", 24)
+	card.add_child(margin)
+
+	var vbox: VBoxContainer = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
+	margin.add_child(vbox)
+
+	var title_lbl: Label = Label.new()
+	title_lbl.name = "VaultTitleLabel"
+	title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_lbl.add_theme_font_size_override("font_size", 18)
+	title_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.25))
+	vbox.add_child(title_lbl)
+
+	var icon_lbl: Label = Label.new()
+	icon_lbl.name = "VaultIconLabel"
+	icon_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	icon_lbl.add_theme_font_size_override("font_size", 42)
+	vbox.add_child(icon_lbl)
+
+	var name_lbl: Label = Label.new()
+	name_lbl.name = "VaultNameLabel"
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_lbl.add_theme_font_size_override("font_size", 16)
+	name_lbl.add_theme_color_override("font_color", Color(0.95, 0.98, 1.0))
+	vbox.add_child(name_lbl)
+
+	var desc_lbl: Label = Label.new()
+	desc_lbl.name = "VaultDescLabel"
+	desc_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc_lbl.add_theme_font_size_override("font_size", 12)
+	desc_lbl.add_theme_color_override("font_color", Color(0.75, 0.82, 0.92))
+	vbox.add_child(desc_lbl)
+
+	var btn_vbox: VBoxContainer = VBoxContainer.new()
+	btn_vbox.add_theme_constant_override("separation", 8)
+	vbox.add_child(btn_vbox)
+
+	var claim_btn: Button = Button.new()
+	claim_btn.name = "ClaimVaultBtn"
+	claim_btn.text = "CLAIM REWARD"
+	claim_btn.custom_minimum_size = Vector2(0, 44)
+	claim_btn.theme_type_variation = &"PrimaryButton"
+	_attach_spring_physics(claim_btn)
+	btn_vbox.add_child(claim_btn)
+
+	var close_btn: Button = Button.new()
+	close_btn.name = "CloseVaultBtn"
+	close_btn.text = "LATER"
+	close_btn.custom_minimum_size = Vector2(0, 36)
+	close_btn.pressed.connect(_hide_star_vault_modal)
+	_attach_spring_physics(close_btn)
+	btn_vbox.add_child(close_btn)
+
+	add_child(modal)
+	return modal

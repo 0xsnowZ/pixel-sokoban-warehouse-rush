@@ -9,6 +9,8 @@ signal progress_loaded
 signal level_unlocked(level_index: int)
 signal hints_changed(new_count: int)
 signal achievement_unlocked(achievement_id: String)
+signal star_vault_claimed(vault_index: int, reward: Dictionary)
+signal daily_challenge_completed_signal(streak: int, hints_awarded: int)
 
 const DEFAULT_SAVE_PATH: String = "user://pixel_porter_save.json"
 
@@ -36,6 +38,22 @@ var hints_remaining: int = 3
 var total_crates_pushed: int = 0
 var unlocked_achievements: Array[String] = []
 var last_hint_refill_date: String = ""
+
+# Star Vault Milestones & Daily Warehouse Shift (Breakout Retention Engine)
+var claimed_star_vaults: Array[int] = []
+var daily_challenge_date: String = ""
+var daily_challenge_streak: int = 0
+var daily_challenge_completed: bool = false
+
+# 6 Progressive Star Vault Milestone Chests rewarding dedicated players
+const STAR_VAULTS: Array[Dictionary] = [
+	{ "stars": 15, "name": "Bronze Supply Cache", "reward_type": "hints", "amount": 5, "icon": "🥉" },
+	{ "stars": 25, "name": "Safety Vest Locker", "reward_type": "skin", "skin_id": "safety_vest", "icon": "🦺" },
+	{ "stars": 40, "name": "Steel Freight Vault", "reward_type": "skin", "skin_id": "steel_container", "icon": "🗄️" },
+	{ "stars": 60, "name": "Foreman's Cache", "reward_type": "skin", "skin_id": "foreman", "icon": "👷" },
+	{ "stars": 80, "name": "Cryo Vault Locker", "reward_type": "skin", "skin_id": "cryo_vault", "icon": "❄️" },
+	{ "stars": 100, "name": "Golden Master Vault", "reward_type": "skin", "skin_id": "golden_porter", "icon": "👑" }
+]
 
 
 func _ready() -> void:
@@ -410,7 +428,11 @@ func to_dict() -> Dictionary:
 			"hints_remaining": hints_remaining,
 			"total_crates_pushed": total_crates_pushed,
 			"unlocked_achievements": unlocked_achievements,
-			"last_hint_refill_date": last_hint_refill_date
+			"last_hint_refill_date": last_hint_refill_date,
+			"claimed_star_vaults": claimed_star_vaults,
+			"daily_challenge_date": daily_challenge_date,
+			"daily_challenge_streak": daily_challenge_streak,
+			"daily_challenge_completed": daily_challenge_completed
 		}
 	}
 
@@ -443,6 +465,14 @@ func from_dict(data: Dictionary) -> void:
 	for a in raw_achievements:
 		unlocked_achievements.append(str(a))
 	last_hint_refill_date = str(economy.get("last_hint_refill_date", ""))
+
+	var raw_vaults = economy.get("claimed_star_vaults", [])
+	claimed_star_vaults = []
+	for v in raw_vaults:
+		claimed_star_vaults.append(int(v))
+	daily_challenge_date = str(economy.get("daily_challenge_date", ""))
+	daily_challenge_streak = int(economy.get("daily_challenge_streak", 0))
+	daily_challenge_completed = bool(economy.get("daily_challenge_completed", false))
 
 
 ## Saves game state to JSON on disk atomically with backup copy protection.
@@ -548,6 +578,10 @@ func reset_all_progress(custom_path: String = "") -> void:
 	total_crates_pushed = 0
 	unlocked_achievements.clear()
 	last_hint_refill_date = ""
+	claimed_star_vaults.clear()
+	daily_challenge_date = ""
+	daily_challenge_streak = 0
+	daily_challenge_completed = false
 	save_data(custom_path)
 	var target_path: String = custom_path if not custom_path.is_empty() else DEFAULT_SAVE_PATH
 	var bak_path: String = target_path + ".bak"
@@ -602,3 +636,111 @@ func cycle_control_scheme() -> int:
 	control_scheme = (control_scheme + 1) % 3
 	save_data()
 	return control_scheme
+
+
+# ==============================================================================
+# Star Vault Milestones & Daily Warehouse Shift System (Breakout Hit Engine)
+# ==============================================================================
+
+func get_all_star_vaults() -> Array[Dictionary]:
+	return STAR_VAULTS
+
+
+func is_star_vault_claimed(vault_index: int) -> bool:
+	return claimed_star_vaults.has(vault_index)
+
+
+func get_unclaimed_star_vaults() -> Array[Dictionary]:
+	var unclaimed: Array[Dictionary] = []
+	var current_stars: int = get_total_stars()
+	for i in range(STAR_VAULTS.size()):
+		var vault: Dictionary = STAR_VAULTS[i]
+		if current_stars >= vault["stars"] and not is_star_vault_claimed(i):
+			unclaimed.append({
+				"index": i,
+				"vault": vault
+			})
+	return unclaimed
+
+
+func claim_star_vault(vault_index: int) -> Dictionary:
+	if vault_index < 0 or vault_index >= STAR_VAULTS.size():
+		return {}
+	if is_star_vault_claimed(vault_index):
+		return {}
+
+	var vault: Dictionary = STAR_VAULTS[vault_index]
+	if get_total_stars() < vault["stars"]:
+		return {}
+
+	claimed_star_vaults.append(vault_index)
+
+	# Grant reward
+	if vault.get("reward_type") == "hints":
+		add_hints(vault.get("amount", 3))
+	elif vault.get("reward_type") == "skin":
+		var s_id: String = vault.get("skin_id", "")
+		if not s_id.is_empty():
+			if is_worker_skin_unlocked(s_id):
+				equip_worker_skin(s_id)
+			elif is_crate_skin_unlocked(s_id):
+				equip_crate_skin(s_id)
+
+	star_vault_claimed.emit(vault_index, vault)
+	save_data()
+	return vault
+
+
+func get_today_date_str() -> String:
+	var d: Dictionary = Time.get_date_dict_from_system()
+	return "%04d-%02d-%02d" % [d.year, d.month, d.day]
+
+
+func get_daily_challenge_info() -> Dictionary:
+	var today: String = get_today_date_str()
+	if daily_challenge_date != today:
+		# New calendar day detected
+		if not daily_challenge_date.is_empty() and not daily_challenge_completed:
+			# Missed yesterday's challenge -> reset streak
+			daily_challenge_streak = 0
+		daily_challenge_date = today
+		daily_challenge_completed = false
+		save_data()
+
+	var parts: PackedStringArray = today.split("-")
+	var y: int = parts[0].to_int() if parts.size() > 0 else 2026
+	var m: int = parts[1].to_int() if parts.size() > 1 else 11
+	var d: int = parts[2].to_int() if parts.size() > 2 else 7
+	# Deterministic day seed selecting from quality warehouse puzzles (levels 5 to 44)
+	var day_seed: int = (y * 372 + m * 31 + d)
+	var level_idx: int = 5 + (day_seed % 40)
+
+	return {
+		"date": today,
+		"level_index": level_idx,
+		"streak": daily_challenge_streak,
+		"is_completed": daily_challenge_completed,
+		"reward_hints": 3
+	}
+
+
+func record_daily_challenge_completed() -> Dictionary:
+	if daily_challenge_completed:
+		return get_daily_challenge_info()
+
+	daily_challenge_completed = true
+	daily_challenge_streak += 1
+	var hints_awarded: int = 3
+	add_hints(hints_awarded)
+	daily_challenge_completed_signal.emit(daily_challenge_streak, hints_awarded)
+	save_data()
+	return get_daily_challenge_info()
+
+
+## Unlocks the next level and advances progress when player uses a Level Skip lifeline.
+func skip_level(level_index: int) -> bool:
+	var target: int = level_index + 1
+	unlock_level(target)
+	last_played_level = target
+	save_data()
+	return true

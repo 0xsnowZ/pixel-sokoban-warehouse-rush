@@ -623,9 +623,24 @@ func test_rewarded_ad_hint_economy_in_game() -> void:
 	assert_true(game.ad_reward_modal.visible, "AdRewardModal shown when hints exhausted")
 
 	# 4. Tapping Watch Ad grants +3 hints and closes modal
+	var skip_btn: Button = game.ad_reward_modal.find_child("SkipLevelBtn", true, false) as Button
+	assert_true(skip_btn != null, "SkipLevelBtn exists in AdRewardModal")
+
 	game._on_watch_ad_pressed()
 	assert_true(game.save_mgr.hints_remaining >= 2, "Player awarded hints after watching ad")
 	assert_true(not game.ad_reward_modal.visible, "AdRewardModal hidden after reward granted")
+
+	# 5. Test Skip Level lifeline
+	game._show_ad_reward_modal()
+	assert_true(game.ad_reward_modal.visible, "AdRewardModal shown for Level Skip")
+	game._on_skip_level_pressed()
+	assert_true(not game.ad_reward_modal.visible, "AdRewardModal hidden after Level Skip")
+	assert_eq(game.current_level_index, 1, "Level skipped from 0 to 1")
+
+	# 6. Test Daily Challenge Mode UI
+	game.is_daily_challenge = true
+	game._update_ui()
+	assert_true("DAILY SHIFT" in game.level_label.text, "Level label displays DAILY SHIFT in daily challenge mode")
 
 	game.free()
 	loc.free()

@@ -26,6 +26,7 @@ func _init() -> void:
 	run_suite("Porter Locker Cosmetics & Star Economy (Phase 3)", test_porter_locker_cosmetics)
 	run_suite("Persistence (Save & Load to Disk)", test_persistence)
 	run_suite("Corrupt & Missing File Resilience", test_corrupt_and_missing_file)
+	run_suite("Breakout Hit Engine: Star Vaults, Daily Challenge & Level Skip", test_breakout_hit_engine)
 
 	_cleanup_test_file()
 
@@ -333,4 +334,75 @@ func test_porter_locker_cosmetics() -> void:
 
 	mgr.free()
 	mgr2.free()
+
+
+func test_breakout_hit_engine() -> void:
+	var mgr = SaveManagerScript.new()
+	mgr.reset_all_progress(TEST_SAVE_PATH)
+
+	# 1. Level Skip Lifeline
+	assert_equal(mgr.unlocked_level, 0, "Initial unlocked level is 0")
+	var skip_res: bool = mgr.skip_level(0)
+	assert_true(skip_res, "skip_level(0) returns true")
+	assert_equal(mgr.unlocked_level, 1, "Level 1 is now unlocked via Level Skip")
+	assert_equal(mgr.last_played_level, 1, "Last played level updated to 1")
+
+	# 2. Star Vault Milestones
+	assert_equal(mgr.get_all_star_vaults().size(), 6, "All 6 Star Vault milestones defined")
+	assert_equal(mgr.get_unclaimed_star_vaults().size(), 0, "No unclaimed vaults with 0 stars")
+	assert_false(mgr.is_star_vault_claimed(0), "Bronze Vault is unclaimed initially")
+
+	# Award 15 stars (enough for tier 0 Bronze Supply Cache)
+	for i in range(5):
+		mgr.completed_levels[str(i)] = { "stars": 3, "best_moves": 4, "best_pushes": 2 }
+	assert_equal(mgr.get_total_stars(), 15, "Total stars is now 15")
+
+	var unclaimed: Array[Dictionary] = mgr.get_unclaimed_star_vaults()
+	assert_equal(unclaimed.size(), 1, "Exactly 1 unclaimed vault available at 15 stars")
+	assert_equal(unclaimed[0]["index"], 0, "Unclaimed vault is tier 0 (Bronze)")
+
+	var initial_hints: int = mgr.get_hints_remaining()
+	var reward: Dictionary = mgr.claim_star_vault(0)
+	assert_false(reward.is_empty(), "claim_star_vault(0) succeeded")
+	assert_true(mgr.is_star_vault_claimed(0), "Bronze Vault marked as claimed")
+	assert_equal(mgr.get_hints_remaining(), initial_hints + 5, "Bronze Vault awarded +5 hints")
+
+	# Attempt duplicate claim
+	var dup_reward: Dictionary = mgr.claim_star_vault(0)
+	assert_true(dup_reward.is_empty(), "Duplicate vault claim prevented")
+
+	# 3. Daily Warehouse Shift Challenge
+	var daily_info: Dictionary = mgr.get_daily_challenge_info()
+	assert_false(daily_info["date"].is_empty(), "Daily challenge has valid date string")
+	assert_true(daily_info["level_index"] >= 5 and daily_info["level_index"] <= 44, "Daily challenge selects curated level")
+	assert_equal(daily_info["streak"], 0, "Initial daily streak is 0")
+	assert_false(daily_info["is_completed"], "Daily challenge not completed initially")
+
+	var daily_res: Dictionary = mgr.record_daily_challenge_completed()
+	assert_true(daily_res["is_completed"], "Daily challenge marked completed")
+	assert_equal(daily_res["streak"], 1, "Daily streak incremented to 1")
+	assert_equal(mgr.get_hints_remaining(), initial_hints + 5 + 3, "Daily completion awarded +3 hints")
+
+	# Duplicate completion on same day should not double-increment streak
+	var dup_daily: Dictionary = mgr.record_daily_challenge_completed()
+	assert_equal(dup_daily["streak"], 1, "Duplicate daily completion preserves streak")
+
+	# 4. Persistence across save/load
+	mgr.save_data(TEST_SAVE_PATH)
+	var mgr2 = SaveManagerScript.new()
+	mgr2.load_data(TEST_SAVE_PATH)
+	assert_true(mgr2.is_star_vault_claimed(0), "Claimed Star Vault persisted across save/load")
+	assert_equal(mgr2.daily_challenge_streak, 1, "Daily streak persisted across save/load")
+	assert_true(mgr2.daily_challenge_completed, "Daily completion flag persisted across save/load")
+	assert_equal(mgr2.unlocked_level, 1, "Level skip progression persisted across save/load")
+
+	# 5. Reset clears breakout states
+	mgr2.reset_all_progress(TEST_SAVE_PATH)
+	assert_false(mgr2.is_star_vault_claimed(0), "Star vaults reset on progress reset")
+	assert_equal(mgr2.daily_challenge_streak, 0, "Daily streak reset on progress reset")
+	assert_false(mgr2.daily_challenge_completed, "Daily completion reset on progress reset")
+
+	mgr.free()
+	mgr2.free()
+
 

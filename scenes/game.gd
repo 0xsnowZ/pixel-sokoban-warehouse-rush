@@ -32,6 +32,7 @@ var _layout_dirty: bool = true
 var player_facing_dir: Vector2i = Vector2i.DOWN
 var win_particles: Array[Dictionary] = []
 var is_level_won: bool = false
+var is_daily_challenge: bool = false
 var player_celebration_hop: float = 0.0
 var victory_radiance_rings: Array[Dictionary] = []
 var star_burst_particles: Array[Dictionary] = []
@@ -355,6 +356,10 @@ func _ready() -> void:
 			save_mgr = SaveManagerScript.new()
 			add_child(save_mgr)
 
+	if save_mgr != null and save_mgr.has_meta("is_daily_challenge") and bool(save_mgr.get_meta("is_daily_challenge")):
+		is_daily_challenge = true
+		save_mgr.set_meta("is_daily_challenge", false)
+
 	if audio_mgr == null and is_inside_tree() and get_tree().root.has_node("AudioManager"):
 		audio_mgr = get_tree().root.get_node("AudioManager")
 
@@ -677,7 +682,12 @@ func _update_ui() -> void:
 	_prev_live_stars = live_stars
 
 	if loc_mgr:
-		level_label.text = loc_mgr.tr_text("GAME_LEVEL_LABEL", [current_level_index + 1, level_paths.size()])
+		if is_daily_challenge:
+			var daily_info: Dictionary = save_mgr.get_daily_challenge_info() if save_mgr else {}
+			var streak_val: int = daily_info.get("streak", 0)
+			level_label.text = "DAILY SHIFT • %d 🔥" % streak_val
+		else:
+			level_label.text = loc_mgr.tr_text("GAME_LEVEL_LABEL", [current_level_index + 1, level_paths.size()])
 		stats_label.text = "%s%s   •   %s%s" % [
 			loc_mgr.tr_text("GAME_MOVES", [grid.moves_count]),
 			star_target_sub,
@@ -700,7 +710,12 @@ func _update_ui() -> void:
 		if win_retry_button != null:
 			win_retry_button.text = loc_mgr.tr_text("WIN_RETRY_BTN")
 	else:
-		level_label.text = "LEVEL %d / %d" % [current_level_index + 1, level_paths.size()]
+		if is_daily_challenge:
+			var daily_info: Dictionary = save_mgr.get_daily_challenge_info() if save_mgr else {}
+			var streak_val: int = daily_info.get("streak", 0)
+			level_label.text = "DAILY SHIFT • %d 🔥" % streak_val
+		else:
+			level_label.text = "LEVEL %d / %d" % [current_level_index + 1, level_paths.size()]
 		stats_label.text = "MOVES: %d%s   •   PUSHES: %d%s" % [grid.moves_count, star_target_sub, grid.pushes_count, best_str]
 		if undo_button != null:
 			undo_button.text = "Undo"
@@ -758,15 +773,24 @@ func _on_crate_pushed(from_pos: Vector2i, to_pos: Vector2i) -> void:
 	if grid != null and grid.goals.has(to_pos):
 		_spawn_goal_effect(to_pos)
 		add_trauma(0.38)
+		var docked_count: int = 0
+		for c_pos in grid.crates.keys():
+			if grid.goals.has(c_pos):
+				docked_count += 1
+		var total_goals: int = grid.goals.size()
 		if audio_mgr:
 			if audio_mgr.has_method("play_goal_lock"):
-				audio_mgr.play_goal_lock()
+				audio_mgr.play_goal_lock(docked_count, total_goals)
 			else:
 				audio_mgr.play_push()
 	else:
 		if audio_mgr:
 			if grid != null and grid.goals.has(from_pos) and audio_mgr.has_method("play_goal_unlock"):
-				audio_mgr.play_goal_unlock()
+				var remaining_docks: int = 0
+				for c_pos in grid.crates.keys():
+					if grid.goals.has(c_pos):
+						remaining_docks += 1
+				audio_mgr.play_goal_unlock(remaining_docks)
 			elif audio_mgr.has_method("play_push"):
 				audio_mgr.play_push(current_chapter_idx)
 
@@ -822,6 +846,10 @@ func _on_level_won() -> void:
 		haptic_mgr.vibrate_win()
 	if save_mgr:
 		save_mgr.record_level_completion(current_level_index, grid.moves_count, grid.pushes_count)
+		if is_daily_challenge:
+			var d_res: Dictionary = save_mgr.record_daily_challenge_completed()
+			var cur_streak: int = d_res.get("streak", 1)
+			_show_hint_toast("DAILY SHIFT CLEARED! +3 HINTS • %d DAY STREAK 🔥" % cur_streak, Color(1.0, 0.85, 0.25))
 	_check_achievements()
 	if ad_mgr:
 		ad_mgr.record_level_completed(current_level_index)
@@ -3154,6 +3182,15 @@ func _create_ad_reward_modal() -> PanelContainer:
 	_attach_spring_physics(watch_btn)
 	btn_vbox.add_child(watch_btn)
 
+	var skip_btn: Button = Button.new()
+	skip_btn.name = "SkipLevelBtn"
+	skip_btn.text = loc_mgr.tr_text("BTN_SKIP_LEVEL") if loc_mgr else "SKIP THIS LEVEL (LIFELINE)"
+	skip_btn.custom_minimum_size = Vector2(0, 42)
+	skip_btn.theme_type_variation = &"SecondaryButton"
+	skip_btn.pressed.connect(_on_skip_level_pressed)
+	_attach_spring_physics(skip_btn)
+	btn_vbox.add_child(skip_btn)
+
 	var close_btn: Button = Button.new()
 	close_btn.name = "CloseRewardModalBtn"
 	close_btn.text = loc_mgr.tr_text("BTN_CLOSE") if loc_mgr else "CLOSE"
@@ -3189,6 +3226,25 @@ func _on_watch_ad_pressed() -> void:
 			_on_rewarded_hints_earned("hints", 3)
 	else:
 		_on_rewarded_hints_earned("hints", 3)
+
+
+func _on_skip_level_pressed() -> void:
+	if audio_mgr:
+		audio_mgr.play_click()
+	_hide_ad_reward_modal()
+	if save_mgr != null:
+		save_mgr.skip_level(current_level_index)
+	var next_idx: int = current_level_index + 1
+	if next_idx < level_paths.size():
+		load_level(next_idx)
+		var msg: String = loc_mgr.tr_text("TOAST_LEVEL_SKIPPED") if loc_mgr else "Level Skipped! Resumed at Level %d" % (next_idx + 1)
+		_show_hint_toast(msg, Color(0.35, 0.85, 1.0))
+		if audio_mgr:
+			audio_mgr.play_win()
+		if haptic_mgr:
+			haptic_mgr.vibrate_target()
+	else:
+		_on_level_won()
 
 
 func _on_rewarded_hints_earned(reward_type: String, amount: int) -> void:

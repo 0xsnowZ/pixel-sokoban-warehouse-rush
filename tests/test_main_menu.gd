@@ -27,6 +27,7 @@ func _init() -> void:
 	run_suite("Settings Modal & Audio Sliders", test_settings_modal_and_sliders)
 	run_suite("Porter Locker Modal & Cosmetic Equipping", test_porter_locker_modal)
 	run_suite("Warehouse Achievements Modal", test_achievements_modal)
+	run_suite("Breakout Hit Engine: Daily Shift & Star Vault Modals", test_breakout_hit_menu_features)
 
 	_cleanup_test_file()
 
@@ -356,5 +357,41 @@ func test_achievements_modal() -> void:
 	# 5. Close modal
 	menu._hide_achievements()
 	assert_false(menu.achievements_modal.visible, "Achievements modal hidden via _hide_achievements")
+
+	menu.queue_free()
+
+
+func test_breakout_hit_menu_features() -> void:
+	var menu: Control = create_test_menu()
+
+	# 1. Daily Shift Hero Button
+	assert_true(menu.daily_shift_btn != null, "Daily Shift hero button created on main menu")
+	assert_true("DAILY SHIFT" in menu.daily_shift_btn.text, "Daily Shift button displays DAILY SHIFT")
+	assert_true(menu.daily_shift_btn.visible, "Daily Shift button is visible")
+
+	# Test daily challenge streak update
+	if menu.save_mgr:
+		menu.save_mgr.record_daily_challenge_completed()
+		menu._update_menu_state()
+		assert_true("CLEARED ✓" in menu.daily_shift_btn.text, "Daily Shift button indicates CLEARED after completion")
+
+	# 2. Star Vault Milestone Modal
+	var vault_data: Dictionary = {
+		"stars": 15,
+		"name": "Bronze Supply Cache",
+		"reward_type": "hints",
+		"amount": 5,
+		"icon": "🥉"
+	}
+	menu._show_star_vault_modal(0, vault_data)
+	assert_true(menu.star_vault_modal != null, "Star Vault modal created")
+	assert_true(menu.star_vault_modal.visible, "Star Vault modal visible after trigger")
+
+	var claim_btn: Button = menu.star_vault_modal.find_child("ClaimVaultBtn", true, false) as Button
+	assert_true(claim_btn != null, "Claim button exists on Star Vault modal")
+
+	# Claim the vault
+	claim_btn.pressed.emit()
+	assert_false(menu.star_vault_modal.visible, "Star Vault modal hidden after claiming")
 
 	menu.queue_free()

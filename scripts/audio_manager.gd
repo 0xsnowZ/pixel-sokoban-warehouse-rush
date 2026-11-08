@@ -401,14 +401,22 @@ func play_modal_close() -> void:
 	play_stream(sfx_modal_close if sfx_modal_close != null else sfx_click, -5.5)
 
 
-## Hydraulic docking pad lock chime
-func play_goal_lock() -> void:
-	play_stream(sfx_goal_lock, 0.0, 1.0, 0.02)
+## Hydraulic docking pad lock chime with dynamic ascending harmonic arpeggios
+## (C4 -> E4 -> G4 -> C5 -> E5 -> G5) providing musical dopamine on successive crate dockings.
+const DOCKING_CHORD_PITCHES: Array[float] = [1.00, 1.26, 1.50, 2.00, 2.52, 3.00]
+
+func play_goal_lock(dock_index: int = 1, total_goals: int = 1) -> void:
+	var idx: int = clampi(dock_index - 1, 0, DOCKING_CHORD_PITCHES.size() - 1)
+	var pitch: float = DOCKING_CHORD_PITCHES[idx]
+	var vol_boost: float = 1.5 if (dock_index >= total_goals and total_goals > 0) else 0.0
+	play_stream(sfx_goal_lock, vol_boost, pitch, 0.01)
 
 
 ## Crate disengage / goal unlock sound when pulling crate off a goal
-func play_goal_unlock() -> void:
-	play_stream(sfx_goal_unlock if sfx_goal_unlock != null else sfx_push, -2.0, 1.0, 0.02)
+func play_goal_unlock(remaining_docks: int = 0) -> void:
+	var idx: int = clampi(remaining_docks, 0, DOCKING_CHORD_PITCHES.size() - 1)
+	var pitch: float = DOCKING_CHORD_PITCHES[idx] * 0.90
+	play_stream(sfx_goal_unlock if sfx_goal_unlock != null else sfx_push, -1.5, pitch, 0.02)
 
 
 ## Progressive star award chime (1, 2, or 3)

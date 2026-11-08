@@ -169,7 +169,11 @@ func test_safe_playback() -> void:
 	audio_mgr.play_bump()
 	audio_mgr.play_undo()
 	audio_mgr.play_goal_lock()
+	audio_mgr.play_goal_lock(1, 3)
+	audio_mgr.play_goal_lock(2, 3)
+	audio_mgr.play_goal_lock(3, 3)
 	audio_mgr.play_goal_unlock()
+	audio_mgr.play_goal_unlock(2)
 
 	audio_mgr.play_star(1)
 	audio_mgr.play_star(2)
