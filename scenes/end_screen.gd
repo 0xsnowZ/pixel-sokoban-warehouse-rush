@@ -1,6 +1,6 @@
 extends Control
 
-## End Screen controller shown after completing all 50 levels (PRD Section 6).
+## End Screen controller shown after completing all 75 levels (PRD Section 6).
 ## Displays:
 ## - "Thank you for playing!" message
 ## - Total campaign statistics (levels solved, total best moves, total pushes)
@@ -115,7 +115,7 @@ func _update_ui() -> void:
 
 	if has_node("Margin/VBox/StatsPanel/PanelMargin/PanelVBox/StarsSummaryLabel"):
 		var stars_lbl = $Margin/VBox/StatsPanel/PanelMargin/PanelVBox/StarsSummaryLabel as Label
-		stars_lbl.text = "★ Total Stars: %d / 150 ★" % total_stars
+		stars_lbl.text = "★ Total Stars: %d / 225 ★" % total_stars
 
 	if loc_mgr:
 		title_label.text = loc_mgr.tr_text("END_TITLE")
@@ -126,9 +126,9 @@ func _update_ui() -> void:
 		menu_btn.text = loc_mgr.tr_text("BTN_MAIN_MENU")
 	else:
 		title_label.text = "CAMPAIGN COMPLETED!"
-		thanks_label.text = "Thank you for playing Pixel Sokoban: Warehouse Rush!\nYou have mastered all 50 warehouse puzzles."
+		thanks_label.text = "Thank you for playing Pixel Sokoban: Warehouse Rush!\nYou have mastered all 75 warehouse puzzles."
 		more_levels_label.text = "★ More levels coming soon! ★"
-		stats_label.text = "Levels Solved: %d / 50\nTotal Best Moves: %d\nTotal Best Pushes: %d" % [total_solved, total_moves, total_pushes]
+		stats_label.text = "Levels Solved: %d / 75\nTotal Best Moves: %d\nTotal Best Pushes: %d" % [total_solved, total_moves, total_pushes]
 		level_select_btn.text = "Level Select"
 		menu_btn.text = "Main Menu"
 

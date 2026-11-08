@@ -32,11 +32,19 @@ const ACHIEVEMENTS: Array[Dictionary] = [
 		"desc_key": "ACH_COLD_STORAGE_DESC"
 	},
 	{
+		"id": "quantum_master",
+		"icon": "⚛️",
+		"name": "Quantum Master",
+		"name_key": "ACH_QUANTUM_MASTER",
+		"desc": "Conquer all 25 levels of Chapter 4 Quantum Vault.",
+		"desc_key": "ACH_QUANTUM_MASTER_DESC"
+	},
+	{
 		"id": "depot_cleared",
 		"icon": "🏆",
 		"name": "Unstoppable Porter",
 		"name_key": "ACH_DEPOT_CLEARED",
-		"desc": "Complete all 50 handcrafted warehouse levels.",
+		"desc": "Complete all 75 handcrafted warehouse levels.",
 		"desc_key": "ACH_DEPOT_CLEARED_DESC"
 	},
 	{
@@ -60,7 +68,7 @@ const ACHIEVEMENTS: Array[Dictionary] = [
 		"icon": "👑",
 		"name": "Puzzle Perfectionist",
 		"name_key": "ACH_PERFECTIONIST",
-		"desc": "Achieve 3 stars on all 50 levels (150 Stars).",
+		"desc": "Achieve 3 stars on all 75 levels (225 Stars).",
 		"desc_key": "ACH_PERFECTIONIST_DESC"
 	},
 	{
@@ -101,7 +109,7 @@ func get_achievement_info(id: String) -> Dictionary:
 	return {}
 
 
-## Returns all 9 achievement definitions.
+## Returns all 10 achievement definitions.
 func get_all_achievements() -> Array[Dictionary]:
 	return ACHIEVEMENTS
 
@@ -152,19 +160,24 @@ func evaluate_progress(custom_save_mgr: Node = null) -> Array[String]:
 		if unlock("cold_storage", mgr):
 			newly_unlocked.append("cold_storage")
 
-	# 4. Unstoppable Porter (Completed all 50 levels)
+	# 4. Quantum Master (Completed all 25 levels of Chapter 3)
+	if mgr.is_chapter_completed(3):
+		if unlock("quantum_master", mgr):
+			newly_unlocked.append("quantum_master")
+
+	# 5. Unstoppable Porter (Completed all 75 levels)
 	var all_levels_done: bool = true
-	for lvl in range(50):
+	for lvl in range(75):
 		if not mgr.is_level_completed(lvl):
 			all_levels_done = false
 			break
-	if all_levels_done and mgr.completed_levels.size() >= 50:
+	if all_levels_done and mgr.completed_levels.size() >= 75:
 		if unlock("depot_cleared", mgr):
 			newly_unlocked.append("depot_cleared")
 
-	# 5. Star milestones
+	# 6. Star milestones
 	var three_star_count: int = 0
-	for lvl in range(50):
+	for lvl in range(75):
 		if mgr.get_level_stars(lvl) == 3:
 			three_star_count += 1
 
@@ -176,11 +189,11 @@ func evaluate_progress(custom_save_mgr: Node = null) -> Array[String]:
 		if unlock("precision_master", mgr):
 			newly_unlocked.append("precision_master")
 
-	if mgr.get_total_stars() >= 150:
+	if mgr.get_total_stars() >= 225:
 		if unlock("puzzle_perfectionist", mgr):
 			newly_unlocked.append("puzzle_perfectionist")
 
-	# 6. Cosmetics check
+	# 7. Cosmetics check
 	if mgr.selected_worker_skin != "classic" or mgr.selected_crate_skin != "classic_wood":
 		if unlock("stylin_porter", mgr):
 			newly_unlocked.append("stylin_porter")

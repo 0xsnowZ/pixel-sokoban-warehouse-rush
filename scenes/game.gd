@@ -7,13 +7,13 @@ extends Control
 const SaveManagerScript = preload("res://scripts/save_manager.gd")
 const SokobanSolverScript = preload("res://scripts/sokoban_solver.gd")
 
-# Levels available (50 verified solvable levels)
+# Levels available (75 verified solvable levels)
 var level_paths: Array[String] = _get_default_level_paths()
 var current_level_index: int = 0
 
 static func _get_default_level_paths() -> Array[String]:
 	var paths: Array[String] = []
-	for i in range(1, 51):
+	for i in range(1, 76):
 		paths.append("res://levels/level_%02d.sok" % i)
 	return paths
 
@@ -110,6 +110,24 @@ const CHAPTER_THEMES: Array[Dictionary] = [
 		"crate_tint": Color(1.00, 0.94, 0.90),
 		"dim_color": Color(0.05, 0.04, 0.08, 0.45),
 		"badge_color": Color(1.00, 0.65, 0.20)
+	},
+	{
+		"id": 3,
+		"name": "Quantum Vault",
+		"icon": "⚛️",
+		"frame_base": Color(0.08, 0.04, 0.14),
+		"frame_rim": Color(0.85, 0.40, 1.00),
+		"frame_groove": Color(0.04, 0.02, 0.08),
+		"bolt_dark": Color(0.06, 0.02, 0.10),
+		"bolt_core": Color(0.90, 0.50, 1.00),
+		"bolt_specular": Color(1.00, 0.85, 1.00),
+		"floor_tint": Color(0.90, 0.84, 0.98),
+		"wall_tint": Color(1.0, 1.0, 1.0),
+		"goal_aura": Color(0.85, 0.35, 1.00),
+		"goal_core": Color(0.95, 0.80, 1.00, 0.95),
+		"crate_tint": Color(0.95, 0.90, 1.00),
+		"dim_color": Color(0.06, 0.02, 0.10, 0.45),
+		"badge_color": Color(0.85, 0.40, 1.00)
 	}
 ]
 
@@ -195,6 +213,7 @@ var level_start_time: int = 0
 var tex_wall_cargo: Texture2D = preload("res://assets/wall_brick.png")
 var tex_wall_cold_storage: Texture2D = preload("res://assets/wall_cold_storage.png")
 var tex_wall_cyber_depot: Texture2D = preload("res://assets/wall_cyber_depot.png")
+var tex_wall_quantum_vault: Texture2D = preload("res://assets/wall_quantum_vault.png")
 var tex_wall: Texture2D = tex_wall_cargo
 var tex_floor_1: Texture2D = preload("res://assets/floor_tile_1.png")
 var tex_floor_2: Texture2D = preload("res://assets/floor_tile_2.png")
@@ -521,7 +540,9 @@ func get_chapter_index(level_idx: int = -1) -> int:
 		return 0
 	elif l_idx < 35:
 		return 1
-	return 2
+	elif l_idx < 50:
+		return 2
+	return 3
 
 
 func get_current_chapter_theme() -> Dictionary:
@@ -1588,7 +1609,7 @@ func _on_next_level_pressed() -> void:
 	if haptic_mgr:
 		haptic_mgr.vibrate_click()
 
-	# If completing the final level (Level 50), navigate to the Campaign End Screen (PRD Section 6)
+	# If completing the final level (Level 75), navigate to the Campaign End Screen (PRD Section 6)
 	if current_level_index >= level_paths.size() - 1:
 		get_tree().change_scene_to_file("res://scenes/end_screen.tscn")
 		return
@@ -2231,6 +2252,13 @@ func _draw_wall(rect: Rect2, pos: Vector2i = Vector2i.ZERO) -> void:
 			top_highlight = Color(0.0, 0.85, 1.0, 0.22)
 			bottom_shadow = Color(0.02, 0.04, 0.08, 0.55)
 			floor_contact_shadow = Color(0.0, 0.02, 0.06, 0.90)
+		3:
+			# === Chapter 4: Quantum Vault (Obsidian-Violet Titanium & Photon Conduit) ===
+			active_wall_tex = tex_wall_quantum_vault
+			wall_tint = Color(1.0, 1.0, 1.0)
+			top_highlight = Color(0.85, 0.40, 1.00, 0.30)
+			bottom_shadow = Color(0.04, 0.02, 0.08, 0.60)
+			floor_contact_shadow = Color(0.02, 0.01, 0.05, 0.92)
 		_:
 			# === Chapter 1: Cargo Bay (Traditional Terracotta Brickwork) ===
 			active_wall_tex = tex_wall_cargo
@@ -2251,6 +2279,11 @@ func _draw_wall(rect: Rect2, pos: Vector2i = Vector2i.ZERO) -> void:
 		var pulse: float = sin(float(Time.get_ticks_msec()) * 0.003 + (pos.x * 1.5 + pos.y * 2.0)) * 0.5 + 0.5
 		var center_p: Vector2 = rect.get_center()
 		draw_circle(center_p, 1.8, Color(0.0, 0.95, 1.0, 0.30 + pulse * 0.40))
+	elif current_chapter_idx == 3:
+		var pulse_q: float = sin(float(Time.get_ticks_msec()) * 0.004 + (pos.x * 2.0 + pos.y * 1.5)) * 0.5 + 0.5
+		var center_q: Vector2 = rect.get_center()
+		draw_circle(center_q, 2.2, Color(0.90, 0.45, 1.0, 0.35 + pulse_q * 0.45))
+		draw_circle(center_q, 1.0, Color(1.0, 0.85, 1.0, 0.60 + pulse_q * 0.40))
 
 
 func is_level_non_square() -> bool:

@@ -90,6 +90,7 @@ func test_sfx_synthesis() -> void:
 
 	assert_true(audio_mgr.sfx_push_cold != null, "sfx_push_cold (Cold Storage) stream generated")
 	assert_true(audio_mgr.sfx_push_cyber != null, "sfx_push_cyber (Cyber Depot) stream generated")
+	assert_true(audio_mgr.sfx_push_quantum != null, "sfx_push_quantum (Quantum Vault) stream generated")
 
 	assert_true(audio_mgr.sfx_bump != null, "sfx_bump (Wall collision) stream generated")
 	assert_true(audio_mgr.sfx_undo != null, "sfx_undo (Time rewind) stream generated")
@@ -165,6 +166,7 @@ func test_safe_playback() -> void:
 	audio_mgr.play_push(0)
 	audio_mgr.play_push(1)
 	audio_mgr.play_push(2)
+	audio_mgr.play_push(3)
 
 	audio_mgr.play_bump()
 	audio_mgr.play_undo()

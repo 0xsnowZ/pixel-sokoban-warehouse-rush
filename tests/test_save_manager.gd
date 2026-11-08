@@ -243,6 +243,8 @@ func test_warehouse_chapters_progression() -> void:
 	assert_equal(mgr.get_chapter_index(34), 1, "Level 34 maps to Chapter 1 (Cold Storage)")
 	assert_equal(mgr.get_chapter_index(35), 2, "Level 35 maps to Chapter 2 (Cyber Depot)")
 	assert_equal(mgr.get_chapter_index(49), 2, "Level 49 maps to Chapter 2 (Cyber Depot)")
+	assert_equal(mgr.get_chapter_index(50), 3, "Level 50 maps to Chapter 3 (Quantum Vault)")
+	assert_equal(mgr.get_chapter_index(74), 3, "Level 74 maps to Chapter 3 (Quantum Vault)")
 
 	# 2. Chapter metadata
 	var ch0: Dictionary = mgr.get_chapter_info(0)
@@ -258,6 +260,12 @@ func test_warehouse_chapters_progression() -> void:
 	var ch2: Dictionary = mgr.get_chapter_info(2)
 	assert_equal(ch2.get("name"), "Cyber Depot", "Chapter 2 is named Cyber Depot")
 	assert_equal(ch2.get("icon"), "⚡", "Chapter 2 icon is ⚡")
+
+	var ch3: Dictionary = mgr.get_chapter_info(3)
+	assert_equal(ch3.get("name"), "Quantum Vault", "Chapter 3 is named Quantum Vault")
+	assert_equal(ch3.get("icon"), "⚛️", "Chapter 3 icon is ⚛️")
+	assert_equal(ch3.get("start_level"), 50, "Chapter 3 starts at 50")
+	assert_equal(ch3.get("end_level"), 74, "Chapter 3 ends at 74")
 
 	# 3. Chapter stars & completion tracking
 	assert_equal(mgr.get_chapter_stars(0), 0, "Initial Chapter 0 stars is 0")
@@ -348,7 +356,7 @@ func test_breakout_hit_engine() -> void:
 	assert_equal(mgr.last_played_level, 1, "Last played level updated to 1")
 
 	# 2. Star Vault Milestones
-	assert_equal(mgr.get_all_star_vaults().size(), 6, "All 6 Star Vault milestones defined")
+	assert_equal(mgr.get_all_star_vaults().size(), 9, "All 9 Star Vault milestones defined")
 	assert_equal(mgr.get_unclaimed_star_vaults().size(), 0, "No unclaimed vaults with 0 stars")
 	assert_false(mgr.is_star_vault_claimed(0), "Bronze Vault is unclaimed initially")
 

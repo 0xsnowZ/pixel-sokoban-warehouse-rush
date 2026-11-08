@@ -88,8 +88,8 @@ func test_campaign_statistics_aggregation() -> void:
 	print("--- Running Suite: Campaign Statistics Aggregation ---")
 	var save_mgr: Node = SaveManagerScript.new()
 
-	# Simulate completing all 50 levels with 10 moves and 5 pushes each
-	for i in range(50):
+	# Simulate completing all 75 levels with 10 moves and 5 pushes each
+	for i in range(75):
 		save_mgr.completed_levels[str(i)] = {
 			"best_moves": 10,
 			"best_pushes": 5
@@ -97,9 +97,9 @@ func test_campaign_statistics_aggregation() -> void:
 
 	var end_screen: Control = create_test_end_screen(null, save_mgr)
 
-	assert_true(end_screen.stats_label.text.contains("50 / 50"), "Stats displays 50 / 50 levels solved")
-	assert_true(end_screen.stats_label.text.contains("500"), "Stats displays total 500 moves (50 * 10)")
-	assert_true(end_screen.stats_label.text.contains("250"), "Stats displays total 250 pushes (50 * 5)")
+	assert_true(end_screen.stats_label.text.contains("75 / 75"), "Stats displays 75 / 75 levels solved")
+	assert_true(end_screen.stats_label.text.contains("750"), "Stats displays total 750 moves (75 * 10)")
+	assert_true(end_screen.stats_label.text.contains("375"), "Stats displays total 375 pushes (75 * 5)")
 
 	end_screen.free()
 	save_mgr.free()

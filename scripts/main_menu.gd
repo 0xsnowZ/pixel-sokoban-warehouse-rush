@@ -3,14 +3,14 @@ extends Control
 ## Main menu and Level Select controller for Pixel Porter.
 ## Implements PRD Section 6 flow:
 ## - Continue / Play navigation
-## - Level select 50-level grid with locked/completed visual states
+## - Level select 75-level grid with locked/completed visual states
 ## - Sound on/off toggle persisted via SaveManager
 ## - Credits popup
 
 const SaveManagerScript = preload("res://scripts/save_manager.gd")
 const AchievementManagerScript = preload("res://scripts/achievement_manager.gd")
-const TOTAL_LEVELS_COUNT: int = 50
-const AVAILABLE_LEVELS_COUNT: int = 50 # All 50 verified solvable levels active
+const TOTAL_LEVELS_COUNT: int = 75
+const AVAILABLE_LEVELS_COUNT: int = 75 # All 75 verified solvable levels active
 
 # Enhanced High-Resolution UI Icon Textures
 var icon_trophy: Texture2D = preload("res://assets/icons/icon_trophy.png")
@@ -700,7 +700,7 @@ func _refresh_locker_ui() -> void:
 	if locker_title_label:
 		locker_title_label.text = loc_mgr.tr_text("LOCKER_TITLE") if loc_mgr else "SUPPLY DEPOT"
 	if locker_stars_badge:
-		locker_stars_badge.text = loc_mgr.tr_text("LOCKER_STARS_BADGE", [total_stars]) if loc_mgr else ("%d / 150 Stars Collected" % total_stars)
+		locker_stars_badge.text = loc_mgr.tr_text("LOCKER_STARS_BADGE", [total_stars]) if loc_mgr else ("%d / 225 Stars Collected" % total_stars)
 
 	if outfits_tab_btn:
 		outfits_tab_btn.text = loc_mgr.tr_text("LOCKER_TAB_OUTFITS") if loc_mgr else "OUTFITS"
@@ -1225,14 +1225,14 @@ func _update_menu_state() -> void:
 		language_btn.text = "LANGUAGE: English"
 
 	var total_stars: int = save_mgr.get_total_stars() if (save_mgr and save_mgr.has_method("get_total_stars")) else 0
-	var sector_idx: int = save_mgr.get_chapter_index(last_lvl) if (save_mgr and save_mgr.has_method("get_chapter_index")) else (0 if last_lvl < 15 else (1 if last_lvl < 35 else 2))
+	var sector_idx: int = save_mgr.get_chapter_index(last_lvl) if (save_mgr and save_mgr.has_method("get_chapter_index")) else (0 if last_lvl < 15 else (1 if last_lvl < 35 else (2 if last_lvl < 50 else 3)))
 	if star_progress_btn:
 		var ch_title: String = "Cargo Bay"
 		if loc_mgr and loc_mgr.has_method("tr_text"):
 			ch_title = loc_mgr.tr_text("CHAPTER_%d_TITLE" % sector_idx)
 		elif save_mgr and save_mgr.has_method("get_chapter_info"):
 			ch_title = save_mgr.get_chapter_info(sector_idx).get("name", "Cargo Bay")
-		star_progress_btn.text = "%d / 150 Stars • Sector %d: %s" % [total_stars, sector_idx + 1, ch_title]
+		star_progress_btn.text = "%d / 225 Stars • Sector %d: %s" % [total_stars, sector_idx + 1, ch_title]
 	if quick_lang_btn:
 		var lang_code: String = loc_mgr.current_language.to_upper() if loc_mgr else "EN"
 		quick_lang_btn.text = lang_code
@@ -1362,12 +1362,12 @@ func _refresh_level_grid_buttons() -> void:
 
 	if has_node("LevelSelectView/TopBar/Margin/HBox/TotalStarsLabel") and save_mgr != null:
 		var stars_lbl = get_node("LevelSelectView/TopBar/Margin/HBox/TotalStarsLabel") as Label
-		stars_lbl.text = "%d / 150 Stars" % total_stars
+		stars_lbl.text = "%d / 225 Stars" % total_stars
 
 	# Update Campaign Banner card if present
 	var pb: ProgressBar = find_child("ProgressBar", true, false) as ProgressBar
 	if pb != null:
-		pb.max_value = 150.0
+		pb.max_value = 225.0
 		pb.value = float(total_stars)
 
 	var next_vault_info: String = ""
@@ -1380,7 +1380,7 @@ func _refresh_level_grid_buttons() -> void:
 
 	var stars_count_lbl: Label = find_child("StarsCountLabel", true, false) as Label
 	if stars_count_lbl != null:
-		stars_count_lbl.text = "%d / 150 Stars Collected%s" % [total_stars, next_vault_info]
+		stars_count_lbl.text = "%d / 225 Stars Collected%s" % [total_stars, next_vault_info]
 
 	var completion_lbl: Label = find_child("CompletionLabel", true, false) as Label
 	if completion_lbl != null and save_mgr != null:
@@ -1389,11 +1389,12 @@ func _refresh_level_grid_buttons() -> void:
 			if save_mgr.is_level_completed(i):
 				completed_count += 1
 		var pct: int = int((float(completed_count) / float(TOTAL_LEVELS_COUNT)) * 100.0)
-		completion_lbl.text = "%d/50 Cleared • %d%%" % [completed_count, pct]
+		completion_lbl.text = "%d/75 Cleared • %d%%" % [completed_count, pct]
 
 	var s1_stars: int = save_mgr.get_chapter_stars(0) if save_mgr else 0
 	var s2_stars: int = save_mgr.get_chapter_stars(1) if save_mgr else 0
 	var s3_stars: int = save_mgr.get_chapter_stars(2) if save_mgr else 0
+	var s4_stars: int = save_mgr.get_chapter_stars(3) if save_mgr else 0
 
 	var s1_badge: Label = find_child("Sector1Badge", true, false) as Label
 	if s1_badge != null:
@@ -1407,6 +1408,10 @@ func _refresh_level_grid_buttons() -> void:
 	if s3_badge != null:
 		s3_badge.text = "⚡ S3: %d/45 ★" % s3_stars
 
+	var s4_badge: Label = find_child("Sector4Badge", true, false) as Label
+	if s4_badge != null:
+		s4_badge.text = "⚛ S4: %d/75 ★" % s4_stars
+
 	for child in level_grid.get_children():
 		if not child is Button:
 			continue
@@ -1415,7 +1420,7 @@ func _refresh_level_grid_buttons() -> void:
 		var is_unlocked: bool = is_available and (lvl_idx <= unlocked_lvl)
 		var is_completed: bool = save_mgr != null and save_mgr.is_level_completed(lvl_idx)
 
-		var ch_idx: int = save_mgr.get_chapter_index(lvl_idx) if (save_mgr != null and save_mgr.has_method("get_chapter_index")) else (0 if lvl_idx < 15 else (1 if lvl_idx < 35 else 2))
+		var ch_idx: int = save_mgr.get_chapter_index(lvl_idx) if (save_mgr != null and save_mgr.has_method("get_chapter_index")) else (0 if lvl_idx < 15 else (1 if lvl_idx < 35 else (2 if lvl_idx < 50 else 3)))
 		var ch_info: Dictionary = save_mgr.get_chapter_info(ch_idx) if (save_mgr != null and save_mgr.has_method("get_chapter_info")) else { "color": Color(1.0, 1.0, 1.0) }
 		var ch_col: Color = ch_info.get("color", Color(1.0, 1.0, 1.0))
 		var opt_moves: int = save_mgr.get_optimal_moves(lvl_idx) if save_mgr else 15

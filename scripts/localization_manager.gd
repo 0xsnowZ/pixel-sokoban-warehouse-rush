@@ -152,6 +152,11 @@ const TRANSLATIONS: Dictionary = {
 		"fr": "Cyber Dépôt",
 		"ar": "المستودع الذكي"
 	},
+	"CHAPTER_3_TITLE": {
+		"en": "Quantum Vault",
+		"fr": "Voûte Quantique",
+		"ar": "القبو الكمومي"
+	},
 	"CHAPTER_TOAST": {
 		"en": "CHAPTER %d: %s",
 		"fr": "CHAPITRE %d : %s",
@@ -498,9 +503,9 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "اكتملت الحملة بنجاح!"
 	},
 	"END_THANKS": {
-		"en": "Thank you for playing Pixel Sokoban: Warehouse Rush!\nYou have mastered all 50 warehouse puzzles.",
-		"fr": "Merci d'avoir joué à Pixel Sokoban: Warehouse Rush !\nVous avez maîtrisé les 50 défis d'entrepôt.",
-		"ar": "شكراً لك على لعب Pixel Sokoban: Warehouse Rush!\nلقد تمكنت من حل جميع ألغاز المستودع الـ 50."
+		"en": "Thank you for playing Pixel Sokoban: Warehouse Rush!\nYou have mastered all 75 warehouse puzzles.",
+		"fr": "Merci d'avoir joué à Pixel Sokoban: Warehouse Rush !\nVous avez maîtrisé les 75 défis d'entrepôt.",
+		"ar": "شكراً لك على لعب Pixel Sokoban: Warehouse Rush!\nلقد تمكنت من حل جميع ألغاز المستودع الـ 75."
 	},
 	"END_MORE_LEVELS": {
 		"en": "More levels coming soon!",
@@ -508,9 +513,9 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "المزيد من المستويات قريباً!"
 	},
 	"END_STATS_SUMMARY": {
-		"en": "Levels Solved: %d / 50\nTotal Best Moves: %d\nTotal Best Pushes: %d",
-		"fr": "Niveaux résolus : %d / 50\nTotal meilleurs mouvements : %d\nTotal meilleures poussées : %d",
-		"ar": "المستويات المحلولة: %d / 50\nإجمالي أفضل الحركات: %d\nإجمالي أفضل الدفعات: %d"
+		"en": "Levels Solved: %d / 75\nTotal Best Moves: %d\nTotal Best Pushes: %d",
+		"fr": "Niveaux résolus : %d / 75\nTotal meilleurs mouvements : %d\nTotal meilleures poussées : %d",
+		"ar": "المستويات المحلولة: %d / 75\nإجمالي أفضل الحركات: %d\nإجمالي أفضل الدفعات: %d"
 	},
 	"BTN_MAIN_MENU": {
 		"en": "Main Menu",
@@ -553,9 +558,9 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "إنجازات المستودع"
 	},
 	"ACHIEVEMENTS_COUNTER": {
-		"en": "%d / 9 Unlocked",
-		"fr": "%d / 9 Débloqués",
-		"ar": "%d / 9 تم الفتح"
+		"en": "%d / 10 Unlocked",
+		"fr": "%d / 10 Débloqués",
+		"ar": "%d / 10 تم الفتح"
 	},
 	"ACH_FIRST_SHIFT": {
 		"en": "First Shift",
@@ -587,15 +592,25 @@ const TRANSLATIONS: Dictionary = {
 		"fr": "Terminez les 20 niveaux de la Chambre froide.",
 		"ar": "أتقن جميع مستويات التخزين البارد الـ 20."
 	},
+	"ACH_QUANTUM_MASTER": {
+		"en": "Quantum Master",
+		"fr": "Maître Quantique",
+		"ar": "خبير الكم"
+	},
+	"ACH_QUANTUM_MASTER_DESC": {
+		"en": "Conquer all 25 levels of Chapter 4 Quantum Vault.",
+		"fr": "Terminez les 25 niveaux de la Voûte Quantique.",
+		"ar": "أتقن جميع مستويات القبو الكمومي الـ 25."
+	},
 	"ACH_DEPOT_CLEARED": {
 		"en": "Unstoppable Porter",
 		"fr": "Porteur Inarrêtable",
 		"ar": "حمال لا يتوقف"
 	},
 	"ACH_DEPOT_CLEARED_DESC": {
-		"en": "Complete all 50 handcrafted warehouse levels.",
-		"fr": "Terminez les 50 niveaux du jeu.",
-		"ar": "أكمل جميع مستويات المستودع الـ 50."
+		"en": "Complete all 75 handcrafted warehouse levels.",
+		"fr": "Terminez les 75 niveaux du jeu.",
+		"ar": "أكمل جميع مستويات المستودع الـ 75."
 	},
 	"ACH_PRECISION_STARTER": {
 		"en": "Precision Starter",
@@ -623,9 +638,9 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "خبير الألغاز المتقن"
 	},
 	"ACH_PERFECTIONIST_DESC": {
-		"en": "Achieve 3 stars on all 50 levels (150 Stars).",
-		"fr": "Obtenez 3 étoiles sur les 50 niveaux (150 étoiles).",
-		"ar": "احصل على 3 نجوم في جميع المستويات الـ 50 (150 نجمة)."
+		"en": "Achieve 3 stars on all 75 levels (225 Stars).",
+		"fr": "Obtenez 3 étoiles sur les 75 niveaux (225 étoiles).",
+		"ar": "احصل على 3 نجوم في جميع المستويات الـ 75 (225 نجمة)."
 	},
 	"ACH_STYLIN_PORTER": {
 		"en": "Stylin' Porter",

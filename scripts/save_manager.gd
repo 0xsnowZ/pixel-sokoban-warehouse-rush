@@ -45,14 +45,17 @@ var daily_challenge_date: String = ""
 var daily_challenge_streak: int = 0
 var daily_challenge_completed: bool = false
 
-# 6 Progressive Star Vault Milestone Chests rewarding dedicated players
+# Progressive Star Vault Milestone Chests rewarding dedicated players
 const STAR_VAULTS: Array[Dictionary] = [
 	{ "stars": 15, "name": "Bronze Supply Cache", "reward_type": "hints", "amount": 5, "icon": "🥉" },
 	{ "stars": 25, "name": "Safety Vest Locker", "reward_type": "skin", "skin_id": "safety_vest", "icon": "🦺" },
 	{ "stars": 40, "name": "Steel Freight Vault", "reward_type": "skin", "skin_id": "steel_container", "icon": "🗄️" },
 	{ "stars": 60, "name": "Foreman's Cache", "reward_type": "skin", "skin_id": "foreman", "icon": "👷" },
 	{ "stars": 80, "name": "Cryo Vault Locker", "reward_type": "skin", "skin_id": "cryo_vault", "icon": "❄️" },
-	{ "stars": 100, "name": "Golden Master Vault", "reward_type": "skin", "skin_id": "golden_porter", "icon": "👑" }
+	{ "stars": 100, "name": "Golden Master Vault", "reward_type": "skin", "skin_id": "golden_porter", "icon": "👑" },
+	{ "stars": 140, "name": "Quantum Solenoid Cache", "reward_type": "hints", "amount": 10, "icon": "⚛️" },
+	{ "stars": 180, "name": "Plasma Core Vault", "reward_type": "hints", "amount": 15, "icon": "🔮" },
+	{ "stars": 210, "name": "Grandmaster Apex Trophy", "reward_type": "hints", "amount": 25, "icon": "🏆" }
 ]
 
 
@@ -79,13 +82,16 @@ func unlock_level(target_level_index: int) -> bool:
 	return false
 
 
-# Mathematically verified optimal moves for all 50 levels
+# Mathematically verified optimal moves for all 75 levels
 const OPTIMAL_MOVES: Array[int] = [
 	9, 12, 18, 21, 22, 25, 26, 27, 28, 29,
 	28, 28, 30, 30, 31, 35, 36, 24, 36, 38,
 	28, 35, 38, 30, 30, 32, 44, 45, 46, 48,
 	50, 51, 52, 52, 61, 64, 71, 76, 79, 82,
 	83, 91, 92, 95, 98, 100, 100, 102, 106, 131,
+	32, 34, 35, 36, 38, 38, 39, 40, 40, 43,
+	39, 45, 38, 47, 37, 45, 37, 48, 37, 40,
+	35, 40, 35, 40, 35
 ]
 
 
@@ -129,7 +135,7 @@ func get_level_stars(level_index: int) -> int:
 	return rec.get("stars", 0)
 
 
-## Returns the total stars collected across all completed levels (out of 150).
+## Returns the total stars collected across all completed levels (out of 225).
 func get_total_stars() -> int:
 	var total: int = 0
 	for rec in completed_levels.values():
@@ -137,11 +143,12 @@ func get_total_stars() -> int:
 	return total
 
 
-# 3 Warehouse Logistics Chapters across 50 levels (PRD Phase 2)
+# 4 Warehouse Logistics Chapters across 75 levels (PRD Phase 2)
 const CHAPTER_TIERS: Array[Dictionary] = [
 	{ "id": 0, "name": "Cargo Bay", "start_level": 0, "end_level": 14, "icon": "📦", "color": Color(0.98, 0.82, 0.25) },
 	{ "id": 1, "name": "Cold Storage", "start_level": 15, "end_level": 34, "icon": "❄", "color": Color(0.35, 0.85, 1.0) },
-	{ "id": 2, "name": "Cyber Depot", "start_level": 35, "end_level": 49, "icon": "⚡", "color": Color(1.0, 0.65, 0.20) }
+	{ "id": 2, "name": "Cyber Depot", "start_level": 35, "end_level": 49, "icon": "⚡", "color": Color(1.0, 0.65, 0.20) },
+	{ "id": 3, "name": "Quantum Vault", "start_level": 50, "end_level": 74, "icon": "⚛️", "color": Color(0.85, 0.40, 1.00) }
 ]
 
 
@@ -150,7 +157,9 @@ func get_chapter_index(level_index: int) -> int:
 		return 0
 	elif level_index < 35:
 		return 1
-	return 2
+	elif level_index < 50:
+		return 2
+	return 3
 
 
 func get_chapter_info(chapter_index: int) -> Dictionary:

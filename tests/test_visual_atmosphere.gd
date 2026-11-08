@@ -92,7 +92,7 @@ func test_ambient_motes_simulation(game: Node) -> void:
 func test_chapter_atmospherics(game: Node) -> void:
 	print("--- Running Suite: Chapter Progression Atmospherics ---")
 	if game.save_mgr:
-		game.save_mgr.unlocked_level = 49
+		game.save_mgr.unlocked_level = 74
 	game.load_level(0)
 	assert_true(game.current_chapter_idx == 0, "Level 1 is Cargo Bay chapter 0")
 
@@ -103,6 +103,10 @@ func test_chapter_atmospherics(game: Node) -> void:
 	game.load_level(35)
 	assert_true(game.current_chapter_idx == 2, "Level 36 is Cyber Depot chapter 2")
 	assert_true(game.ambient_motes.size() == 16, "Motes active in Cyber Depot")
+
+	game.load_level(50)
+	assert_true(game.current_chapter_idx == 3, "Level 51 is Quantum Vault chapter 3")
+	assert_true(game.ambient_motes.size() == 16, "Motes active in Quantum Vault")
 
 	# Return to level 0
 	game.load_level(0)

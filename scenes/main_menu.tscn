@@ -66,7 +66,7 @@ layout_mode = 2
 theme_type_variation = &"TopBarButton"
 theme_override_colors/font_color = Color(0.98, 0.85, 0.28, 1)
 theme_override_font_sizes/font_size = 13
-text = "0 / 150 Stars • Sector 1"
+text = "0 / 225 Stars • Sector 1"
 
 [node name="Spacer" type="Control" parent="MainView/TopBarMargin/HBox"]
 layout_mode = 2
@@ -246,7 +246,7 @@ custom_minimum_size = Vector2(96, 34)
 layout_mode = 2
 theme_type_variation = &"StarBadgeLabel"
 theme_override_font_sizes/font_size = 13
-text = "0 / 150 Stars"
+text = "0 / 225 Stars"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -297,12 +297,12 @@ text = "WAREHOUSE CAMPAIGN"
 layout_mode = 2
 theme_override_colors/font_color = Color(0.72, 0.80, 0.92, 1)
 theme_override_font_sizes/font_size = 11
-text = "50 SECTORS"
+text = "75 SECTORS"
 
 [node name="ProgressBar" type="ProgressBar" parent="LevelSelectView/Scroll/Margin/ContentVBox/CampaignBanner/Margin/VBox"]
 custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
-max_value = 150.0
+max_value = 225.0
 show_percentage = false
 
 [node name="FooterHBox" type="HBoxContainer" parent="LevelSelectView/Scroll/Margin/ContentVBox/CampaignBanner/Margin/VBox"]
@@ -313,13 +313,13 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.85, 0.90, 0.98, 1)
 theme_override_font_sizes/font_size = 11
-text = "0 / 150 Stars Collected"
+text = "0 / 225 Stars Collected"
 
 [node name="CompletionLabel" type="Label" parent="LevelSelectView/Scroll/Margin/ContentVBox/CampaignBanner/Margin/VBox/FooterHBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.55, 0.65, 0.78, 1)
 theme_override_font_sizes/font_size = 11
-text = "0/50 Cleared • 0%"
+text = "0/75 Cleared • 0%"
 
 [node name="SectorsHBox" type="HBoxContainer" parent="LevelSelectView/Scroll/Margin/ContentVBox/CampaignBanner/Margin/VBox"]
 layout_mode = 2
@@ -347,6 +347,14 @@ size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 0.65, 0.2, 1)
 theme_override_font_sizes/font_size = 10
 text = "⚡ S3: 0/45 ★"
+horizontal_alignment = 1
+
+[node name="Sector4Badge" type="Label" parent="LevelSelectView/Scroll/Margin/ContentVBox/CampaignBanner/Margin/VBox/SectorsHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.85, 0.40, 1, 1)
+theme_override_font_sizes/font_size = 10
+text = "⚛ S4: 0/75 ★"
 horizontal_alignment = 1
 
 [node name="LevelGrid" type="GridContainer" parent="LevelSelectView/Scroll/Margin/ContentVBox"]
@@ -584,7 +592,7 @@ horizontal_alignment = 1
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.9, 0.98, 1)
 theme_override_font_sizes/font_size = 13
-text = "0 / 150 Stars Collected"
+text = "0 / 225 Stars Collected"
 horizontal_alignment = 1
 
 [node name="TabsHBox" type="HBoxContainer" parent="LockerModal/Margin/VBox"]

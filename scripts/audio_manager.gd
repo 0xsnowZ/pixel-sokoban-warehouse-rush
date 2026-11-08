@@ -19,6 +19,7 @@ var sfx_move_alt: AudioStreamWAV
 var sfx_push: AudioStreamWAV
 var sfx_push_cold: AudioStreamWAV
 var sfx_push_cyber: AudioStreamWAV
+var sfx_push_quantum: AudioStreamWAV
 var sfx_bump: AudioStreamWAV
 var sfx_undo: AudioStreamWAV
 var sfx_win: AudioStreamWAV
@@ -342,6 +343,8 @@ func play_push(chapter_idx: int = 0) -> void:
 			stream = sfx_push_cold if sfx_push_cold != null else sfx_push
 		2:
 			stream = sfx_push_cyber if sfx_push_cyber != null else sfx_push
+		3:
+			stream = sfx_push_quantum if sfx_push_quantum != null else sfx_push
 		_:
 			stream = sfx_push
 	play_stream(stream, -1.0, 1.0, 0.05)
@@ -448,6 +451,7 @@ func _generate_all_sfx() -> void:
 	sfx_push = _synth_push(0)
 	sfx_push_cold = _synth_push(1)
 	sfx_push_cyber = _synth_push(2)
+	sfx_push_quantum = _synth_push(3)
 	sfx_bump = _synth_bump()
 	sfx_undo = _synth_undo()
 	sfx_win = _synth_win()
@@ -610,6 +614,55 @@ func _synth_push(style: int = 0) -> AudioStreamWAV:
 					em_lock = sin(p_snap) * exp(-dt * 115.0) * 0.60
 
 				var val: float = kick + glide + em_lock
+				var sample_val: int = int(clampi(int(val * 23000.0), -32767, 32767))
+				bytes.encode_s16(i * 2, sample_val)
+			return _create_wav(bytes)
+
+		3:
+			# === Chapter 4: Quantum Vault (Harmonic Plasma Solenoid Kick & Resonant Decay) ===
+			var duration: float = 0.116
+			var total_samples: int = int(duration * MIX_RATE)
+			var bytes: PackedByteArray = PackedByteArray()
+			bytes.resize(total_samples * 2)
+			var p_plasma: float = 0.0
+			var p_sub: float = 0.0
+			var p_decay: float = 0.0
+			var lp_noise: float = 0.0
+			var seed_val: int = 999
+
+			for i in range(total_samples):
+				var t_sec: float = float(i) / float(MIX_RATE)
+
+				# 1. Plasma Solenoid Kick (0 to 32ms) - Rapid downward harmonic sweep
+				var kick: float = 0.0
+				if t_sec < 0.032:
+					var f_sweep: float = 460.0 - (t_sec / 0.032) * 220.0
+					p_plasma += (f_sweep * TAU) / float(MIX_RATE)
+					kick = (sin(p_plasma) + 0.40 * sin(p_plasma * 2.5)) * exp(-t_sec * 100.0) * 0.72
+
+				# 2. Quantum Phase-Shift Glide (10 to 86ms)
+				var glide: float = 0.0
+				if t_sec >= 0.010 and t_sec <= 0.086:
+					var s_t: float = (t_sec - 0.010) / 0.076
+					var s_env: float = sin(s_t * PI)
+					var f_sub: float = 240.0 + sin(s_t * PI * 1.5) * 80.0
+					p_sub += (f_sub * TAU) / float(MIX_RATE)
+
+					seed_val = int((seed_val * 1103515245 + 12345) & 0x7FFFFFFF)
+					var raw_noise: float = (float(seed_val & 0xFFFF) / 32768.0) - 1.0
+					lp_noise += 0.15 * (raw_noise - lp_noise)
+
+					var phase_tone: float = (sin(p_sub) + 0.35 * sin(p_sub * 2.0) + 0.15 * sin(p_sub * 3.0)) * 0.52
+					glide = (phase_tone + lp_noise * 0.38) * s_env * 0.68
+
+				# 3. Resonant Quantum Latch (74 to 116ms)
+				var latch: float = 0.0
+				if t_sec >= 0.074:
+					var dt: float = t_sec - 0.074
+					p_decay += (480.0 * TAU) / float(MIX_RATE)
+					latch = (sin(p_decay) + 0.30 * sin(p_decay * 2.2)) * exp(-dt * 110.0) * 0.62
+
+				var val: float = kick + glide + latch
 				var sample_val: int = int(clampi(int(val * 23000.0), -32767, 32767))
 				bytes.encode_s16(i * 2, sample_val)
 			return _create_wav(bytes)

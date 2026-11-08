@@ -22,7 +22,7 @@ func _init() -> void:
 
 	run_suite("Main Menu Initialization & Views", test_menu_initialization)
 	run_suite("Progression Reactive State (Continue/Play)", test_continue_and_play_state)
-	run_suite("50-Level Select Grid & Status Badges", test_level_select_grid)
+	run_suite("75-Level Select Grid & Status Badges", test_level_select_grid)
 	run_suite("Sound Toggle & Credits Modal", test_sound_and_credits)
 	run_suite("Settings Modal & Audio Sliders", test_settings_modal_and_sliders)
 	run_suite("Porter Locker Modal & Cosmetic Equipping", test_porter_locker_modal)
@@ -132,7 +132,7 @@ func test_level_select_grid() -> void:
 	var menu: Control = create_test_menu()
 
 	var grid_buttons = menu.level_grid.get_children()
-	assert_equal(grid_buttons.size(), 50, "Level grid contains 50 level buttons as required by PRD")
+	assert_equal(grid_buttons.size(), 75, "Level grid contains 75 level buttons as required by PRD")
 
 	# Set level 0 as completed, level 1 as unlocked, level 2 as available
 	menu.save_mgr.reset_all_progress(TEST_SAVE_PATH)
@@ -342,17 +342,17 @@ func test_achievements_modal() -> void:
 	# 2. Open achievements modal
 	menu._show_achievements()
 	assert_true(menu.achievements_modal.visible, "Achievements modal opens via _show_achievements")
-	assert_true("0 / 9" in menu.achievements_counter_badge.text or "0" in menu.achievements_counter_badge.text, "Achievements counter badge starts at 0")
+	assert_true("0 / 10" in menu.achievements_counter_badge.text or "0" in menu.achievements_counter_badge.text, "Achievements counter badge starts at 0")
 
-	# 3. 9 achievement cards populated
+	# 3. 10 achievement cards populated
 	var cards = menu.achievements_items_vbox.get_children()
-	assert_equal(cards.size(), 9, "Achievements modal displays all 9 achievement cards")
+	assert_equal(cards.size(), 10, "Achievements modal displays all 10 achievement cards")
 
 	# 4. Unlock an achievement and refresh
 	if menu.achievement_mgr:
 		menu.achievement_mgr.unlock("first_shift")
 		menu._refresh_achievements_ui()
-		assert_true("1 / 9" in menu.achievements_counter_badge.text, "Counter badge updates to 1 / 9 unlocked")
+		assert_true("1 / 10" in menu.achievements_counter_badge.text, "Counter badge updates to 1 / 10 unlocked")
 
 	# 5. Close modal
 	menu._hide_achievements()

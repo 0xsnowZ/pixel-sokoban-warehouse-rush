@@ -81,7 +81,7 @@ func test_achievement_catalog() -> void:
 	var ach_mgr = AchievementManagerScript.new()
 	var all_achs = ach_mgr.get_all_achievements()
 
-	assert_equal(all_achs.size(), 9, "All 9 achievements registered in catalog")
+	assert_equal(all_achs.size(), 10, "All 10 achievements registered in catalog")
 
 	var first_shift = ach_mgr.get_achievement_info("first_shift")
 	assert_false(first_shift.is_empty(), "First Shift achievement exists")

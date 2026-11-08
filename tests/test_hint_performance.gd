@@ -9,7 +9,7 @@ func _init() -> void:
 	print("======================================================\n")
 
 	var passes: int = 0
-	var test_levels: Array[int] = [1, 10, 16, 25, 35, 45, 50]
+	var test_levels: Array[int] = [1, 10, 16, 25, 35, 45, 50, 55, 65, 75]
 	for lvl in test_levels:
 		var path: String = "res://levels/level_%02d.sok" % lvl
 		var grid: GridLogic = GridLogicScript.new()
