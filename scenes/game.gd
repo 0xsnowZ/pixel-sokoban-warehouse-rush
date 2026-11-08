@@ -2267,23 +2267,63 @@ func _draw_wall(rect: Rect2, pos: Vector2i = Vector2i.ZERO) -> void:
 			bottom_shadow = Color(0.0, 0.0, 0.0, 0.25)
 			floor_contact_shadow = Color(0.0, 0.0, 0.0, 0.70)
 
+	# 1. Base Wall Texture
 	draw_texture_rect(active_wall_tex, rect, false, wall_tint)
-	draw_line(rect.position, rect.position + Vector2(rect.size.x, 0.0), top_highlight, 1.0)
-	draw_line(rect.position + Vector2(0.0, rect.size.y - 1.0), rect.end - Vector2(0.0, 1.0), bottom_shadow, 1.0)
 
+	# Adjacency checks (UP, DOWN, LEFT, RIGHT)
+	var wall_u: bool = grid != null and not grid.is_interior_floor(pos + Vector2i.UP)
+	var wall_d: bool = grid != null and not grid.is_interior_floor(pos + Vector2i.DOWN)
+	var wall_l: bool = grid != null and not grid.is_interior_floor(pos + Vector2i.LEFT)
+	var wall_r: bool = grid != null and not grid.is_interior_floor(pos + Vector2i.RIGHT)
+
+	# 2. Continuous Wall Coping: top highlight only on exposed upper edge
+	if not wall_u:
+		draw_line(rect.position, rect.position + Vector2(rect.size.x, 0.0), top_highlight, 1.2)
+	if not wall_d:
+		draw_line(rect.position + Vector2(0.0, rect.size.y - 1.0), rect.end - Vector2(0.0, 1.0), bottom_shadow, 1.0)
+
+	# 3. 2.5D Directional Front-Face Floor Shadows onto interior floor below
 	if grid != null and pos.y < grid.height - 1 and grid.is_interior_floor(pos + Vector2i.DOWN):
-		draw_line(rect.position + Vector2(0.0, rect.size.y - 1.0), rect.end - Vector2(0.0, 1.0), floor_contact_shadow, 2.0)
+		var shadow_h: float = minf(tile_size * 0.20, 9.0)
+		# 3-tier soft vertical shadow cast on floor
+		draw_rect(Rect2(rect.position.x, rect.end.y, rect.size.x, shadow_h), Color(0.0, 0.0, 0.0, 0.16))
+		draw_rect(Rect2(rect.position.x, rect.end.y, rect.size.x, shadow_h * 0.55), Color(0.0, 0.0, 0.0, 0.26))
+		draw_rect(Rect2(rect.position.x, rect.end.y, rect.size.x, shadow_h * 0.25), Color(0.0, 0.0, 0.0, 0.42))
+		draw_line(Vector2(rect.position.x, rect.end.y), Vector2(rect.end.x, rect.end.y), floor_contact_shadow, 1.8)
 
-	# Chapter 3: Pulsing cybernetic diode node in central conduit
-	if current_chapter_idx == 2:
-		var pulse: float = sin(float(Time.get_ticks_msec()) * 0.003 + (pos.x * 1.5 + pos.y * 2.0)) * 0.5 + 0.5
+	# 4. Lateral Contact Shadow onto interior floor to the right
+	if grid != null and pos.x < grid.width - 1 and grid.is_interior_floor(pos + Vector2i.RIGHT):
+		var shadow_w: float = minf(tile_size * 0.12, 5.0)
+		draw_rect(Rect2(rect.end.x, rect.position.y, shadow_w, rect.size.y), Color(0.0, 0.0, 0.0, 0.16))
+
+	# 5. Connected Conduits & Intersections for Cyber Depot (Ch 3) and Quantum Vault (Ch 4)
+	if current_chapter_idx == 2 or current_chapter_idx == 3:
 		var center_p: Vector2 = rect.get_center()
-		draw_circle(center_p, 1.8, Color(0.0, 0.95, 1.0, 0.30 + pulse * 0.40))
-	elif current_chapter_idx == 3:
-		var pulse_q: float = sin(float(Time.get_ticks_msec()) * 0.004 + (pos.x * 2.0 + pos.y * 1.5)) * 0.5 + 0.5
-		var center_q: Vector2 = rect.get_center()
-		draw_circle(center_q, 2.2, Color(0.90, 0.45, 1.0, 0.35 + pulse_q * 0.45))
-		draw_circle(center_q, 1.0, Color(1.0, 0.85, 1.0, 0.60 + pulse_q * 0.40))
+		var conduit_col: Color = Color(0.0, 0.85, 1.0, 0.60) if current_chapter_idx == 2 else Color(0.85, 0.45, 1.0, 0.60)
+		var conduit_w: float = 1.6
+
+		# Draw continuous lines connecting with neighboring wall tiles
+		if wall_l:
+			draw_line(Vector2(rect.position.x, center_p.y), center_p, conduit_col, conduit_w)
+		if wall_r:
+			draw_line(center_p, Vector2(rect.end.x, center_p.y), conduit_col, conduit_w)
+		if wall_u:
+			draw_line(Vector2(center_p.x, rect.position.y), center_p, conduit_col, conduit_w)
+		if wall_d:
+			draw_line(center_p, Vector2(center_p.x, rect.end.y), conduit_col, conduit_w)
+
+		var deg: int = (1 if wall_l else 0) + (1 if wall_r else 0) + (1 if wall_u else 0) + (1 if wall_d else 0)
+		var is_corner: bool = (deg == 2 and ((wall_l and wall_u) or (wall_l and wall_d) or (wall_r and wall_u) or (wall_r and wall_d)))
+
+		# Only draw pulsing diode node at true intersections (T, cross), corners, or isolated columns
+		if deg >= 3 or is_corner or deg <= 1:
+			var pulse: float = sin(float(Time.get_ticks_msec()) * 0.003 + (pos.x * 1.5 + pos.y * 2.0)) * 0.5 + 0.5
+			if current_chapter_idx == 2:
+				draw_circle(center_p, 2.2, Color(0.0, 0.95, 1.0, 0.35 + pulse * 0.45))
+				draw_circle(center_p, 1.0, Color(0.8, 1.0, 1.0, 0.70 + pulse * 0.30))
+			else:
+				draw_circle(center_p, 2.4, Color(0.90, 0.45, 1.0, 0.35 + pulse * 0.45))
+				draw_circle(center_p, 1.2, Color(1.0, 0.85, 1.0, 0.70 + pulse * 0.30))
 
 
 func is_level_non_square() -> bool:
@@ -2356,6 +2396,9 @@ func _draw_goal_hazard_brackets(rect: Rect2, ch: Dictionary) -> void:
 	elif current_chapter_idx == 2:
 		steel_col = Color(0.06, 0.08, 0.12, 0.95)
 		accent_col = Color(0.20, 0.98, 0.60, 0.90)
+	elif current_chapter_idx == 3:
+		steel_col = Color(0.10, 0.06, 0.16, 0.95)
+		accent_col = Color(0.85, 0.40, 1.00, 0.90)
 
 	var pad: Rect2 = rect.grow(-3.0)
 	var arm: float = pad.size.x * 0.22
