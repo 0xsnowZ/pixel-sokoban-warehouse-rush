@@ -3031,20 +3031,6 @@ func _on_top_bar_draw() -> void:
 	_draw_terminal_bolt(top_bar, Vector2(10.0, 10.0))
 	_draw_terminal_bolt(top_bar, Vector2(sz.x - 10.0, 10.0))
 
-	# Industrial hazard caution stripes along bottom edge
-	var bar_h: float = 3.0
-	var num_stripes: int = 5
-	# Left hazard bracket
-	for i in range(num_stripes):
-		var sx: float = 14.0 + i * 8.0
-		var col: Color = Color(0.96, 0.78, 0.20, 0.85) if (i % 2 == 0) else Color(0.12, 0.14, 0.18, 0.90)
-		top_bar.draw_line(Vector2(sx, sz.y - 1.5), Vector2(sx + 5.0, sz.y - 1.5), col, bar_h)
-	# Right hazard bracket
-	for i in range(num_stripes):
-		var sx: float = sz.x - 14.0 - (num_stripes - i) * 8.0
-		var col: Color = Color(0.96, 0.78, 0.20, 0.85) if (i % 2 == 0) else Color(0.12, 0.14, 0.18, 0.90)
-		top_bar.draw_line(Vector2(sx, sz.y - 1.5), Vector2(sx + 5.0, sz.y - 1.5), col, bar_h)
-
 
 func _on_bottom_bar_draw() -> void:
 	if bottom_bar == null:
@@ -3053,20 +3039,6 @@ func _on_bottom_bar_draw() -> void:
 	# Industrial Corner Hex Screws
 	_draw_terminal_bolt(bottom_bar, Vector2(10.0, sz.y - 10.0))
 	_draw_terminal_bolt(bottom_bar, Vector2(sz.x - 10.0, sz.y - 10.0))
-
-	# Industrial hazard caution stripes along top edge
-	var bar_h: float = 3.0
-	var num_stripes: int = 5
-	# Left hazard bracket
-	for i in range(num_stripes):
-		var sx: float = 14.0 + i * 8.0
-		var col: Color = Color(0.96, 0.78, 0.20, 0.85) if (i % 2 == 0) else Color(0.12, 0.14, 0.18, 0.90)
-		bottom_bar.draw_line(Vector2(sx, 1.5), Vector2(sx + 5.0, 1.5), col, bar_h)
-	# Right hazard bracket
-	for i in range(num_stripes):
-		var sx: float = sz.x - 14.0 - (num_stripes - i) * 8.0
-		var col: Color = Color(0.96, 0.78, 0.20, 0.85) if (i % 2 == 0) else Color(0.12, 0.14, 0.18, 0.90)
-		bottom_bar.draw_line(Vector2(sx, 1.5), Vector2(sx + 5.0, 1.5), col, bar_h)
 
 
 func _draw_terminal_bolt(ci: CanvasItem, pos: Vector2) -> void:
