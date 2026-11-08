@@ -2271,10 +2271,10 @@ func _draw_wall(rect: Rect2, pos: Vector2i = Vector2i.ZERO) -> void:
 	draw_texture_rect(active_wall_tex, rect, false, wall_tint)
 
 	# Adjacency checks (UP, DOWN, LEFT, RIGHT)
-	var wall_u: bool = grid != null and not grid.is_interior_floor(pos + Vector2i.UP)
-	var wall_d: bool = grid != null and not grid.is_interior_floor(pos + Vector2i.DOWN)
-	var wall_l: bool = grid != null and not grid.is_interior_floor(pos + Vector2i.LEFT)
-	var wall_r: bool = grid != null and not grid.is_interior_floor(pos + Vector2i.RIGHT)
+	var wall_u: bool = grid != null and grid.is_wall(pos + Vector2i.UP)
+	var wall_d: bool = grid != null and grid.is_wall(pos + Vector2i.DOWN)
+	var wall_l: bool = grid != null and grid.is_wall(pos + Vector2i.LEFT)
+	var wall_r: bool = grid != null and grid.is_wall(pos + Vector2i.RIGHT)
 
 	# 2. Continuous Wall Coping: top highlight only on exposed upper edge
 	if not wall_u:
