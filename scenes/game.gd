@@ -2566,11 +2566,7 @@ func _draw_crate(rect: Rect2, on_goal: bool, logical_pos: Vector2i = Vector2i.ZE
 				var c_len: float = draw_r.size.x * 0.35
 				draw_line(c_center - Vector2(c_len * 0.5, c_len * 0.5), c_center + Vector2(c_len * 0.5, c_len * 0.5), h_col, 3.5)
 				draw_line(c_center - Vector2(c_len * 0.5, -c_len * 0.5), c_center + Vector2(c_len * 0.5, -c_len * 0.5), h_col, 3.5)
-				# Glowing hazard border rim
-				draw_rect(draw_r.grow(-2), Color(1.0, 0.75, 0.15, 0.55), false, 1.5)
 			"cryo_vault":
-				# Sub-zero icy frost border and chilled corner brackets
-				draw_rect(draw_r.grow(-2), Color(0.40, 0.88, 1.0, 0.65), false, 1.5)
 				# 4 Frost crystalline corner studs
 				var pad: float = draw_r.size.x * 0.18
 				var frost_pts = [
@@ -2580,16 +2576,9 @@ func _draw_crate(rect: Rect2, on_goal: bool, logical_pos: Vector2i = Vector2i.ZE
 					draw_r.position + Vector2(draw_r.size.x - pad, draw_r.size.y - pad)
 				]
 				for pt in frost_pts:
-					draw_circle(pt, 2.2, Color(0.85, 0.98, 1.0, 0.90))
-					draw_circle(pt, 1.0, Color(1.0, 1.0, 1.0, 1.0))
-				# Center snowflake cross accent
-				var cr_sz: float = draw_r.size.x * 0.16
-				draw_line(c_center - Vector2(cr_sz, 0), c_center + Vector2(cr_sz, 0), Color(0.70, 0.95, 1.0, 0.80), 1.5)
-				draw_line(c_center - Vector2(0, cr_sz), c_center + Vector2(0, cr_sz), Color(0.70, 0.95, 1.0, 0.80), 1.5)
+					draw_circle(pt, 2.0, Color(0.85, 0.98, 1.0, 0.85))
+					draw_circle(pt, 0.9, Color(1.0, 1.0, 1.0, 0.95))
 			"luxury_safe":
-				# Double gold-leaf prestige border rim
-				draw_rect(draw_r.grow(-2), Color(1.0, 0.84, 0.20, 0.85), false, 1.8)
-				draw_rect(draw_r.grow(-4), Color(0.85, 0.65, 0.15, 0.50), false, 1.0)
 				# Central brass vault combination dial
 				draw_circle(c_center, 6.0, Color(0.12, 0.10, 0.08, 0.85))
 				draw_circle(c_center, 5.0, Color(1.0, 0.86, 0.28, 0.95))
