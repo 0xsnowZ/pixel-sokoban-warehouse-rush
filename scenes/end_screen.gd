@@ -9,7 +9,7 @@ extends Control
 ## - Multi-language localization (EN, FR, AR)
 ## - Replay / Level select and Main Menu navigation buttons
 
-const SaveManagerScript = preload("res://scripts/save_manager.gd")
+const SaveManagerScript: GDScript = preload("res://scripts/save_manager.gd")
 
 var save_mgr: Node = null
 var audio_mgr: Node = null
@@ -83,7 +83,7 @@ func _ready() -> void:
 	_attach_spring_physics(menu_btn)
 
 	if has_node("Margin/VBox/TrophyIcon"):
-		var trophy = $Margin/VBox/TrophyIcon
+		var trophy: Control = $Margin/VBox/TrophyIcon as Control
 		trophy.pivot_offset = trophy.custom_minimum_size / 2.0 if trophy.size == Vector2.ZERO else trophy.size / 2.0
 		var tw: Tween = create_tween().set_loops()
 		tw.tween_property(trophy, "scale", Vector2(1.08, 1.08), 1.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
@@ -114,7 +114,7 @@ func _update_ui() -> void:
 			total_stars += rec.get("stars", 0)
 
 	if has_node("Margin/VBox/StatsPanel/PanelMargin/PanelVBox/StarsSummaryLabel"):
-		var stars_lbl = $Margin/VBox/StatsPanel/PanelMargin/PanelVBox/StarsSummaryLabel as Label
+		var stars_lbl: Label = $Margin/VBox/StatsPanel/PanelMargin/PanelVBox/StarsSummaryLabel as Label
 		stars_lbl.text = "★ Total Stars: %d / 225 ★" % total_stars
 
 	if loc_mgr:
@@ -257,8 +257,9 @@ func _on_menu_pressed() -> void:
 
 
 func _attach_spring_physics(btn: Button) -> void:
-	if btn == null:
+	if btn == null or btn.has_meta("has_spring_physics"):
 		return
+	btn.set_meta("has_spring_physics", true)
 	btn.pivot_offset = btn.size / 2.0
 	btn.button_down.connect(func():
 		btn.pivot_offset = btn.size / 2.0

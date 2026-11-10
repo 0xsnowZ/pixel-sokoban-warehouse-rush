@@ -12,12 +12,13 @@ config_version=5
 
 config/name="Pixel Sokoban: Warehouse Rush"
 run/main_scene="res://scenes/splash_screen.tscn"
-config/features=PackedStringArray("4.7", "Forward Plus")
+config/features=PackedStringArray("4.7", "GL Compatibility")
 boot_splash/bg_color=Color(0.0235294, 0.0352941, 0.0666667, 1)
 boot_splash/image="res://assets/splash.png"
 boot_splash/stretch_mode=4
 config/icon="res://icon.png"
 boot_splash/minimum_display_time=200
+run/max_fps=60
 
 [autoload]
 
@@ -50,5 +51,10 @@ pointing/emulate_mouse_from_touch=true
 
 [rendering]
 
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true
+2d/snap/snap_2d_transforms_to_pixel=true
+2d/snap/snap_2d_vertices_to_pixel=true
+environment/defaults/default_clear_color=Color(0.0235294, 0.0352941, 0.0666667, 1)
 

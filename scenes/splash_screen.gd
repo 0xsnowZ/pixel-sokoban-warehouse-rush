@@ -33,7 +33,7 @@ func _ready() -> void:
 	if is_inside_tree() and get_viewport() != null:
 		get_viewport().size_changed.connect(_on_viewport_size_changed)
 
-	var safe_mgr = null
+	var safe_mgr: Node = null
 	if is_inside_tree() and get_tree() and get_tree().root:
 		safe_mgr = get_tree().root.get_node_or_null("SafeAreaManager")
 	if safe_mgr and safe_mgr.has_signal("safe_area_changed"):
@@ -43,7 +43,7 @@ func _ready() -> void:
 	if background:
 		var vp_sz: Vector2 = get_viewport_rect().size if is_inside_tree() and get_viewport() != null else Vector2(540.0, 960.0)
 		background.pivot_offset = vp_sz / 2.0
-		var bg_tw = create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		var bg_tw: Tween = create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 		bg_tw.tween_property(background, "scale", Vector2(1.035, 1.035), duration)
 
 	if margin:
@@ -71,7 +71,7 @@ func _apply_safe_area(custom_insets: Dictionary = {}) -> void:
 		return
 	var insets: Dictionary = custom_insets
 	if insets.is_empty():
-		var safe_mgr = null
+		var safe_mgr: Node = null
 		if is_inside_tree() and get_tree() and get_tree().root:
 			safe_mgr = get_tree().root.get_node_or_null("SafeAreaManager")
 		if safe_mgr and safe_mgr.has_method("get_safe_insets"):
@@ -246,7 +246,7 @@ func skip_to_main_menu() -> void:
 
 
 func _trigger_haptic() -> void:
-	var haptic_mgr = null
+	var haptic_mgr: Node = null
 	if is_inside_tree() and get_tree() and get_tree().root:
 		haptic_mgr = get_tree().root.get_node_or_null("HapticManager")
 	if haptic_mgr and haptic_mgr.has_method("play_click"):
@@ -260,7 +260,7 @@ func _transition_to_menu(fade_time: float = 0.35) -> void:
 
 	_ensure_node_refs()
 	if fade_overlay:
-		var fade = create_tween()
+		var fade: Tween = create_tween()
 		if fade:
 			fade.tween_property(fade_overlay, "modulate:a", 1.0, fade_time)
 			fade.tween_callback(_change_scene)
@@ -271,6 +271,6 @@ func _transition_to_menu(fade_time: float = 0.35) -> void:
 
 
 func _change_scene() -> void:
-	var tree = get_tree()
+	var tree: SceneTree = get_tree()
 	if tree:
 		tree.change_scene_to_file(MAIN_MENU_SCENE_PATH)

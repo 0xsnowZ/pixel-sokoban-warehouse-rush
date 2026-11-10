@@ -19,6 +19,13 @@ const TEST_SCRIPTS: Array[String] = [
 	"tests/test_safe_area_manager.gd",
 	"tests/test_splash_screen.gd",
 	"tests/test_achievement_manager.gd",
+	"tests/test_game_feel.gd",
+	"tests/test_hint_performance.gd",
+	"tests/test_level3_hint_deadlock.gd",
+	"tests/test_live_star_tracker.gd",
+	"tests/test_non_square_framing.gd",
+	"tests/test_terminal_console_ui.gd",
+	"tests/test_visual_atmosphere.gd",
 	"scripts/verify_levels.gd"
 ]
 

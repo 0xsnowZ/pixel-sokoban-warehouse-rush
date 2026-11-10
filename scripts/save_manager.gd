@@ -469,13 +469,13 @@ func from_dict(data: Dictionary) -> void:
 	var economy: Dictionary = data.get("economy", {})
 	hints_remaining = int(economy.get("hints_remaining", 3))
 	total_crates_pushed = int(economy.get("total_crates_pushed", 0))
-	var raw_achievements = economy.get("unlocked_achievements", [])
+	var raw_achievements: Array = economy.get("unlocked_achievements", []) as Array
 	unlocked_achievements = []
 	for a in raw_achievements:
 		unlocked_achievements.append(str(a))
 	last_hint_refill_date = str(economy.get("last_hint_refill_date", ""))
 
-	var raw_vaults = economy.get("claimed_star_vaults", [])
+	var raw_vaults: Array = economy.get("claimed_star_vaults", []) as Array
 	claimed_star_vaults = []
 	for v in raw_vaults:
 		claimed_star_vaults.append(int(v))

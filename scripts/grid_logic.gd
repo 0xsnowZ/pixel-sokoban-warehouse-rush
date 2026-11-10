@@ -175,7 +175,7 @@ func _compute_interior_floor() -> void:
 				queue.append(nxt)
 
 
-const LevelData = preload("res://scripts/level_data.gd")
+const LevelData: GDScript = preload("res://scripts/level_data.gd")
 
 ## Loads a level from a file containing standard Sokoban text.
 ## Falls back to embedded LevelData if file is not directly readable.
@@ -524,7 +524,7 @@ func has_deadlock() -> bool:
 
 ## Creates an independent clone of the current GridLogic instance.
 func clone() -> RefCounted:
-	var copy = (get_script() as GDScript).new()
+	var copy: RefCounted = (get_script() as GDScript).new()
 	copy.width = width
 	copy.height = height
 	copy.player_pos = player_pos

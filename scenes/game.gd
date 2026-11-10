@@ -4,8 +4,8 @@ extends Control
 ## Renders the grid, handles swipes and keyboard input, animates moves,
 ## and implements PRD Section 4 & 5 gameplay and UI requirements.
 
-const SaveManagerScript = preload("res://scripts/save_manager.gd")
-const SokobanSolverScript = preload("res://scripts/sokoban_solver.gd")
+const SaveManagerScript: GDScript = preload("res://scripts/save_manager.gd")
+const SokobanSolverScript: GDScript = preload("res://scripts/sokoban_solver.gd")
 
 # Levels available (75 verified solvable levels)
 var level_paths: Array[String] = _get_default_level_paths()
@@ -206,7 +206,18 @@ var ad_reward_modal: PanelContainer = null
 @onready var star_2: Label = $WinModal.find_child("Star2", true, false) if has_node("WinModal") else null
 @onready var star_3: Label = $WinModal.find_child("Star3", true, false) if has_node("WinModal") else null
 @onready var restart_dialog: ConfirmationDialog = $RestartConfirmDialog
+@onready var dim_overlay: ColorRect = $DimOverlay if has_node("DimOverlay") else null
+@onready var moves_card: PanelContainer = $WinModal.find_child("MovesCard", true, false) as PanelContainer if has_node("WinModal") else null
+@onready var time_card: PanelContainer = $WinModal.find_child("TimeCard", true, false) as PanelContainer if has_node("WinModal") else null
+@onready var pushes_card: PanelContainer = $WinModal.find_child("PushesCard", true, false) as PanelContainer if has_node("WinModal") else null
+@onready var moves_val_lbl: Label = moves_card.find_child("Val", true, false) as Label if moves_card else null
+@onready var time_val_lbl: Label = time_card.find_child("Val", true, false) as Label if time_card else null
+@onready var pushes_val_lbl: Label = pushes_card.find_child("Val", true, false) as Label if pushes_card else null
+@onready var moves_title_lbl: Label = moves_card.find_child("Title", true, false) as Label if moves_card else null
+@onready var time_title_lbl: Label = time_card.find_child("Title", true, false) as Label if time_card else null
+@onready var pushes_title_lbl: Label = pushes_card.find_child("Title", true, false) as Label if pushes_card else null
 
+var _idle_pulse_timer: float = 0.0
 var level_start_time: int = 0
 
 # Board sprite textures
@@ -568,10 +579,8 @@ func load_level(index: int) -> void:
 	current_chapter_idx = get_chapter_index(current_level_index)
 	var ch: Dictionary = get_current_chapter_theme()
 
-	if has_node("DimOverlay"):
-		var dim: ColorRect = get_node("DimOverlay") as ColorRect
-		if dim:
-			dim.color = ch["dim_color"]
+	if dim_overlay:
+		dim_overlay.color = ch["dim_color"]
 
 	if _last_loaded_chapter != -1 and prev_ch != current_chapter_idx:
 		announce_chapter(current_chapter_idx)
@@ -893,17 +902,16 @@ func _on_level_won() -> void:
 	var three_star_target: int = star_targets.get("three_star", optimal_moves + 2)
 
 	# Populate card stats
-	var moves_card = win_modal.find_child("MovesCard", true, false) if win_modal else null
-	var time_card = win_modal.find_child("TimeCard", true, false) if win_modal else null
-	var pushes_card = win_modal.find_child("PushesCard", true, false) if win_modal else null
-
-	var moves_val_lbl = moves_card.find_child("Val", true, false) if moves_card else null
-	var time_val_lbl = time_card.find_child("Val", true, false) if time_card else null
-	var pushes_val_lbl = pushes_card.find_child("Val", true, false) if pushes_card else null
-
-	var moves_title_lbl = moves_card.find_child("Title", true, false) if moves_card else null
-	var time_title_lbl = time_card.find_child("Title", true, false) if time_card else null
-	var pushes_title_lbl = pushes_card.find_child("Title", true, false) if pushes_card else null
+	if moves_val_lbl == null and win_modal != null:
+		moves_card = win_modal.find_child("MovesCard", true, false) as PanelContainer
+		time_card = win_modal.find_child("TimeCard", true, false) as PanelContainer
+		pushes_card = win_modal.find_child("PushesCard", true, false) as PanelContainer
+		moves_val_lbl = moves_card.find_child("Val", true, false) as Label if moves_card else null
+		time_val_lbl = time_card.find_child("Val", true, false) as Label if time_card else null
+		pushes_val_lbl = pushes_card.find_child("Val", true, false) as Label if pushes_card else null
+		moves_title_lbl = moves_card.find_child("Title", true, false) as Label if moves_card else null
+		time_title_lbl = time_card.find_child("Title", true, false) as Label if time_card else null
+		pushes_title_lbl = pushes_card.find_child("Title", true, false) as Label if pushes_card else null
 
 	if moves_val_lbl: moves_val_lbl.text = str(grid.moves_count)
 	if time_val_lbl: time_val_lbl.text = time_formatted
@@ -965,7 +973,7 @@ func _on_level_won() -> void:
 
 func _animate_stars_sequence(stars: Array, earned: int, gold_color: Color) -> void:
 	for i in range(mini(earned, stars.size())):
-		var s = stars[i]
+		var s: Label = stars[i] as Label
 		if s == null:
 			continue
 		var star_num: int = i + 1
@@ -1812,9 +1820,12 @@ func _process(delta: float) -> void:
 		if hint_time_remaining <= 0.0:
 			clear_hint()
 
-	# Subtle continuous breathing pulse for goals
+	# Subtle continuous breathing pulse for goals: throttled to 30 FPS during idle to conserve battery
 	if grid and not grid.goals.is_empty():
-		needs_redraw = true
+		_idle_pulse_timer += delta
+		if _idle_pulse_timer >= 0.033:
+			_idle_pulse_timer = 0.0
+			needs_redraw = true
 
 	# Update board trauma & shake
 	if board_trauma > 0.0:
@@ -1843,7 +1854,6 @@ func _process(delta: float) -> void:
 
 	# Option B: Update floating ambient warehouse motes
 	if not ambient_motes.is_empty() and (win_modal == null or not win_modal.visible):
-		needs_redraw = true
 		for mote in ambient_motes:
 			mote["phase"] += delta * 1.35 * mote.get("speed_mult", 1.0)
 			var drift: Vector2 = mote["vel"] + Vector2(cos(mote["phase"]) * 0.006, sin(mote["phase"] * 0.8) * 0.005)
@@ -1996,17 +2006,24 @@ func _draw() -> void:
 	var is_non_square: bool = is_level_non_square()
 
 	# 1. Industrial Warehouse 2.5D Silhouette Drop Shadow (Natural depth, no artificial border frames or screws)
-	for y in range(grid.height):
-		for x in range(grid.width):
-			var pos: Vector2i = Vector2i(x, y)
-			if not grid.is_exterior_void(pos):
-				var s_rect: Rect2 = Rect2(effective_origin + Vector2(x, y) * tile_size, Vector2(tile_size, tile_size))
-				# Layer 3: Distant soft ambient penumbra
-				draw_rect(Rect2(s_rect.position + Vector2(8, 12), s_rect.size + Vector2(6, 6)), Color(0.0, 0.0, 0.0, 0.12))
-				# Layer 2: Mid directional shadow
-				draw_rect(Rect2(s_rect.position + Vector2(5, 7), s_rect.size + Vector2(3, 3)), Color(0.0, 0.0, 0.0, 0.24))
-				# Layer 1: Tight perimeter contact depth
-				draw_rect(Rect2(s_rect.position + Vector2(2, 3), s_rect.size), Color(0.0, 0.0, 0.0, 0.45))
+	if grid.exterior_void.is_empty():
+		# Fast path: Solid rectangular warehouse room; batch entire silhouette shadow into 3 passes
+		var full_rect: Rect2 = Rect2(effective_origin, board_pixel_size)
+		draw_rect(Rect2(full_rect.position + Vector2(8, 12), full_rect.size + Vector2(6, 6)), Color(0.0, 0.0, 0.0, 0.12))
+		draw_rect(Rect2(full_rect.position + Vector2(5, 7), full_rect.size + Vector2(3, 3)), Color(0.0, 0.0, 0.0, 0.24))
+		draw_rect(Rect2(full_rect.position + Vector2(2, 3), full_rect.size), Color(0.0, 0.0, 0.0, 0.45))
+	else:
+		for y in range(grid.height):
+			for x in range(grid.width):
+				var pos: Vector2i = Vector2i(x, y)
+				if not grid.is_exterior_void(pos):
+					var s_rect: Rect2 = Rect2(effective_origin + Vector2(x, y) * tile_size, Vector2(tile_size, tile_size))
+					# Layer 3: Distant soft ambient penumbra
+					draw_rect(Rect2(s_rect.position + Vector2(8, 12), s_rect.size + Vector2(6, 6)), Color(0.0, 0.0, 0.0, 0.12))
+					# Layer 2: Mid directional shadow
+					draw_rect(Rect2(s_rect.position + Vector2(5, 7), s_rect.size + Vector2(3, 3)), Color(0.0, 0.0, 0.0, 0.24))
+					# Layer 1: Tight perimeter contact depth
+					draw_rect(Rect2(s_rect.position + Vector2(2, 3), s_rect.size), Color(0.0, 0.0, 0.0, 0.45))
 
 	# 2. Draw Floor & Walls with Clean, Unified Architecture
 	for y in range(grid.height):
@@ -2569,7 +2586,7 @@ func _draw_crate(rect: Rect2, on_goal: bool, logical_pos: Vector2i = Vector2i.ZE
 			"cryo_vault":
 				# 4 Frost crystalline corner studs
 				var pad: float = draw_r.size.x * 0.18
-				var frost_pts = [
+				var frost_pts: Array[Vector2] = [
 					draw_r.position + Vector2(pad, pad),
 					draw_r.position + Vector2(draw_r.size.x - pad, pad),
 					draw_r.position + Vector2(pad, draw_r.size.y - pad),
@@ -2585,7 +2602,7 @@ func _draw_crate(rect: Rect2, on_goal: bool, logical_pos: Vector2i = Vector2i.ZE
 				draw_circle(c_center, 2.0, Color(0.30, 0.20, 0.05, 1.0))
 				# 4 Gold corner rivets
 				var g_pad: float = draw_r.size.x * 0.14
-				var g_corners = [
+				var g_corners: Array[Vector2] = [
 					draw_r.position + Vector2(g_pad, g_pad),
 					draw_r.position + Vector2(draw_r.size.x - g_pad, g_pad),
 					draw_r.position + Vector2(g_pad, draw_r.size.y - g_pad),
@@ -3000,9 +3017,10 @@ func _spawn_goal_effect(goal_pos: Vector2i) -> void:
 
 
 func _attach_spring_physics(btn: Button) -> void:
-	if btn == null:
+	if btn == null or btn.has_meta("has_spring_physics"):
 		return
-	var calc_pivot = func():
+	btn.set_meta("has_spring_physics", true)
+	var calc_pivot: Callable = func() -> void:
 		var sz: Vector2 = btn.custom_minimum_size if btn.size == Vector2.ZERO else btn.size
 		btn.pivot_offset = sz / 2.0
 	calc_pivot.call()
@@ -3158,7 +3176,7 @@ func _show_ad_reward_modal() -> void:
 		ad_reward_modal = _create_ad_reward_modal()
 	ad_reward_modal.show()
 	ad_reward_modal.modulate.a = 0.0
-	var tw = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	var tw: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.tween_property(ad_reward_modal, "modulate:a", 1.0, 0.18)
 
 
@@ -3203,7 +3221,7 @@ func _on_rewarded_hints_earned(reward_type: String, amount: int) -> void:
 			save_mgr.add_hints(amount)
 		_hide_ad_reward_modal()
 		_update_hint_button_text()
-		var msg = loc_mgr.tr_text("TOAST_HINTS_ADDED") if loc_mgr else "+3 Hints Added!"
+		var msg: String = loc_mgr.tr_text("TOAST_HINTS_ADDED") if loc_mgr else "+3 Hints Added!"
 		_show_hint_toast(msg, Color(0.4, 1.0, 0.6))
 		if audio_mgr:
 			audio_mgr.play_win()
@@ -3216,7 +3234,7 @@ func _check_achievements() -> void:
 	if achievement_mgr != null and save_mgr != null:
 		var newly_unlocked: Array[String] = achievement_mgr.evaluate_progress(save_mgr)
 		for id in newly_unlocked:
-			var info = achievement_mgr.get_achievement_info(id)
+			var info: Dictionary = achievement_mgr.get_achievement_info(id)
 			_show_achievement_toast(info)
 
 

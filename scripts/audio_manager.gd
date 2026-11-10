@@ -106,13 +106,13 @@ func _load_bgm_streams() -> void:
 	for track in BGM_TRACKS:
 		var path: String = track["path"]
 		if ResourceLoader.exists(path):
-			var stream = load(path)
+			var stream: Resource = load(path)
 			if stream != null:
 				if stream is AudioStreamOggVorbis:
 					stream.loop = true
 				_bgm_streams[track["id"]] = stream
 		elif FileAccess.file_exists(path):
-			var stream = AudioStreamOggVorbis.load_from_file(path)
+			var stream: AudioStreamOggVorbis = AudioStreamOggVorbis.load_from_file(path)
 			if stream != null:
 				stream.loop = true
 				_bgm_streams[track["id"]] = stream
@@ -169,10 +169,10 @@ func play_music(track_index: int = -1) -> void:
 		if save_mgr.has_method("save_data"):
 			save_mgr.save_data()
 
-	var stream = _bgm_streams.get(track_index, null)
+	var stream: AudioStream = _bgm_streams.get(track_index, null) as AudioStream
 	if stream == null:
 		_load_bgm_streams()
-		stream = _bgm_streams.get(track_index, null)
+		stream = _bgm_streams.get(track_index, null) as AudioStream
 
 	if stream != null and music_player != null:
 		music_player.stream = stream

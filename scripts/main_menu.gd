@@ -7,8 +7,8 @@ extends Control
 ## - Sound on/off toggle persisted via SaveManager
 ## - Credits popup
 
-const SaveManagerScript = preload("res://scripts/save_manager.gd")
-const AchievementManagerScript = preload("res://scripts/achievement_manager.gd")
+const SaveManagerScript: GDScript = preload("res://scripts/save_manager.gd")
+const AchievementManagerScript: GDScript = preload("res://scripts/achievement_manager.gd")
 const TOTAL_LEVELS_COUNT: int = 75
 const AVAILABLE_LEVELS_COUNT: int = 75 # All 75 verified solvable levels active
 
@@ -176,7 +176,7 @@ func _ready() -> void:
 	if is_inside_tree() and get_tree().root.has_node("AchievementManager"):
 		achievement_mgr = get_tree().root.get_node("AchievementManager")
 	else:
-		var ach_script = load("res://scripts/achievement_manager.gd")
+		var ach_script: GDScript = load("res://scripts/achievement_manager.gd") as GDScript
 		if ach_script:
 			achievement_mgr = ach_script.new()
 			achievement_mgr.save_mgr = save_mgr
@@ -717,10 +717,10 @@ func _refresh_locker_ui() -> void:
 		child.queue_free()
 
 	if current_locker_tab == "outfits":
-		var skins = save_mgr.get_all_worker_skins()
+		var skins: Array[Dictionary] = save_mgr.get_all_worker_skins()
 		var player_tex: Texture2D = preload("res://assets/player_down.png")
 		for skin in skins:
-			var card = _create_locker_item_card(
+			var card: Control = _create_locker_item_card(
 				skin["id"],
 				skin.get("icon", "🧢"),
 				loc_mgr.tr_text(skin["name_key"]) if loc_mgr else skin.get("name", ""),
@@ -734,10 +734,10 @@ func _refresh_locker_ui() -> void:
 			)
 			locker_items_vbox.add_child(card)
 	else:
-		var crates = save_mgr.get_all_crate_skins()
+		var crates: Array[Dictionary] = save_mgr.get_all_crate_skins()
 		var crate_tex: Texture2D = preload("res://assets/crate_normal.png")
 		for crate in crates:
-			var card = _create_locker_item_card(
+			var card: Control = _create_locker_item_card(
 				crate["id"],
 				crate.get("icon", "📦"),
 				loc_mgr.tr_text(crate["name_key"]) if loc_mgr else crate.get("name", ""),
@@ -928,7 +928,7 @@ func _refresh_achievements_ui() -> void:
 		ach_list = achievement_mgr.get_all_achievements()
 	elif save_mgr and save_mgr.has_method("get_unlocked_achievements"):
 		# In case achievement_mgr is absent, build from save_mgr
-		var unlocked = save_mgr.get_unlocked_achievements()
+		var unlocked: Array[String] = save_mgr.get_unlocked_achievements()
 		ach_list = []
 
 	var unlocked_count: int = 0
@@ -964,7 +964,7 @@ func _refresh_achievements_ui() -> void:
 		elif save_mgr and save_mgr.has_method("is_achievement_unlocked"):
 			is_unlocked = save_mgr.is_achievement_unlocked(ach.get("id", ""))
 
-		var card = _create_achievement_item_card(
+		var card: Control = _create_achievement_item_card(
 			ach.get("id", ""),
 			ach.get("icon", "🏆"),
 			loc_mgr.tr_text(ach.get("title_key", "")) if loc_mgr else ach.get("title", ""),
@@ -1181,7 +1181,7 @@ func _update_menu_state() -> void:
 			credits_btn.text = loc_mgr.tr_text("MENU_CREDITS")
 		if back_btn != null:
 			back_btn.text = loc_mgr.tr_text("BTN_BACK")
-		var lvl_title = find_child("Title", true, false)
+		var lvl_title: Label = find_child("Title", true, false) as Label
 		if has_node("LevelSelectView/TopBar/Margin/HBox/Title"):
 			$LevelSelectView/TopBar/Margin/HBox/Title.text = loc_mgr.tr_text("LEVEL_SELECT_TITLE")
 		if has_node("CreditsModal/VBox/Title"):
@@ -1249,7 +1249,7 @@ func _update_menu_state() -> void:
 			daily_shift_btn.add_theme_font_size_override("font_size", 14)
 			daily_shift_btn.pressed.connect(_on_daily_shift_pressed)
 			_attach_spring_physics(daily_shift_btn)
-			var dual_deck = deck.find_child("DualDeck", false, false)
+			var dual_deck: Control = deck.find_child("DualDeck", false, false) as Control
 			if dual_deck != null:
 				deck.add_child(daily_shift_btn)
 				deck.move_child(daily_shift_btn, dual_deck.get_index())
@@ -1361,7 +1361,7 @@ func _refresh_level_grid_buttons() -> void:
 	var total_stars: int = save_mgr.get_total_stars() if save_mgr != null else 0
 
 	if has_node("LevelSelectView/TopBar/Margin/HBox/TotalStarsLabel") and save_mgr != null:
-		var stars_lbl = get_node("LevelSelectView/TopBar/Margin/HBox/TotalStarsLabel") as Label
+		var stars_lbl: Label = get_node("LevelSelectView/TopBar/Margin/HBox/TotalStarsLabel") as Label
 		stars_lbl.text = "%d / 225 Stars" % total_stars
 
 	# Update Campaign Banner card if present
@@ -1472,6 +1472,8 @@ func _refresh_level_grid_buttons() -> void:
 	if active_frontier_btn != null and active_frontier_btn.is_inside_tree():
 		var p_sz: Vector2 = active_frontier_btn.custom_minimum_size if active_frontier_btn.size == Vector2.ZERO else active_frontier_btn.size
 		active_frontier_btn.pivot_offset = p_sz / 2.0
+		if current_level_pulse_tw and current_level_pulse_tw.is_valid():
+			current_level_pulse_tw.kill()
 		current_level_pulse_tw = create_tween().set_loops()
 		current_level_pulse_tw.tween_property(active_frontier_btn, "scale", Vector2(1.05, 1.05), 0.75).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		current_level_pulse_tw.tween_property(active_frontier_btn, "scale", Vector2.ONE, 0.75).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
@@ -1490,7 +1492,7 @@ func _scroll_to_button(btn: Button) -> void:
 func _do_scroll_to_button(scroll_cnt: ScrollContainer, btn: Button) -> void:
 	if not is_instance_valid(scroll_cnt) or not is_instance_valid(btn) or not btn.is_inside_tree():
 		return
-	var v_scroll = scroll_cnt.get_v_scroll_bar()
+	var v_scroll: VScrollBar = scroll_cnt.get_v_scroll_bar()
 	if v_scroll != null and v_scroll.max_value > scroll_cnt.size.y:
 		var btn_y: float = btn.global_position.y - scroll_cnt.global_position.y + scroll_cnt.scroll_vertical
 		var target_scroll: float = btn_y - (scroll_cnt.size.y * 0.4)
@@ -1509,9 +1511,10 @@ func _on_level_button_pressed(level_index: int) -> void:
 
 
 func _attach_spring_physics(btn: Button) -> void:
-	if btn == null:
+	if btn == null or btn.has_meta("has_spring_physics"):
 		return
-	var calc_pivot = func():
+	btn.set_meta("has_spring_physics", true)
+	var calc_pivot: Callable = func() -> void:
 		var sz: Vector2 = btn.custom_minimum_size if btn.size == Vector2.ZERO else btn.size
 		btn.pivot_offset = sz / 2.0
 	calc_pivot.call()
@@ -1599,7 +1602,7 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 
 	star_vault_modal.show()
 	star_vault_modal.modulate.a = 0.0
-	var tw = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	var tw: Tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.tween_property(star_vault_modal, "modulate:a", 1.0, 0.20)
 	if audio_mgr:
 		audio_mgr.play_star(3)

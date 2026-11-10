@@ -116,7 +116,7 @@ func get_all_achievements() -> Array[Dictionary]:
 
 ## Returns true if the achievement is already unlocked in save data.
 func is_unlocked(id: String, custom_save_mgr: Node = null) -> bool:
-	var mgr = custom_save_mgr if custom_save_mgr != null else save_mgr
+	var mgr: Node = custom_save_mgr if custom_save_mgr != null else save_mgr
 	if mgr != null:
 		return mgr.is_achievement_unlocked(id)
 	return false
@@ -124,8 +124,8 @@ func is_unlocked(id: String, custom_save_mgr: Node = null) -> bool:
 
 ## Attempts to unlock an achievement. Returns true if newly unlocked.
 func unlock(id: String, custom_save_mgr: Node = null) -> bool:
-	var mgr = custom_save_mgr if custom_save_mgr != null else save_mgr
-	var info = get_achievement_info(id)
+	var mgr: Node = custom_save_mgr if custom_save_mgr != null else save_mgr
+	var info: Dictionary = get_achievement_info(id)
 	if info.is_empty():
 		return false
 
@@ -140,7 +140,7 @@ func unlock(id: String, custom_save_mgr: Node = null) -> bool:
 
 ## Evaluates game progress against achievement milestones.
 func evaluate_progress(custom_save_mgr: Node = null) -> Array[String]:
-	var mgr = custom_save_mgr if custom_save_mgr != null else save_mgr
+	var mgr: Node = custom_save_mgr if custom_save_mgr != null else save_mgr
 	var newly_unlocked: Array[String] = []
 	if mgr == null:
 		return newly_unlocked
@@ -208,7 +208,7 @@ func evaluate_progress(custom_save_mgr: Node = null) -> Array[String]:
 
 ## Returns number of unlocked achievements out of 9.
 func get_unlocked_count(custom_save_mgr: Node = null) -> int:
-	var mgr = custom_save_mgr if custom_save_mgr != null else save_mgr
+	var mgr: Node = custom_save_mgr if custom_save_mgr != null else save_mgr
 	if mgr == null:
 		return 0
 	return mgr.unlocked_achievements.size()

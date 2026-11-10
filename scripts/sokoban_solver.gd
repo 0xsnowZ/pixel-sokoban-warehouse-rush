@@ -8,7 +8,7 @@ extends RefCounted
 ## - Prunes corner deadlocks and unpushable states.
 ## - Returns solvability status, minimum moves, minimum pushes, and solution string.
 
-const GridLogicScript = preload("res://scripts/grid_logic.gd")
+const GridLogicScript: GDScript = preload("res://scripts/grid_logic.gd")
 
 class SolverResult:
 	var is_solvable: bool = false
@@ -42,7 +42,7 @@ static func load_solutions() -> Dictionary:
 		if f != null:
 			var txt: String = f.get_as_text()
 			f.close()
-			var parsed = JSON.parse_string(txt)
+			var parsed: Variant = JSON.parse_string(txt)
 			if parsed is Dictionary:
 				_solutions_cache = parsed
 	return _solutions_cache
