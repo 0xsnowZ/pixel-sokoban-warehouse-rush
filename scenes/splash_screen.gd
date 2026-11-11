@@ -53,6 +53,7 @@ func _ready() -> void:
 			margin_fade.tween_property(margin, "modulate:a", 1.0, 0.25).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 	_update_localized_text(0.0)
+	ResourceLoader.load_threaded_request(MAIN_MENU_SCENE_PATH)
 	_start_loading_animation()
 	_start_prompt_pulse()
 
@@ -142,6 +143,13 @@ func _ensure_node_refs() -> void:
 		status_label = get_node_or_null("Margin/BottomVBox/StatusLabel")
 	if not prompt_label:
 		prompt_label = get_node_or_null("Margin/BottomVBox/PromptLabel")
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		skip_to_main_menu()
+		if get_viewport():
+			get_viewport().set_input_as_handled()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -272,5 +280,11 @@ func _transition_to_menu(fade_time: float = 0.35) -> void:
 
 func _change_scene() -> void:
 	var tree: SceneTree = get_tree()
-	if tree:
-		tree.change_scene_to_file(MAIN_MENU_SCENE_PATH)
+	if not tree:
+		return
+	if ResourceLoader.load_threaded_get_status(MAIN_MENU_SCENE_PATH) == ResourceLoader.THREAD_LOAD_LOADED:
+		var scene: PackedScene = ResourceLoader.load_threaded_get(MAIN_MENU_SCENE_PATH) as PackedScene
+		if scene != null:
+			tree.change_scene_to_packed(scene)
+			return
+	tree.change_scene_to_file(MAIN_MENU_SCENE_PATH)

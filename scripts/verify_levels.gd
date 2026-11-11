@@ -4,8 +4,8 @@ extends SceneTree
 ## Solves every shipped level on disk, executes the solution, and validates progression bounds.
 ## Run via: godot --headless --path . -s scripts/verify_levels.gd
 
-const SokobanSolverScript = preload("res://scripts/sokoban_solver.gd")
-const GridLogicScript = preload("res://scripts/grid_logic.gd")
+const SokobanSolverScript: GDScript = preload("res://scripts/sokoban_solver.gd")
+const GridLogicScript: GDScript = preload("res://scripts/grid_logic.gd")
 
 const TOTAL_LEVELS: int = 50
 
@@ -33,14 +33,14 @@ func _init() -> void:
 			failures += 1
 			continue
 
-		var grid = GridLogicScript.new()
+		var grid: GridLogic = GridLogicScript.new()
 		if not grid.load_from_file(path):
 			printerr("ERROR: Failed to parse level at %s" % path)
 			failures += 1
 			continue
 
 		var start_solve: int = Time.get_ticks_msec()
-		var res = SokobanSolverScript.solve(grid, 80000)
+		var res: SokobanSolver.SolverResult = SokobanSolverScript.solve(grid, 80000)
 		var elapsed_ms: float = float(Time.get_ticks_msec() - start_solve)
 
 		if not res.is_solvable:
@@ -49,7 +49,7 @@ func _init() -> void:
 			continue
 
 		# Verify executing solver solution produces a winning state
-		var sim_grid = grid.clone()
+		var sim_grid: GridLogic = grid.clone()
 		var executed_moves: int = sim_grid.execute_moves(res.solution_str)
 		if not sim_grid.is_won():
 			printerr("FAIL: Level %02d solution did not solve the level!" % lvl)

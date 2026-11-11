@@ -10,6 +10,10 @@ extends Control
 ## - Replay / Level select and Main Menu navigation buttons
 
 const SaveManagerScript: GDScript = preload("res://scripts/save_manager.gd")
+const MAIN_MENU_SCENE_PATH: String = "res://scenes/main_menu.tscn"
+
+const MAX_CELEBRATION_PARTICLES: int = 40
+var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 var save_mgr: Node = null
 var audio_mgr: Node = null
@@ -43,6 +47,8 @@ func _initialize_nodes() -> void:
 
 func _ready() -> void:
 	_initialize_nodes()
+	_rng.randomize()
+	ResourceLoader.load_threaded_request(MAIN_MENU_SCENE_PATH)
 
 	if save_mgr == null:
 		if is_inside_tree() and get_tree().root.has_node("SaveManager"):
@@ -169,27 +175,26 @@ func _spawn_initial_confetti() -> void:
 func _process(delta: float) -> void:
 	particle_spawn_timer += delta
 	# Continuous slow celebratory confetti shower
-	if particle_spawn_timer >= 0.18:
+	if particle_spawn_timer >= 0.18 and celebration_particles.size() < MAX_CELEBRATION_PARTICLES:
 		particle_spawn_timer = 0.0
 		var viewport_sz: Vector2 = size if size != Vector2.ZERO else Vector2(540, 960)
-		var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 		var palette: Array[Color] = [
 			Color(1.0, 0.84, 0.20),
 			Color(0.25, 0.88, 0.45),
 			Color(0.95, 0.28, 0.35),
 			Color(0.35, 0.78, 1.0)
 		]
-		var p_type: String = "star" if (rng.randf() < 0.25) else "ribbon"
+		var p_type: String = "star" if (_rng.randf() < 0.25) else "ribbon"
 		celebration_particles.append({
 			"type": p_type,
-			"pos": Vector2(rng.randf_range(20, viewport_sz.x - 20), -10),
-			"vel": Vector2(rng.randf_range(-40, 40), rng.randf_range(80, 160)),
-			"color": palette[rng.randi() % palette.size()],
-			"size": rng.randf_range(7.0, 11.0),
+			"pos": Vector2(_rng.randf_range(20, viewport_sz.x - 20), -10),
+			"vel": Vector2(_rng.randf_range(-40, 40), _rng.randf_range(80, 160)),
+			"color": palette[_rng.randi() % palette.size()],
+			"size": _rng.randf_range(7.0, 11.0),
 			"life": 3.2,
 			"max_life": 3.2,
-			"rot": rng.randf_range(0.0, TAU),
-			"vrot": rng.randf_range(-4.0, 4.0)
+			"rot": _rng.randf_range(0.0, TAU),
+			"vrot": _rng.randf_range(-4.0, 4.0)
 		})
 
 	var i: int = celebration_particles.size() - 1
@@ -197,7 +202,8 @@ func _process(delta: float) -> void:
 		var p: Dictionary = celebration_particles[i]
 		p["life"] -= delta
 		if p["life"] <= 0.0:
-			celebration_particles.remove_at(i)
+			celebration_particles[i] = celebration_particles.back()
+			celebration_particles.pop_back()
 		else:
 			p["pos"] += p["vel"] * delta
 			p["vel"].y += 120.0 * delta # Gravity
@@ -240,12 +246,28 @@ func _draw() -> void:
 			draw_colored_polygon(pts, p_col)
 
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		_on_menu_pressed()
+		if get_viewport():
+			get_viewport().set_input_as_handled()
+
+
+func _transition_to_main_menu() -> void:
+	if ResourceLoader.load_threaded_get_status(MAIN_MENU_SCENE_PATH) == ResourceLoader.THREAD_LOAD_LOADED:
+		var scene: PackedScene = ResourceLoader.load_threaded_get(MAIN_MENU_SCENE_PATH) as PackedScene
+		if scene != null:
+			get_tree().change_scene_to_packed(scene)
+			return
+	get_tree().change_scene_to_file(MAIN_MENU_SCENE_PATH)
+
+
 func _on_level_select_pressed() -> void:
 	if audio_mgr:
 		audio_mgr.play_click()
 	if haptic_mgr:
 		haptic_mgr.vibrate_click()
-	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+	_transition_to_main_menu()
 
 
 func _on_menu_pressed() -> void:
@@ -253,7 +275,7 @@ func _on_menu_pressed() -> void:
 		audio_mgr.play_click()
 	if haptic_mgr:
 		haptic_mgr.vibrate_click()
-	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+	_transition_to_main_menu()
 
 
 func _attach_spring_physics(btn: Button) -> void:

@@ -39,6 +39,12 @@ window/size/window_height_override=800
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation=1
+window/vsync/vsync_mode=1
+
+[physics]
+
+common/physics_ticks_per_second=30
+2d/default_gravity=0.0
 
 [gui]
 

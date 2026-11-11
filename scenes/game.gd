@@ -6,6 +6,16 @@ extends Control
 
 const SaveManagerScript: GDScript = preload("res://scripts/save_manager.gd")
 const SokobanSolverScript: GDScript = preload("res://scripts/sokoban_solver.gd")
+const MAIN_MENU_SCENE_PATH: String = "res://scenes/main_menu.tscn"
+const END_SCENE_PATH: String = "res://scenes/end_screen.tscn"
+
+const MAX_DUST_PARTICLES: int = 36
+const MAX_GOAL_EFFECTS: int = 32
+const MAX_WIN_PARTICLES: int = 48
+const MAX_VICTORY_RINGS: int = 16
+const MAX_STAR_BURST_PARTICLES: int = 32
+
+var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 # Levels available (75 verified solvable levels)
 var level_paths: Array[String] = _get_default_level_paths()
@@ -382,6 +392,9 @@ func _initialize_nodes() -> void:
 
 func _ready() -> void:
 	_initialize_nodes()
+	_rng.randomize()
+	ResourceLoader.load_threaded_request(MAIN_MENU_SCENE_PATH)
+	ResourceLoader.load_threaded_request(END_SCENE_PATH)
 	if save_mgr == null:
 		if is_inside_tree() and get_tree().root.has_node("SaveManager"):
 			save_mgr = get_tree().root.get_node("SaveManager")
@@ -520,6 +533,56 @@ func _ready() -> void:
 		top_bar.draw.connect(_on_top_bar_draw)
 	if bottom_bar != null and not bottom_bar.draw.is_connected(_on_bottom_bar_draw):
 		bottom_bar.draw.connect(_on_bottom_bar_draw)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		_handle_mobile_back_request()
+	elif what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		_on_application_paused()
+	elif what == NOTIFICATION_APPLICATION_RESUMED or what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		_on_application_resumed()
+
+
+func _handle_mobile_back_request() -> void:
+	if ad_reward_modal != null and ad_reward_modal.visible:
+		ad_reward_modal.hide()
+		if get_viewport(): get_viewport().set_input_as_handled()
+	elif win_modal != null and win_modal.visible:
+		_on_menu_pressed()
+		if get_viewport(): get_viewport().set_input_as_handled()
+	elif restart_dialog != null and restart_dialog.visible:
+		restart_dialog.hide()
+		if get_viewport(): get_viewport().set_input_as_handled()
+	else:
+		_on_restart_pressed()
+		if get_viewport(): get_viewport().set_input_as_handled()
+
+
+func _on_application_paused() -> void:
+	is_undo_held = false
+	undo_hold_time = 0.0
+	undo_step_timer = 0.0
+	is_touching = false
+	active_touch_index = -1
+	swipe_triggered_in_gesture = false
+	if save_mgr != null and save_mgr.has_method("save_data"):
+		save_mgr.save_data()
+
+
+func _on_application_resumed() -> void:
+	_apply_safe_area()
+	calculate_layout()
+	queue_redraw()
+
+
+func _transition_to_scene(path: String) -> void:
+	if ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_LOADED:
+		var scene: PackedScene = ResourceLoader.load_threaded_get(path) as PackedScene
+		if scene != null:
+			get_tree().change_scene_to_packed(scene)
+			return
+	get_tree().change_scene_to_file(path)
 
 
 func _apply_safe_area() -> void:
@@ -694,8 +757,7 @@ func _update_ui() -> void:
 				audio_mgr.play_bump()
 
 			# Micro electrical sparks popping from lost star
-			var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-			rng.randomize()
+			var rng: RandomNumberGenerator = _rng
 			var sg_pos: Vector2 = star_gauge.global_position + star_gauge.size * 0.5
 			for i in range(6):
 				dust_particles.append({
@@ -1053,8 +1115,7 @@ func _animate_player(from_pos: Vector2i, to_pos: Vector2i) -> void:
 func _spawn_footstep_dust(from_pos: Vector2i, _to_pos: Vector2i) -> void:
 	var base_origin: Vector2 = grid_origin + Vector2(from_pos) * tile_size
 	var foot_pos: Vector2 = base_origin + Vector2(tile_size * 0.5, tile_size * 0.80)
-	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-	rng.randomize()
+	var rng: RandomNumberGenerator = _rng
 	for i in range(2):
 		dust_particles.append({
 			"pos": foot_pos + Vector2(rng.randf_range(-4.0, 4.0), rng.randf_range(-2.0, 2.0)),
@@ -1135,8 +1196,7 @@ func _trigger_bump_recoil(dir: Vector2i) -> void:
 	# Micro contact dust specks kicking back from wall impact
 	var p_center: Vector2 = grid_origin + visual_player_pos * tile_size + Vector2(tile_size * 0.5, tile_size * 0.5)
 	var contact_pt: Vector2 = p_center + Vector2(dir) * (tile_size * 0.44)
-	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-	rng.randomize()
+	var rng: RandomNumberGenerator = _rng
 	for i in range(3):
 		var lateral: Vector2 = Vector2(-dir.y, dir.x) * rng.randf_range(-20.0, 20.0) - Vector2(dir) * rng.randf_range(15.0, 35.0)
 		dust_particles.append({
@@ -1190,13 +1250,16 @@ func _is_touch_on_ui(pos: Vector2) -> bool:
 	return false
 
 
-func _input(event: InputEvent) -> void:
-	_process_game_input(event)
-
-
 func _unhandled_input(event: InputEvent) -> void:
-	# Fallback if unhandled input is triggered or called directly by test suites
+	# Primary reactive handler for Android touch, drag, and mobile gameplay inputs
 	_process_game_input(event)
+
+
+func _input(event: InputEvent) -> void:
+	# Supports direct calls from automated test suites in headless mode
+	# while allowing normal GUI Control nodes to consume touch events first at runtime
+	if not is_inside_tree() or get_tree().root == null or DisplayServer.get_name() == "headless":
+		_process_game_input(event)
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -1619,7 +1682,7 @@ func _on_next_level_pressed() -> void:
 
 	# If completing the final level (Level 75), navigate to the Campaign End Screen (PRD Section 6)
 	if current_level_index >= level_paths.size() - 1:
-		get_tree().change_scene_to_file("res://scenes/end_screen.tscn")
+		_transition_to_scene(END_SCENE_PATH)
 		return
 
 	var next_idx: int = current_level_index + 1
@@ -1658,7 +1721,7 @@ func _on_menu_pressed() -> void:
 			audio_mgr.unduck_music(0.5)
 	if haptic_mgr:
 		haptic_mgr.vibrate_click()
-	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+	_transition_to_scene(MAIN_MENU_SCENE_PATH)
 
 
 func _spawn_celebration_particles() -> void:
@@ -1682,8 +1745,7 @@ func _spawn_celebration_particles() -> void:
 	if spawn_points.is_empty():
 		spawn_points.append(size / 2.0 if size != Vector2.ZERO else Vector2(360, 640))
 
-	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-	rng.randomize()
+	var rng: RandomNumberGenerator = _rng
 
 	# 1. Fountain bursts from goal pads
 	for origin_pt in spawn_points:
@@ -1759,8 +1821,7 @@ func _spawn_celebration_particles() -> void:
 
 
 func _spawn_star_burst(center_pt: Vector2) -> void:
-	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-	rng.randomize()
+	var rng: RandomNumberGenerator = _rng
 	victory_radiance_rings.append({
 		"pos": center_pt,
 		"radius": 14.0,
@@ -1845,7 +1906,8 @@ func _process(delta: float) -> void:
 			var dp: Dictionary = dust_particles[di]
 			dp["life"] -= delta
 			if dp["life"] <= 0.0:
-				dust_particles.remove_at(di)
+				dust_particles[di] = dust_particles.back()
+				dust_particles.pop_back()
 			else:
 				dp["pos"] += dp["vel"] * delta
 				dp["vel"] *= (1.0 - 5.0 * delta)
@@ -1889,7 +1951,8 @@ func _process(delta: float) -> void:
 			var ge: Dictionary = goal_effects[gi]
 			ge["life"] -= delta
 			if ge["life"] <= 0.0:
-				goal_effects.remove_at(gi)
+				goal_effects[gi] = goal_effects.back()
+				goal_effects.pop_back()
 			else:
 				if ge["type"] == "ring":
 					var progress: float = 1.0 - (ge["life"] / ge["max_life"])
@@ -1907,7 +1970,8 @@ func _process(delta: float) -> void:
 			var ring: Dictionary = victory_radiance_rings[vi]
 			ring["life"] -= delta
 			if ring["life"] <= 0.0:
-				victory_radiance_rings.remove_at(vi)
+				victory_radiance_rings[vi] = victory_radiance_rings.back()
+				victory_radiance_rings.pop_back()
 			else:
 				var t_prog: float = 1.0 - (ring["life"] / ring["max_life"])
 				ring["radius"] = lerpf(tile_size * 0.25, ring["max_radius"], t_prog)
@@ -1921,7 +1985,8 @@ func _process(delta: float) -> void:
 			var sp: Dictionary = star_burst_particles[si]
 			sp["life"] -= delta
 			if sp["life"] <= 0.0:
-				star_burst_particles.remove_at(si)
+				star_burst_particles[si] = star_burst_particles.back()
+				star_burst_particles.pop_back()
 			else:
 				sp["pos"] += sp["vel"] * delta
 				sp["vel"] *= (1.0 - 2.8 * delta)
@@ -1935,7 +2000,8 @@ func _process(delta: float) -> void:
 			var p: Dictionary = win_particles[i]
 			p["life"] -= delta
 			if p["life"] <= 0.0:
-				win_particles.remove_at(i)
+				win_particles[i] = win_particles.back()
+				win_particles.pop_back()
 			else:
 				p["sway_phase"] = p.get("sway_phase", 0.0) + p.get("sway_speed", 5.0) * delta
 				p["pos"].x += sin(p["sway_phase"]) * p.get("sway_amount", 40.0) * delta
@@ -2006,7 +2072,7 @@ func _draw() -> void:
 	var is_non_square: bool = is_level_non_square()
 
 	# 1. Industrial Warehouse 2.5D Silhouette Drop Shadow (Natural depth, no artificial border frames or screws)
-	if grid.exterior_void.is_empty():
+	if not is_non_square:
 		# Fast path: Solid rectangular warehouse room; batch entire silhouette shadow into 3 passes
 		var full_rect: Rect2 = Rect2(effective_origin, board_pixel_size)
 		draw_rect(Rect2(full_rect.position + Vector2(8, 12), full_rect.size + Vector2(6, 6)), Color(0.0, 0.0, 0.0, 0.12))
@@ -2025,16 +2091,21 @@ func _draw() -> void:
 					# Layer 1: Tight perimeter contact depth
 					draw_rect(Rect2(s_rect.position + Vector2(2, 3), s_rect.size), Color(0.0, 0.0, 0.0, 0.45))
 
-	# 2. Draw Floor & Walls with Clean, Unified Architecture
+	# 2A. Draw All Floor Tiles (Batched by floor texture to minimize draw calls)
 	for y in range(grid.height):
 		for x in range(grid.width):
 			var pos: Vector2i = Vector2i(x, y)
-			var rect: Rect2 = Rect2(effective_origin + Vector2(x, y) * tile_size, Vector2(tile_size, tile_size))
-
-			if grid.is_wall(pos):
-				_draw_wall(rect, pos)
-			elif grid.is_interior_floor(pos) or grid.interior_floor.is_empty():
+			if not grid.is_wall(pos) and (grid.is_interior_floor(pos) or grid.interior_floor.is_empty()):
+				var rect: Rect2 = Rect2(effective_origin + Vector2(x, y) * tile_size, Vector2(tile_size, tile_size))
 				_draw_floor_tile(rect, pos, ch)
+
+	# 2B. Draw All Wall Tiles (Batched by wall texture to minimize draw calls)
+	for y in range(grid.height):
+		for x in range(grid.width):
+			var pos: Vector2i = Vector2i(x, y)
+			if grid.is_wall(pos):
+				var rect: Rect2 = Rect2(effective_origin + Vector2(x, y) * tile_size, Vector2(tile_size, tile_size))
+				_draw_wall(rect, pos)
 
 	# 2.2. Architectural Edge Depth (snug drop shadows on non-square shapes, no harsh borders)
 	if is_non_square:
@@ -2495,8 +2566,7 @@ func _draw_ambient_motes(_effective_origin: Vector2, _board_pixel_size: Vector2,
 
 func _init_ambient_motes() -> void:
 	ambient_motes.clear()
-	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-	rng.randomize()
+	var rng: RandomNumberGenerator = _rng
 	for i in range(16):
 		ambient_motes.append({
 			"pos_norm": Vector2(rng.randf(), rng.randf()),
@@ -2847,8 +2917,7 @@ func _spawn_push_dust(from_pos: Vector2i, to_pos: Vector2i) -> void:
 	var dir: Vector2i = to_pos - from_pos
 	var base_origin: Vector2 = grid_origin + Vector2(from_pos) * tile_size
 	var spawn_edge_center: Vector2 = base_origin + Vector2(tile_size * 0.5, tile_size * 0.5) - Vector2(dir) * (tile_size * 0.42)
-	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-	rng.randomize()
+	var rng: RandomNumberGenerator = _rng
 
 	var crate_skin_id: String = save_mgr.selected_crate_skin if save_mgr else "classic_wood"
 	var worker_skin_id: String = save_mgr.selected_worker_skin if save_mgr else "classic"
@@ -3000,8 +3069,7 @@ func _spawn_goal_effect(goal_pos: Vector2i) -> void:
 	})
 
 	# 12 radiating thematic sparks
-	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-	rng.randomize()
+	var rng: RandomNumberGenerator = _rng
 	for i in range(12):
 		var angle: float = (float(i) / 12.0) * TAU + rng.randf_range(-0.15, 0.15)
 		var spd: float = rng.randf_range(120.0, 220.0)

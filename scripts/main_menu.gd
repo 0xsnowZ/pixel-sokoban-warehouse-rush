@@ -11,6 +11,7 @@ const SaveManagerScript: GDScript = preload("res://scripts/save_manager.gd")
 const AchievementManagerScript: GDScript = preload("res://scripts/achievement_manager.gd")
 const TOTAL_LEVELS_COUNT: int = 75
 const AVAILABLE_LEVELS_COUNT: int = 75 # All 75 verified solvable levels active
+const GAME_SCENE_PATH: String = "res://scenes/game.tscn"
 
 # Enhanced High-Resolution UI Icon Textures
 var icon_trophy: Texture2D = preload("res://assets/icons/icon_trophy.png")
@@ -176,9 +177,8 @@ func _ready() -> void:
 	if is_inside_tree() and get_tree().root.has_node("AchievementManager"):
 		achievement_mgr = get_tree().root.get_node("AchievementManager")
 	else:
-		var ach_script: GDScript = load("res://scripts/achievement_manager.gd") as GDScript
-		if ach_script:
-			achievement_mgr = ach_script.new()
+		if AchievementManagerScript:
+			achievement_mgr = AchievementManagerScript.new()
 			achievement_mgr.save_mgr = save_mgr
 			add_child(achievement_mgr)
 
@@ -297,6 +297,39 @@ func _ready() -> void:
 	for b in [continue_btn, play_btn, level_select_btn, locker_btn, achievements_btn, settings_btn, sound_btn, haptics_btn, language_btn, credits_btn, back_btn, close_credits_btn, close_settings_btn, close_locker_btn, close_achievements_btn, outfits_tab_btn, crates_tab_btn, music_toggle_btn, track_cycle_btn, control_mode_btn, star_progress_btn, quick_lang_btn]:
 		if b != null:
 			_attach_spring_physics(b)
+
+	ResourceLoader.load_threaded_request(GAME_SCENE_PATH)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		if credits_modal != null and credits_modal.visible:
+			_hide_credits()
+			if get_viewport(): get_viewport().set_input_as_handled()
+		elif settings_modal != null and settings_modal.visible:
+			_hide_settings()
+			if get_viewport(): get_viewport().set_input_as_handled()
+		elif locker_modal != null and locker_modal.visible:
+			_hide_locker()
+			if get_viewport(): get_viewport().set_input_as_handled()
+		elif achievements_modal != null and achievements_modal.visible:
+			_hide_achievements()
+			if get_viewport(): get_viewport().set_input_as_handled()
+		elif level_select_view != null and level_select_view.visible:
+			_show_main_view()
+			if get_viewport(): get_viewport().set_input_as_handled()
+	elif what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		if save_mgr != null and save_mgr.has_method("save_data"):
+			save_mgr.save_data()
+
+
+func _transition_to_game() -> void:
+	if ResourceLoader.load_threaded_get_status(GAME_SCENE_PATH) == ResourceLoader.THREAD_LOAD_LOADED:
+		var scene: PackedScene = ResourceLoader.load_threaded_get(GAME_SCENE_PATH) as PackedScene
+		if scene != null:
+			get_tree().change_scene_to_packed(scene)
+			return
+	get_tree().change_scene_to_file(GAME_SCENE_PATH)
 
 
 func _apply_safe_area() -> void:
@@ -1330,7 +1363,7 @@ func _on_haptics_toggle_pressed() -> void:
 func _start_game_at_level(level_index: int) -> void:
 	if save_mgr:
 		save_mgr.last_played_level = level_index
-	get_tree().change_scene_to_file("res://scenes/game.tscn")
+	_transition_to_game()
 
 
 func _build_level_grid() -> void:
@@ -1548,7 +1581,7 @@ func _on_daily_shift_pressed() -> void:
 		var d_info: Dictionary = save_mgr.get_daily_challenge_info()
 		save_mgr.set_meta("is_daily_challenge", true)
 		save_mgr.last_played_level = d_info["level_index"]
-	get_tree().change_scene_to_file("res://scenes/game.tscn")
+	_transition_to_game()
 
 
 func _check_star_vault_milestones() -> void:

@@ -16,6 +16,11 @@ func _ready() -> void:
 		get_viewport().size_changed.connect(_on_viewport_size_changed)
 
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_RESUMED or what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		safe_area_changed.emit(get_safe_insets())
+
+
 func _on_viewport_size_changed() -> void:
 	safe_area_changed.emit(get_safe_insets())
 

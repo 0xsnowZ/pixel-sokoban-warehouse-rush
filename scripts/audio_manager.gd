@@ -66,6 +66,7 @@ var current_bgm_track: int = -1
 var _bgm_streams: Dictionary = {}
 var _duck_offset_db: float = 0.0
 var _music_fade_tween: Tween = null
+var _was_music_paused_by_os: bool = false
 
 # AudioStreamPlayer voice pool for overlapping SFX
 var _players: Array[AudioStreamPlayer] = []
@@ -188,6 +189,29 @@ func _exit_tree() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
 		cleanup()
+	elif what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		pause_all_audio()
+	elif what == NOTIFICATION_APPLICATION_RESUMED or what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		resume_all_audio()
+
+
+func pause_all_audio() -> void:
+	if music_player != null and is_instance_valid(music_player) and music_player.playing:
+		_was_music_paused_by_os = true
+		music_player.stream_paused = true
+	for p in _players:
+		if is_instance_valid(p) and p.playing:
+			p.stream_paused = true
+
+
+func resume_all_audio() -> void:
+	if _was_music_paused_by_os and is_music_enabled():
+		if music_player != null and is_instance_valid(music_player):
+			music_player.stream_paused = false
+		_was_music_paused_by_os = false
+	for p in _players:
+		if is_instance_valid(p) and p.stream_paused:
+			p.stream_paused = false
 
 
 func cleanup() -> void:
