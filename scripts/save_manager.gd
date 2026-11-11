@@ -47,15 +47,15 @@ var daily_challenge_completed: bool = false
 
 # Progressive Star Vault Milestone Chests rewarding dedicated players
 const STAR_VAULTS: Array[Dictionary] = [
-	{ "stars": 15, "name": "Bronze Supply Cache", "reward_type": "hints", "amount": 5, "icon": "🥉" },
-	{ "stars": 25, "name": "Safety Vest Locker", "reward_type": "skin", "skin_id": "safety_vest", "icon": "🦺" },
-	{ "stars": 40, "name": "Steel Freight Vault", "reward_type": "skin", "skin_id": "steel_container", "icon": "🗄️" },
-	{ "stars": 60, "name": "Foreman's Cache", "reward_type": "skin", "skin_id": "foreman", "icon": "👷" },
-	{ "stars": 80, "name": "Cryo Vault Locker", "reward_type": "skin", "skin_id": "cryo_vault", "icon": "❄️" },
-	{ "stars": 100, "name": "Golden Master Vault", "reward_type": "skin", "skin_id": "golden_porter", "icon": "👑" },
-	{ "stars": 140, "name": "Quantum Solenoid Cache", "reward_type": "hints", "amount": 10, "icon": "⚛️" },
-	{ "stars": 180, "name": "Plasma Core Vault", "reward_type": "hints", "amount": 15, "icon": "🔮" },
-	{ "stars": 210, "name": "Grandmaster Apex Trophy", "reward_type": "hints", "amount": 25, "icon": "🏆" }
+	{"stars": 15, "name": "Bronze Supply Cache", "reward_type": "hints", "amount": 5, "icon": "🥉"},
+	{"stars": 25, "name": "Safety Vest Locker", "reward_type": "skin", "skin_id": "safety_vest", "icon": "🦺"},
+	{"stars": 40, "name": "Steel Freight Vault", "reward_type": "skin", "skin_id": "steel_container", "icon": "🗄️"},
+	{"stars": 60, "name": "Foreman's Cache", "reward_type": "skin", "skin_id": "foreman", "icon": "👷"},
+	{"stars": 80, "name": "Cryo Vault Locker", "reward_type": "skin", "skin_id": "cryo_vault", "icon": "❄️"},
+	{"stars": 100, "name": "Golden Master Vault", "reward_type": "skin", "skin_id": "golden_porter", "icon": "👑"},
+	{"stars": 140, "name": "Quantum Solenoid Cache", "reward_type": "hints", "amount": 10, "icon": "⚛️"},
+	{"stars": 180, "name": "Plasma Core Vault", "reward_type": "hints", "amount": 15, "icon": "🔮"},
+	{"stars": 210, "name": "Grandmaster Apex Trophy", "reward_type": "hints", "amount": 25, "icon": "🏆"}
 ]
 
 
@@ -145,10 +145,10 @@ func get_total_stars() -> int:
 
 # 4 Warehouse Logistics Chapters across 75 levels (PRD Phase 2)
 const CHAPTER_TIERS: Array[Dictionary] = [
-	{ "id": 0, "name": "Cargo Bay", "start_level": 0, "end_level": 14, "icon": "📦", "color": Color(0.98, 0.82, 0.25) },
-	{ "id": 1, "name": "Cold Storage", "start_level": 15, "end_level": 34, "icon": "❄", "color": Color(0.35, 0.85, 1.0) },
-	{ "id": 2, "name": "Cyber Depot", "start_level": 35, "end_level": 49, "icon": "⚡", "color": Color(1.0, 0.65, 0.20) },
-	{ "id": 3, "name": "Quantum Vault", "start_level": 50, "end_level": 74, "icon": "⚛️", "color": Color(0.85, 0.40, 1.00) }
+	{"id": 0, "name": "Cargo Bay", "start_level": 0, "end_level": 14, "icon": "📦", "color": Color(0.98, 0.82, 0.25)},
+	{"id": 1, "name": "Cold Storage", "start_level": 15, "end_level": 34, "icon": "❄", "color": Color(0.35, 0.85, 1.0)},
+	{"id": 2, "name": "Cyber Depot", "start_level": 35, "end_level": 49, "icon": "⚡", "color": Color(1.0, 0.65, 0.20)},
+	{"id": 3, "name": "Quantum Vault", "start_level": 50, "end_level": 74, "icon": "⚛️", "color": Color(0.85, 0.40, 1.00)}
 ]
 
 

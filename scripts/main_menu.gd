@@ -413,9 +413,9 @@ func _hide_modal_backdrop() -> void:
 	_backdrop_tw.tween_property(modal_blur_overlay, "modulate:a", 0.0, 0.15)
 	_backdrop_tw.tween_callback(func():
 		if modal_blur_overlay and not (
-			(locker_modal and locker_modal.visible) or 
-			(settings_modal and settings_modal.visible) or 
-			(achievements_modal and achievements_modal.visible) or 
+			(locker_modal and locker_modal.visible) or
+			(settings_modal and settings_modal.visible) or
+			(achievements_modal and achievements_modal.visible) or
 			(credits_modal and credits_modal.visible)
 		):
 			modal_blur_overlay.hide()
@@ -1454,7 +1454,7 @@ func _refresh_level_grid_buttons() -> void:
 		var is_completed: bool = save_mgr != null and save_mgr.is_level_completed(lvl_idx)
 
 		var ch_idx: int = save_mgr.get_chapter_index(lvl_idx) if (save_mgr != null and save_mgr.has_method("get_chapter_index")) else (0 if lvl_idx < 15 else (1 if lvl_idx < 35 else (2 if lvl_idx < 50 else 3)))
-		var ch_info: Dictionary = save_mgr.get_chapter_info(ch_idx) if (save_mgr != null and save_mgr.has_method("get_chapter_info")) else { "color": Color(1.0, 1.0, 1.0) }
+		var ch_info: Dictionary = save_mgr.get_chapter_info(ch_idx) if (save_mgr != null and save_mgr.has_method("get_chapter_info")) else {"color": Color(1.0, 1.0, 1.0)}
 		var ch_col: Color = ch_info.get("color", Color(1.0, 1.0, 1.0))
 		var opt_moves: int = save_mgr.get_optimal_moves(lvl_idx) if save_mgr else 15
 		var ch_title_str: String = ch_info.get("name", "Cargo Bay")
