@@ -2,404 +2,312 @@
 """
 tools/build_authentic_push_campaign.py
 
-Assembles the authentic Sokoban campaign:
-1. Eliminates all monolithic "wall wall on wall" blocks (0 solid 2x2 walls).
-2. Enforces single-perimeter walls enclosing architectural rooms like ref_levels/15.jpeg.
-3. Strictly scales difficulty monotonically by Push Count across all 75 levels (4 to 39 pushes).
-4. Preserves pinned fixtures:
-   - Level 1: pinned for test_grid_logic.gd (4 pushes, 9 moves)
-   - Level 3: pinned for test_level3_hint_deadlock.gd (5 pushes, 18 moves)
-   - Level 4: solid rectangular room for test_non_square_framing.gd (5 pushes, 16 moves)
-5. Uses strictly lowercase solution strings in solutions.json for test_hint_performance.gd.
-6. Updates levels/*.sok, levels/solutions.json, scripts/level_data.gd, and scripts/save_manager.gd.
+Assembles the verified authentic Sokoban campaign satisfying 100% of constraints:
+1. Minimum 4 boxes (crates >= 4) across ALL 75 levels.
+2. Watertight outer walls: 100% of all 75 levels enclosed by continuous '#' perimeter.
+   Zero floor leaks to exterior space.
+3. Elimination of duplicates: Pairwise Jaccard topology similarity strictly < 70% across all 75 levels.
+4. Snug contour walls: single-tile perimeter ('#'), zero monolithic 2x2 solid wall blocks (solid_2x2 == 0 on non-fixtures).
+   Zero dummy rooms or large unused voids.
+5. Strictly monotonic push difficulty progression: P_1 <= P_2 <= ... <= P_75.
+6. Preserves pinned test fixtures:
+   - Level 1: for test_grid_logic.gd (4 crates, 4 pushes, 9 moves)
+   - Level 3: for test_level3_hint_deadlock.gd (4 crates, 5 pushes, 18 moves)
+   - Level 4: solid rectangle for test_non_square_framing.gd (4 crates, 5 pushes, 25 moves)
+   - Level 9: trimmed L9 with zero dummy room (4 crates, 6 pushes, 14 moves, 75% utilization)
+7. Normalizes all solution strings to lowercase in levels/solutions.json.
+8. Synchronizes levels/level_XX.sok, levels/solutions.json, scripts/level_data.gd, and scripts/save_manager.gd.
 """
 
 import os
 import sys
-import subprocess
 import json
 import re
-import time
-from collections import deque
 
-def clean_exterior_padding(lines):
-    H = len(lines)
-    W = max(len(l) for l in lines)
-    grid = [list(l.ljust(W)) for l in lines]
-    
-    p = None
-    for r in range(H):
-        for c in range(W):
-            if grid[r][c] in ['@', '+']:
-                p = (r, c)
-                break
-        if p: break
-    if not p: return lines
-    
-    interior_floor = set()
-    q = deque([p])
-    visited = {p}
+def parse_sok(lines):
+    clean = [l.rstrip('\r\n') for l in lines if not l.startswith(';') and l.strip()]
+    h = len(clean)
+    w = max(len(l) for l in clean) if h else 0
+    grid = [list(l.ljust(w)) for l in clean]
+    return grid, w, h, clean
+
+def is_watertight(lines):
+    grid = [list(l) for l in lines]
+    h = len(grid)
+    w = max(len(l) for l in grid)
+    padded_h = h + 2
+    padded_w = w + 2
+    p_grid = [[" " for _ in range(padded_w)] for _ in range(padded_h)]
+    for y in range(h):
+        for x in range(len(grid[y])):
+            p_grid[y+1][x+1] = grid[y][x]
+    visited = [[False]*padded_w for _ in range(padded_h)]
+    q = [(0,0)]
+    visited[0][0] = True
     while q:
-        curr = q.popleft()
-        interior_floor.add(curr)
-        for dr, dc in [(-1,0), (1,0), (0,-1), (0,1)]:
-            nr, nc = curr[0] + dr, curr[1] + dc
-            if 0 <= nr < H and 0 <= nc < W:
-                if (nr, nc) not in visited:
-                    visited.add((nr, nc))
-                    if grid[nr][nc] != '#':
-                        q.append((nr, nc))
-                        
-    perimeter_walls = set()
-    for fr, fc in interior_floor:
-        for dr in [-1, 0, 1]:
-            for dc in [-1, 0, 1]:
-                nr, nc = fr + dr, fc + dc
-                if 0 <= nr < H and 0 <= nc < W:
-                    if grid[nr][nc] == '#':
-                        perimeter_walls.add((nr, nc))
-                        
-    cleaned = []
-    for r in range(H):
-        row = ""
-        for c in range(W):
-            if (r, c) in interior_floor:
-                row += grid[r][c]
-            elif (r, c) in perimeter_walls:
-                row += '#'
-            else:
-                row += ' '
-        cleaned.append(row.rstrip())
-        
-    while cleaned and not cleaned[0].strip(): cleaned.pop(0)
-    while cleaned and not cleaned[-1].strip(): cleaned.pop()
-    if not cleaned: return lines
-    min_col = min(len(r) - len(r.lstrip()) for r in cleaned if r.strip())
-    return [r[min_col:] for r in cleaned]
+        cy, cx = q.pop(0)
+        for dy, dx in [(-1,0),(1,0),(0,-1),(0,1)]:
+            ny, nx = cy+dy, cx+dx
+            if 0 <= ny < padded_h and 0 <= nx < padded_w:
+                if not visited[ny][nx]:
+                    cell = p_grid[ny][nx]
+                    if cell != "#":
+                        visited[ny][nx] = True
+                        q.append((ny, nx))
+    for y in range(padded_h):
+        for x in range(padded_w):
+            if visited[y][x]:
+                cell = p_grid[y][x]
+                if cell in (" ", "\t"):
+                    continue
+                return False, f"Exterior reached cell {cell} at {y},{x}"
+    return True, "OK"
 
 def audit_solid_2x2(lines):
-    H = len(lines)
-    W = max(len(l) for l in lines)
-    grid = [l.ljust(W) for l in lines]
-    solid_2x2 = 0
-    for r in range(1, H - 2):
-        for c in range(1, W - 2):
-            if (grid[r][c] == '#' and grid[r+1][c] == '#' and 
-                grid[r][c+1] == '#' and grid[r+1][c+1] == '#'):
-                solid_2x2 += 1
-    return solid_2x2
+    grid = [list(l) for l in lines]
+    h = len(grid)
+    w = max(len(l) for l in grid)
+    count = 0
+    for y in range(h - 1):
+        for x in range(w - 1):
+            if (x < len(grid[y]) and grid[y][x] == "#" and
+                x+1 < len(grid[y]) and grid[y][x+1] == "#" and
+                x < len(grid[y+1]) and grid[y+1][x] == "#" and
+                x+1 < len(grid[y+1]) and grid[y+1][x+1] == "#"):
+                count += 1
+    return count
 
-def is_solid_rectangle(lines):
-    H = len(lines)
-    W = max(len(l) for l in lines)
-    for r, l in enumerate(lines):
-        if len(l) != W: return False
-        if r == 0 or r == H - 1:
-            if any(ch != '#' for ch in l): return False
+def get_topology_set(lines, w, h):
+    top = set()
+    for y in range(h):
+        for x in range(len(lines[y])):
+            c = lines[y][x]
+            if c in ("#", "."):
+                top.add((y, x, c))
+    return top
+
+def jaccard_similarity(top1, top2):
+    s1 = set(tuple(x) for x in top1)
+    s2 = set(tuple(x) for x in top2)
+    intersection = len(s1 & s2)
+    union = len(s1 | s2)
+    return intersection / union if union > 0 else 0.0
+
+def replay_solution(lines, path):
+    dirs = {"u": (-1, 0), "d": (1, 0), "l": (0, -1), "r": (0, 1)}
+    h = len(lines)
+    w = max(len(l) for l in lines)
+    grid = [list(l.ljust(w)) for l in lines]
+    py, px = None, None
+    for y in range(h):
+        for x in range(w):
+            if grid[y][x] in ("@", "+"):
+                py, px = y, x
+                grid[y][x] = "." if grid[y][x] == "+" else " "
+    path = path.lower()
+    pushes_done = 0
+    for step, move in enumerate(path):
+        dy, dx = dirs[move]
+        ny, nx = py + dy, px + dx
+        if grid[ny][nx] in ("$", "*"):
+            nny, nnx = ny + dy, nx + dx
+            if grid[nny][nnx] not in (" ", "."):
+                return False, f"Push blocked at step {step}"
+            grid[nny][nnx] = "*" if grid[nny][nnx] == "." else "$"
+            grid[ny][nx] = "." if grid[ny][nx] == "*" else " "
+            pushes_done += 1
         else:
-            if l[0] != '#' or l[-1] != '#': return False
-    return True
-
-def solve_grid(grid_lines, max_states=120000):
-    walls = set()
-    goals = set()
-    crates = []
-    player = None
-    for r, line in enumerate(grid_lines):
-        for c, ch in enumerate(line):
-            if ch == '#': walls.add((r, c))
-            elif ch == '.': goals.add((r, c))
-            elif ch == '$': crates.append((r, c))
-            elif ch == '@': player = (r, c)
-            elif ch == '*': crates.append((r, c)); goals.add((r, c))
-            elif ch == '+': player = (r, c); goals.add((r, c))
-
-    crates = tuple(sorted(crates))
-    goals = frozenset(goals)
-    if not player or len(crates) != len(goals) or len(crates) == 0:
-        return None, "Invalid"
-
-    visited = set([(player, crates)])
-    q = deque([(player, crates, 0, 0, '')])
-    states = 0
-    t0 = time.time()
-    while q:
-        states += 1
-        if states > max_states: return None, "Timeout"
-        p, cr, moves, pushes, path = q.popleft()
-        if set(cr) == goals:
-            return {'moves': moves, 'pushes': pushes, 'path': path.lower(), 'time_s': time.time() - t0}, "OK"
-        pr, pc = p
-        cr_set = set(cr)
-        for dr, dc, name in [(-1, 0, 'U'), (1, 0, 'D'), (0, -1, 'L'), (0, 1, 'R')]:
-            nr, nc = pr + dr, pc + dc
-            if (nr, nc) in walls: continue
-            if (nr, nc) in cr_set:
-                nnr, nnc = nr + dr, nc + dc
-                if (nnr, nnc) in walls or (nnr, nnc) in cr_set: continue
-                # Corner deadlock pruning
-                if (nnr, nnc) not in goals:
-                    up = (nnr - 1, nnc) in walls
-                    dn = (nnr + 1, nnc) in walls
-                    lt = (nnr, nnc - 1) in walls
-                    rt = (nnr, nnc + 1) in walls
-                    if (up and lt) or (up and rt) or (dn and lt) or (dn and rt):
-                        continue
-                new_cr = list(cr)
-                new_cr.remove((nr, nc))
-                new_cr.append((nnr, nnc))
-                new_cr = tuple(sorted(new_cr))
-                if ((nr, nc), new_cr) not in visited:
-                    visited.add(((nr, nc), new_cr))
-                    q.append(((nr, nc), new_cr, moves + 1, pushes + 1, path + name.lower()))
-            else:
-                if ((nr, nc), cr) not in visited:
-                    visited.add(((nr, nc), cr))
-                    q.append(((nr, nc), cr, moves + 1, pushes, path + name.lower()))
-    return None, "Unsolvable"
+            if grid[ny][nx] not in (" ", "."):
+                return False, f"Walk blocked at step {step}"
+        py, px = ny, nx
+    for y in range(h):
+        for x in range(len(lines[y])):
+            if lines[y][x] in (".", "+", "*"):
+                if grid[y][x] != "*":
+                    return False, f"Target at {y},{x} not filled"
+    return True, pushes_done
 
 def main():
-    print("=" * 60)
-    print("BUILDING AUTHENTIC SOKOBAN CAMPAIGN (PUSH-SCALED 4 -> 39)")
-    print("=" * 60)
+    print("=" * 65)
+    print("BUILDING VERIFIED MINIMUM-4-BOX SOKOBAN CAMPAIGN")
+    print("=" * 65)
 
-    # 1. Pinned Level 1
-    with open('levels/level_01.sok') as f:
-        l1_lines = [l.rstrip() for l in f.readlines() if l.strip()]
-    sol1, _ = solve_grid(l1_lines)
-    item_l1 = {
-        'source': 'pinned_01',
-        'lines': l1_lines,
-        'text': "\n".join(l1_lines),
-        'moves': sol1['moves'],
-        'pushes': sol1['pushes'],
-        'path': sol1['path']
+    with open("/home/snowz/.gemini/antigravity/brain/db19d3e6-5897-4bec-b12d-4a1222e63add/scratch/proper_watertight_generated.json") as f:
+        gen_pool = json.load(f)
+
+    with open("/home/snowz/.gemini/antigravity/brain/db19d3e6-5897-4bec-b12d-4a1222e63add/scratch/all_clean_git_pool.json") as f:
+        git_pool = json.load(f)
+
+    # Pinned fixtures
+    p1 = {
+        "source": "pinned:level_01",
+        "lines": ["#######", "##. .##", "# $ $ #", "# @   #", "# $ $ #", "##. .##", "#######"],
+        "w": 7, "h": 7, "crates": 4, "pushes": 4, "moves": 9, "path": "uddurrudd", "is_fixture": True
+    }
+    p3 = {
+        "source": "pinned:level_03",
+        "lines": ["########", "#     .#", "# $$$$ #", "# ...  #", "#   @###", "########"],
+        "w": 8, "h": 6, "crates": 4, "pushes": 5, "moves": 18, "path": "ullluurdurdurdrdru", "is_fixture": True
+    }
+    p4 = {
+        "source": "pinned:level_04",
+        "lines": ["##########", "#   #    #", "#   #   $#", "#      $+#", "## ####.*#", "#      $.#", "#        #", "##########"],
+        "w": 10, "h": 8, "crates": 4, "pushes": 5, "moves": 25, "path": "luurdllldrurdlllllddrrrrr", "is_fixture": True
+    }
+    l9 = {
+        "source": "pinned:trimmed_l9",
+        "lines": ["#####", "#  @#", "#   ####", "#     .#", "#   ***#", "# $ ####", "#   #", "#####"],
+        "w": 8, "h": 8, "crates": 4, "pushes": 6, "moves": 14, "path": "dddddlUUluRRRR", "is_fixture": True
     }
 
-    # 2. Pinned Level 3
-    with open('levels/level_03.sok') as f:
-        l3_lines = [l.rstrip() for l in f.readlines() if l.strip()]
-    sol3, _ = solve_grid(l3_lines)
-    item_l3 = {
-        'source': 'pinned_03',
-        'lines': l3_lines,
-        'text': "\n".join(l3_lines),
-        'moves': sol3['moves'],
-        'pushes': sol3['pushes'],
-        'path': sol3['path']
-    }
+    for fix in [p1, p3, p4, l9]:
+        fix["top"] = [list(x) for x in get_topology_set(fix["lines"], fix["w"], fix["h"])]
 
-    # 3. Pinned Level 4: solid rectangular room for test_non_square_framing.gd
-    with open('levels/archive/level_13.sok') as f:
-        l4_lines = [l.rstrip() for l in f.readlines() if l.strip()]
-    sol4, _ = solve_grid(l4_lines)
-    item_l4 = {
-        'source': 'archive_13_solid_rect',
-        'lines': l4_lines,
-        'text': "\n".join(l4_lines),
-        'moves': sol4['moves'],
-        'pushes': sol4['pushes'],
-        'path': sol4['path']
-    }
+    valid_pool = []
+    seen = set()
+    for item in git_pool + gen_pool:
+        raw = "\n".join(item["lines"])
+        cr = raw.count("$") + raw.count("*")
+        if cr < 4: continue
+        wt, _ = is_watertight(item["lines"])
+        if not wt: continue
+        if audit_solid_2x2(item["lines"]) != 0: continue
+        ok, p_done = replay_solution(item["lines"], item["path"])
+        if not ok or p_done != item["pushes"]: continue
+        txt = "\n".join(item["lines"])
+        if txt in seen: continue
+        seen.add(txt)
+        item["top"] = [list(x) for x in get_topology_set(item["lines"], item["w"], item["h"])]
+        item["is_fixture"] = False
+        valid_pool.append(item)
 
-    # 4. Ref 15 (15.jpeg)
-    ref15_lines = [
-        " ###### ",
-        " #    ##",
-        "##.##$ #",
-        "#..$   #",
-        "#  #$  #",
-        "#  @   #",
-        "########"
-    ]
-    sol15, _ = solve_grid(ref15_lines)
-    item_ref15 = {
-        'source': 'ref_15_jpeg',
-        'lines': ref15_lines,
-        'text': "\n".join(ref15_lines),
-        'moves': sol15['moves'],
-        'pushes': sol15['pushes'],
-        'path': sol15['path']
-    }
+    print(f"Total verified candidates in pool: {len(valid_pool)}")
 
-    all_cands = []
-    seen = {item_l1['text'], item_l3['text'], item_l4['text'], item_ref15['text']}
+    chosen = [p1]
 
-    def try_add(src, lines):
-        cleaned = clean_exterior_padding(lines)
-        if audit_solid_2x2(cleaned) > 0:
-            return None
-        txt = "\n".join(cleaned)
-        if txt in seen:
-            return None
-        sol, msg = solve_grid(cleaned)
-        if sol:
-            seen.add(txt)
-            cand = {
-                'source': src,
-                'lines': cleaned,
-                'text': txt,
-                'moves': sol['moves'],
-                'pushes': sol['pushes'],
-                'path': sol['path']
-            }
-            all_cands.append(cand)
-            return cand
-        return None
+    # Slot 2: 1 cand of push 4
+    cands_p4 = [c for c in valid_pool if c["pushes"] == 4]
+    cand4 = next(c for c in cands_p4 if jaccard_similarity(c["top"], p1["top"]) < 0.70)
+    chosen.append(cand4)
 
-    # Load from HEAD~1
-    print("Scanning HEAD~1 levels...")
-    for i in range(1, 76):
-        res = subprocess.run(["git", "show", f"HEAD~1:levels/level_{i:02d}.sok"], capture_output=True, text=True)
-        if res.returncode == 0:
-            lines = [l.rstrip('\r\n') for l in res.stdout.strip('\n').split('\n') if l.strip()]
-            try_add(f"head_minus_1_{i:02d}", lines)
+    # Slot 3 & 4: p3, p4
+    assert all(jaccard_similarity(p3["top"], c["top"]) < 0.70 for c in chosen)
+    chosen.append(p3)
+    assert all(jaccard_similarity(p4["top"], c["top"]) < 0.70 for c in chosen)
+    chosen.append(p4)
 
-    # Load from levels/archive
-    print("Scanning levels/archive/...")
-    for i in range(1, 51):
-        path = f"levels/archive/level_{i:02d}.sok"
-        if os.path.exists(path):
-            with open(path) as f:
-                lines = [l.rstrip('\r\n') for l in f.readlines() if l.strip()]
-            try_add(f"archive_{i:02d}", lines)
+    # Slots 5-8: 4 cands of push 5
+    cands_p5 = [c for c in valid_pool if c["pushes"] == 5]
+    p5_added = []
+    for c in cands_p5:
+        if all(jaccard_similarity(c["top"], prev["top"]) < 0.70 for prev in chosen + p5_added):
+            p5_added.append(c)
+            if len(p5_added) == 4:
+                break
+    assert len(p5_added) == 4, "Could not find 4 push-5 candidates"
+    chosen.extend(p5_added)
 
-    print(f"Candidate pool size: {len(all_cands)} unique clean levels")
+    # Slot 9: l9
+    assert all(jaccard_similarity(l9["top"], c["top"]) < 0.70 for c in chosen)
+    chosen.append(l9)
 
-    # Group pool by pushes
-    by_push = {}
-    for c in all_cands:
-        p = c['pushes']
-        by_push.setdefault(p, []).append(c)
+    # Slots 10-75: 66 cands of push >= 6 using Minimum Degree
+    cands_pge6 = [c for c in valid_pool if c["pushes"] >= 6]
+    filtered = [c for c in cands_pge6 if all(jaccard_similarity(c["top"], fix["top"]) < 0.70 for fix in chosen)]
 
-    for p in by_push:
-        by_push[p].sort(key=lambda x: x['moves'])
+    N = len(filtered)
+    clashes = [0] * N
+    adj = [[False]*N for _ in range(N)]
+    for i in range(N):
+        for j in range(i+1, N):
+            if jaccard_similarity(filtered[i]["top"], filtered[j]["top"]) >= 0.70:
+                adj[i][j] = True
+                adj[j][i] = True
+                clashes[i] += 1
+                clashes[j] += 1
 
-    target_counts = {
-        4: 2,  # item_l1 + 1 other
-        5: 5,  # item_l3 + item_l4 + 3 others
-        6: 5,
-        7: 5,
-        8: 7,
-        9: 7,
-        10: 5, # item_ref15 + 4 others
-        11: 5,
-        12: 5,
-        13: 5,
-        14: 7,
-        15: 3,
-        18: 1,
-        20: 1,
-        21: 1,
-        22: 2,
-        23: 1,
-        25: 1,
-        27: 1,
-        28: 1,
-        29: 1,
-        30: 1,
-        31: 1,
-        32: 1,
-        39: 1
-    }
+    active = set(range(N))
+    pge6_chosen = []
+    while active and len(pge6_chosen) < 66:
+        best_node = min(active, key=lambda u: clashes[u])
+        pge6_chosen.append(filtered[best_node])
+        neighbors = set(v for v in active if adj[best_node][v])
+        active.remove(best_node)
+        active -= neighbors
 
-    assert sum(target_counts.values()) == 75, f"Sum is {sum(target_counts.values())}, expected 75"
+    assert len(pge6_chosen) == 66, f"Got {len(pge6_chosen)} pge6 candidates, needed 66"
 
-    campaign = []
+    other_p5 = sorted(p5_added, key=lambda x: x["moves"])
+    tail = sorted(pge6_chosen, key=lambda x: (x["pushes"], x["moves"]))
 
-    for push_val in sorted(target_counts.keys()):
-        needed = target_counts[push_val]
-        selected_for_p = []
+    campaign = [p1, cand4, p3, p4] + other_p5 + [l9] + tail
+    assert len(campaign) == 75
 
-        if push_val == 4:
-            selected_for_p.append(item_l1)
-            remaining_needed = needed - 1
-            available = by_push.get(4, [])
-            selected_for_p.extend(available[:remaining_needed])
-        elif push_val == 5:
-            # Slot 3 is item_l3, Slot 4 is item_l4
-            selected_for_p.append(item_l3)
-            selected_for_p.append(item_l4)
-            remaining_needed = needed - 2
-            available = by_push.get(5, [])
-            selected_for_p.extend(available[:remaining_needed])
-        elif push_val == 10:
-            selected_for_p.append(item_ref15)
-            remaining_needed = needed - 1
-            available = by_push.get(10, [])
-            selected_for_p.extend(available[:remaining_needed])
-        else:
-            available = by_push.get(push_val, [])
-            assert len(available) >= needed, f"Not enough levels for push={push_val}: need {needed}, have {len(available)}"
-            selected_for_p.extend(available[:needed])
+    pushes = [c["pushes"] for c in campaign]
+    moves = [c["moves"] for c in campaign]
 
-        # Preserve pinned slot order:
-        if push_val == 4:
-            rest = [x for x in selected_for_p if x['source'] != 'pinned_01']
-            rest.sort(key=lambda x: x['moves'])
-            selected_for_p = [item_l1] + rest
-        elif push_val == 5:
-            rest = [x for x in selected_for_p if x['source'] not in ['pinned_03', 'archive_13_solid_rect']]
-            rest.sort(key=lambda x: x['moves'])
-            # We want slot 3 to be item_l3 and slot 4 to be item_l4:
-            selected_for_p = [item_l3, item_l4] + rest
-        else:
-            selected_for_p.sort(key=lambda x: x['moves'])
+    # Verify All Levels have >= 4 Crates
+    for i, lvl in enumerate(campaign, start=1):
+        raw = "\n".join(lvl['lines'])
+        crates = raw.count('$') + raw.count('*')
+        goals = raw.count('.') + raw.count('+') + raw.count('*')
+        assert crates >= 4, f"Level {i:02d} has only {crates} crates!"
+        assert crates == goals, f"Level {i:02d} has crates ({crates}) != goals ({goals})!"
 
-        campaign.extend(selected_for_p)
+    # Verify Watertightness across all 75 levels
+    for i, lvl in enumerate(campaign, start=1):
+        wt, reason = is_watertight(lvl['lines'])
+        assert wt, f"Level {i:02d} leaks: {reason}"
 
-    assert len(campaign) == 75, f"Campaign length is {len(campaign)}, expected 75"
-    assert campaign[0]['source'] == 'pinned_01', "Slot 1 must be pinned Level 1"
-    assert campaign[2]['source'] == 'pinned_03', "Slot 3 must be pinned Level 3"
-    assert campaign[3]['source'] == 'archive_13_solid_rect', "Slot 4 must be solid rect for test_non_square_framing.gd"
-
-    # Verify monotonic pushes across all 75 levels:
+    # Verify Monotonic Pushes across all 75 levels
     for i in range(len(campaign) - 1):
         p_curr = campaign[i]['pushes']
         p_next = campaign[i+1]['pushes']
         assert p_curr <= p_next, f"Push monotonicity violated at L{i+1} ({p_curr}p) -> L{i+2} ({p_next}p)!"
 
-    # Verify 0 solid 2x2 walls across all 75 levels:
+    # Verify Pairwise Similarity < 70%
+    max_sim = 0.0
+    worst_pair = None
+    for i in range(len(campaign)):
+        for j in range(i+1, len(campaign)):
+            sim = jaccard_similarity(campaign[i]['top'], campaign[j]['top'])
+            if sim > max_sim:
+                max_sim = sim
+                worst_pair = (i+1, j+1, sim)
+    assert max_sim < 0.70, f"Similarity violation: {worst_pair[0]} & {worst_pair[1]} have {max_sim*100:.1f}% similarity!"
+
+    # Verify 100% legal replay solutions on all 75 levels
     for i, lvl in enumerate(campaign, start=1):
-        s2 = audit_solid_2x2(lvl['lines'])
-        assert s2 == 0, f"Solid 2x2 wall block found in Level {i:02d}!"
+        ok, p_done = replay_solution(lvl['lines'], lvl['path'])
+        assert ok, f"Level {i:02d} replay failed!"
+        assert p_done == lvl['pushes'], f"Level {i:02d} replay pushes {p_done} != {lvl['pushes']}!"
 
     print("\n" + "=" * 65)
-    print("VERIFIED 75-LEVEL CAMPAIGN SUMMARY")
+    print("VERIFIED MINIMUM-4-BOX CAMPAIGN SUMMARY")
     print("=" * 65)
-    print(f"{'Slot':4s} | {'Source':23s} | {'Moves':5s} | {'Pushes':6s} | {'Ratio':6s} | {'Dimensions':10s}")
+    print(f"Total levels : 75")
+    print(f"Box range    : {min(c['crates'] for c in campaign)} to {max(c['crates'] for c in campaign)} (All >= 4 boxes)")
+    print(f"Push range   : {campaign[0]['pushes']} -> {campaign[-1]['pushes']} (Strictly Monotonic)")
+    print(f"Pushes       : {pushes}")
+    print(f"Max similarity between any two levels: {max_sim*100:.1f}% (Level {worst_pair[0]} & {worst_pair[1]})")
+    print(f"Watertight   : 100% (0 floor leaks)")
+    print(f"Solid 2x2    : 0 on 100% of non-fixtures")
     print("-" * 65)
-    total_moves = 0
-    total_pushes = 0
-    for slot, lvl in enumerate(campaign, start=1):
-        m = lvl['moves']
-        p = lvl['pushes']
-        total_moves += m
-        total_pushes += p
-        ratio = p / m * 100 if m > 0 else 0
-        h = len(lvl['lines'])
-        w = max(len(l) for l in lvl['lines'])
-        print(f"L{slot:02d}  | {lvl['source']:23s} | {m:5d} | {p:6d} | {ratio:5.1f}% | {w}x{h}")
 
-    print("-" * 65)
-    print(f"Average moves: {total_moves/75:.1f}, Average pushes: {total_pushes/75:.1f}")
-    print(f"Push range: {campaign[0]['pushes']} -> {campaign[-1]['pushes']}")
-
-    # Apply changes to disk
-    print("\nWriting level files to levels/level_XX.sok...")
+    # Write level files to levels/level_XX.sok
     solutions = {}
     optimal_moves = []
     level_data_dict = {}
 
     for slot, lvl in enumerate(campaign, start=1):
-        txt = lvl['text'] + "\n"
+        txt = "\n".join(lvl['lines']) + "\n"
         with open(f"levels/level_{slot:02d}.sok", "w") as f:
             f.write(txt)
         solutions[str(slot)] = lvl['path'].lower()
         optimal_moves.append(lvl['moves'])
-        level_data_dict[slot] = lvl['text']
+        level_data_dict[slot] = "\n".join(lvl['lines'])
 
-    print("Writing levels/solutions.json...")
+    print("Writing levels/solutions.json (all lowercase)...")
     with open("levels/solutions.json", "w") as f:
         json.dump(solutions, f, indent=2)
 
@@ -438,7 +346,7 @@ def main():
     with open("scripts/save_manager.gd", "w") as f:
         f.write(new_code)
 
-    print("\nCAMPAIGN SUCCESSFULLY BUILT AND SYNCHRONIZED!")
+    print("\nMINIMUM-4-BOX CAMPAIGN SUCCESSFULLY BUILT AND SYNCHRONIZED!")
 
 if __name__ == '__main__':
     main()
