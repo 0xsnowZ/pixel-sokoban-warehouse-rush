@@ -2327,24 +2327,24 @@ func _draw_wall(rect: Rect2, pos: Vector2i = Vector2i.ZERO) -> void:
 
 	match current_chapter_idx:
 		1:
-			# === Chapter 2: Cold Storage (Cryogenic Insulated Steel Bulkhead) ===
+			# === Chapter 2: Cold Storage (Cryogenic Frosted Blue-Grey Masonry) ===
 			active_wall_tex = tex_wall_cold_storage
 			wall_tint = Color(1.0, 1.0, 1.0)
-			top_highlight = Color(0.65, 0.85, 1.0, 0.28)
+			top_highlight = Color(0.75, 0.90, 1.0, 0.35)
 			bottom_shadow = Color(0.04, 0.08, 0.14, 0.45)
 			floor_contact_shadow = Color(0.02, 0.06, 0.12, 0.85)
 		2:
-			# === Chapter 3: Cyber Depot (Futuristic Composite Armor & Laser Conduit) ===
+			# === Chapter 3: Cyber Depot (Dark Charcoal Slate Basalt Masonry) ===
 			active_wall_tex = tex_wall_cyber_depot
 			wall_tint = Color(1.0, 1.0, 1.0)
-			top_highlight = Color(0.0, 0.85, 1.0, 0.22)
+			top_highlight = Color(1.0, 0.75, 0.22, 0.35)
 			bottom_shadow = Color(0.02, 0.04, 0.08, 0.55)
 			floor_contact_shadow = Color(0.0, 0.02, 0.06, 0.90)
 		3:
-			# === Chapter 4: Quantum Vault (Obsidian-Violet Titanium & Photon Conduit) ===
+			# === Chapter 4: Quantum Vault (Deep Royal Violet Obsidian Masonry) ===
 			active_wall_tex = tex_wall_quantum_vault
 			wall_tint = Color(1.0, 1.0, 1.0)
-			top_highlight = Color(0.85, 0.40, 1.00, 0.30)
+			top_highlight = Color(0.92, 0.68, 1.00, 0.40)
 			bottom_shadow = Color(0.04, 0.02, 0.08, 0.60)
 			floor_contact_shadow = Color(0.02, 0.01, 0.05, 0.92)
 		_:
@@ -2384,34 +2384,32 @@ func _draw_wall(rect: Rect2, pos: Vector2i = Vector2i.ZERO) -> void:
 		var shadow_w: float = minf(tile_size * 0.12, 5.0)
 		draw_rect(Rect2(rect.end.x, rect.position.y, shadow_w, rect.size.y), Color(0.0, 0.0, 0.0, 0.16))
 
-	# 5. Connected Conduits & Intersections for Cyber Depot (Ch 3) and Quantum Vault (Ch 4)
-	if current_chapter_idx == 2 or current_chapter_idx == 3:
-		var center_p: Vector2 = rect.get_center()
-		var conduit_col: Color = Color(0.0, 0.85, 1.0, 0.60) if current_chapter_idx == 2 else Color(0.85, 0.45, 1.0, 0.60)
-		var conduit_w: float = 1.6
+	# 5. Chapter-Specific Architectural Accents on Exposed Coping
+	if not wall_u:
+		match current_chapter_idx:
+			1:
+				# Cold Storage: Crystalline frost glint along exposed top edge
+				draw_line(rect.position + Vector2(0.0, 1.0), rect.position + Vector2(rect.size.x, 1.0), Color(0.85, 0.95, 1.0, 0.35), 1.0)
+			2:
+				# Cyber Depot: Neon cyan laser-etched coping rim
+				draw_line(rect.position + Vector2(0.0, 1.0), rect.position + Vector2(rect.size.x, 1.0), Color(0.0, 0.85, 1.0, 0.30), 1.0)
+			3:
+				# Quantum Vault: Photonic violet crystalline sheen
+				draw_line(rect.position + Vector2(0.0, 1.0), rect.position + Vector2(rect.size.x, 1.0), Color(0.88, 0.50, 1.0, 0.35), 1.0)
 
-		# Draw continuous lines connecting with neighboring wall tiles
-		if wall_l:
-			draw_line(Vector2(rect.position.x, center_p.y), center_p, conduit_col, conduit_w)
-		if wall_r:
-			draw_line(center_p, Vector2(rect.end.x, center_p.y), conduit_col, conduit_w)
-		if wall_u:
-			draw_line(Vector2(center_p.x, rect.position.y), center_p, conduit_col, conduit_w)
-		if wall_d:
-			draw_line(center_p, Vector2(center_p.x, rect.end.y), conduit_col, conduit_w)
-
-		var deg: int = (1 if wall_l else 0) + (1 if wall_r else 0) + (1 if wall_u else 0) + (1 if wall_d else 0)
-		var is_corner: bool = (deg == 2 and ((wall_l and wall_u) or (wall_l and wall_d) or (wall_r and wall_u) or (wall_r and wall_d)))
-
-		# Only draw pulsing diode node at true intersections (T, cross), corners, or isolated columns
-		if deg >= 3 or is_corner or deg <= 1:
-			var pulse: float = sin(float(Time.get_ticks_msec()) * 0.003 + (pos.x * 1.5 + pos.y * 2.0)) * 0.5 + 0.5
-			if current_chapter_idx == 2:
-				draw_circle(center_p, 2.2, Color(0.0, 0.95, 1.0, 0.35 + pulse * 0.45))
-				draw_circle(center_p, 1.0, Color(0.8, 1.0, 1.0, 0.70 + pulse * 0.30))
-			else:
-				draw_circle(center_p, 2.4, Color(0.90, 0.45, 1.0, 0.35 + pulse * 0.45))
-				draw_circle(center_p, 1.2, Color(1.0, 0.85, 1.0, 0.70 + pulse * 0.30))
+	# 6. Exposed Outer Corner Structural Reinforcements
+	if not wall_u and (not wall_l or not wall_r):
+		var corner_x: float = rect.position.x + 4.0 if not wall_l else rect.end.x - 4.0
+		var rivet_pos: Vector2 = Vector2(corner_x, rect.position.y + 4.0)
+		var rivet_col: Color = Color(0.8, 0.85, 0.9, 0.6)
+		match current_chapter_idx:
+			1:
+				rivet_col = Color(0.70, 0.90, 1.0, 0.70)
+			2:
+				rivet_col = Color(1.0, 0.75, 0.20, 0.85) # Amber locator beacon
+			3:
+				rivet_col = Color(0.90, 0.60, 1.0, 0.80)
+		draw_circle(rivet_pos, 1.4, rivet_col)
 
 
 func is_level_non_square() -> bool:

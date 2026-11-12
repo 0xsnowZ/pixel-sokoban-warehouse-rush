@@ -347,6 +347,177 @@ def create_wall_brick():
     print("Saved wall_brick.png")
 
 
+def create_wall_cold_storage():
+    img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+
+    # 3D perspective cold storage brick wall:
+    # Top 24 pixels: frosted ice-capped stone coping
+    ledge_h = 24
+    draw.rectangle([0, 0, SIZE, ledge_h], fill=(100, 135, 165, 255))
+    draw.line([(0, 1), (SIZE, 1)], fill=(195, 235, 255, 255), width=2)
+    for x in range(4, SIZE, 8):
+        draw.line([(x, 3), (x + 2, ledge_h - 2)], fill=(55, 80, 105, 160), width=1)
+    draw.line([(0, ledge_h), (SIZE, ledge_h)], fill=(18, 28, 42, 255), width=3)
+
+    # 4 courses of frosted steel-blue warehouse bricks
+    wall_y = ledge_h + 3
+    wall_h = SIZE - wall_y
+    courses = 4
+    course_h = wall_h / courses
+    mortar_col = (28, 44, 62, 255)
+
+    brick_colors = [
+        (78, 112, 148),
+        (68, 98, 132),
+        (88, 125, 162),
+        (60, 90, 122),
+        (72, 104, 140)
+    ]
+
+    for c in range(courses):
+        cy0 = int(wall_y + c * course_h)
+        cy1 = int(wall_y + (c + 1) * course_h) - 2
+
+        draw.rectangle([0, cy1, SIZE, cy1 + 2], fill=mortar_col)
+
+        brick_w = 42
+        offset = 0 if c % 2 == 0 else int(brick_w / 2)
+
+        x = -offset
+        idx = c * 3
+        while x < SIZE:
+            bx0 = max(0, x)
+            bx1 = min(SIZE, x + brick_w)
+            if bx1 > bx0:
+                col = brick_colors[idx % len(brick_colors)]
+                draw.rectangle([bx0, cy0, bx1, cy1], fill=col + (255,))
+                draw.line([(bx0, cy0), (bx1, cy0)], fill=(min(255, col[0] + 35), min(255, col[1] + 35), min(255, col[2] + 40), 255), width=1)
+                draw.line([(bx0, cy1), (bx1, cy1)], fill=(max(0, col[0] - 35), max(0, col[1] - 35), max(0, col[2] - 35), 255), width=1)
+                if bx1 < SIZE:
+                    draw.rectangle([bx1 - 2, cy0, bx1, cy1], fill=mortar_col)
+            x += brick_w + 2
+            idx += 1
+
+    draw.rectangle([0, 0, SIZE - 1, SIZE - 1], outline=(18, 28, 40, 255), width=2)
+    img.save(os.path.join(OUTPUT_DIR, "wall_cold_storage.png"))
+    print("Saved wall_cold_storage.png")
+
+
+def create_wall_cyber_depot():
+    img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+
+    # 3D perspective cyber depot slate wall:
+    # Top 24 pixels: dark graphite coping with industrial hazard amber highlight
+    ledge_h = 24
+    draw.rectangle([0, 0, SIZE, ledge_h], fill=(72, 78, 92, 255))
+    draw.line([(0, 1), (SIZE, 1)], fill=(255, 185, 45, 255), width=2)
+    for x in range(4, SIZE, 8):
+        draw.line([(x, 3), (x + 2, ledge_h - 2)], fill=(36, 40, 48, 160), width=1)
+    draw.line([(0, ledge_h), (SIZE, ledge_h)], fill=(14, 16, 22, 255), width=3)
+
+    # 4 courses of dark charcoal slate bricks
+    wall_y = ledge_h + 3
+    wall_h = SIZE - wall_y
+    courses = 4
+    course_h = wall_h / courses
+    mortar_col = (20, 24, 30, 255)
+
+    brick_colors = [
+        (56, 64, 76),
+        (48, 54, 66),
+        (64, 72, 86),
+        (42, 48, 58),
+        (52, 58, 70)
+    ]
+
+    for c in range(courses):
+        cy0 = int(wall_y + c * course_h)
+        cy1 = int(wall_y + (c + 1) * course_h) - 2
+
+        draw.rectangle([0, cy1, SIZE, cy1 + 2], fill=mortar_col)
+
+        brick_w = 42
+        offset = 0 if c % 2 == 0 else int(brick_w / 2)
+
+        x = -offset
+        idx = c * 3
+        while x < SIZE:
+            bx0 = max(0, x)
+            bx1 = min(SIZE, x + brick_w)
+            if bx1 > bx0:
+                col = brick_colors[idx % len(brick_colors)]
+                draw.rectangle([bx0, cy0, bx1, cy1], fill=col + (255,))
+                draw.line([(bx0, cy0), (bx1, cy0)], fill=(min(255, col[0] + 30), min(255, col[1] + 32), min(255, col[2] + 36), 255), width=1)
+                draw.line([(bx0, cy1), (bx1, cy1)], fill=(max(0, col[0] - 28), max(0, col[1] - 30), max(0, col[2] - 32), 255), width=1)
+                if bx1 < SIZE:
+                    draw.rectangle([bx1 - 2, cy0, bx1, cy1], fill=mortar_col)
+            x += brick_w + 2
+            idx += 1
+
+    draw.rectangle([0, 0, SIZE - 1, SIZE - 1], outline=(14, 16, 22, 255), width=2)
+    img.save(os.path.join(OUTPUT_DIR, "wall_cyber_depot.png"))
+    print("Saved wall_cyber_depot.png")
+
+
+def create_wall_quantum_vault():
+    img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+
+    # 3D perspective quantum vault obsidian wall:
+    # Top 24 pixels: prismatic obsidian coping with luminous amethyst highlight
+    ledge_h = 24
+    draw.rectangle([0, 0, SIZE, ledge_h], fill=(88, 58, 116, 255))
+    draw.line([(0, 1), (SIZE, 1)], fill=(235, 175, 255, 255), width=2)
+    for x in range(4, SIZE, 8):
+        draw.line([(x, 3), (x + 2, ledge_h - 2)], fill=(38, 22, 52, 160), width=1)
+    draw.line([(0, ledge_h), (SIZE, ledge_h)], fill=(16, 8, 24, 255), width=3)
+
+    # 4 courses of deep royal violet / obsidian bricks
+    wall_y = ledge_h + 3
+    wall_h = SIZE - wall_y
+    courses = 4
+    course_h = wall_h / courses
+    mortar_col = (24, 14, 34, 255)
+
+    brick_colors = [
+        (76, 48, 102),
+        (64, 38, 88),
+        (86, 56, 116),
+        (54, 32, 76),
+        (70, 44, 94)
+    ]
+
+    for c in range(courses):
+        cy0 = int(wall_y + c * course_h)
+        cy1 = int(wall_y + (c + 1) * course_h) - 2
+
+        draw.rectangle([0, cy1, SIZE, cy1 + 2], fill=mortar_col)
+
+        brick_w = 42
+        offset = 0 if c % 2 == 0 else int(brick_w / 2)
+
+        x = -offset
+        idx = c * 3
+        while x < SIZE:
+            bx0 = max(0, x)
+            bx1 = min(SIZE, x + brick_w)
+            if bx1 > bx0:
+                col = brick_colors[idx % len(brick_colors)]
+                draw.rectangle([bx0, cy0, bx1, cy1], fill=col + (255,))
+                draw.line([(bx0, cy0), (bx1, cy0)], fill=(min(255, col[0] + 35), min(255, col[1] + 30), min(255, col[2] + 45), 255), width=1)
+                draw.line([(bx0, cy1), (bx1, cy1)], fill=(max(0, col[0] - 32), max(0, col[1] - 25), max(0, col[2] - 38), 255), width=1)
+                if bx1 < SIZE:
+                    draw.rectangle([bx1 - 2, cy0, bx1, cy1], fill=mortar_col)
+            x += brick_w + 2
+            idx += 1
+
+    draw.rectangle([0, 0, SIZE - 1, SIZE - 1], outline=(16, 10, 24, 255), width=2)
+    img.save(os.path.join(OUTPUT_DIR, "wall_quantum_vault.png"))
+    print("Saved wall_quantum_vault.png")
+
+
 def create_floor_tiles():
     # Tile 1: Industrial warehouse hardwood/concrete panel
     img1 = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
@@ -550,6 +721,9 @@ if __name__ == "__main__":
     create_crate_goal()
     create_goal_pad()
     create_wall_brick()
+    create_wall_cold_storage()
+    create_wall_cyber_depot()
+    create_wall_quantum_vault()
     create_floor_tiles()
-    create_player_sprites()
+    # Note: Player character sprites are maintained by tools/generate_premium_sprites.py
     print("ALL SPRITES GENERATED SUCCESSFULLY!")
