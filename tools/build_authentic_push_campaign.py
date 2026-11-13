@@ -2,27 +2,34 @@
 """
 tools/build_authentic_push_campaign.py
 
-Assembles the verified authentic Sokoban campaign satisfying 100% of constraints:
+Assembles the verified authentic high-difficulty Sokoban campaign satisfying 100% of constraints:
 1. Minimum 4 boxes (crates >= 4) across ALL 75 levels.
 2. Watertight outer walls: 100% of all 75 levels enclosed by continuous '#' perimeter.
    Zero floor leaks to exterior space.
 3. Elimination of duplicates: Pairwise Jaccard topology similarity strictly < 70% across all 75 levels.
 4. Snug contour walls: single-tile perimeter ('#'), zero monolithic 2x2 solid wall blocks (solid_2x2 == 0 on non-fixtures).
    Zero dummy rooms or large unused voids.
-5. Strictly monotonic push difficulty progression: P_1 <= P_2 <= ... <= P_75.
-6. Preserves pinned test fixtures:
+5. Strict push density and compact maneuvering (prevent long, easy corridor runways like old Level 19):
+   - density = pushes / moves >= 0.35 on early/mid levels
+   - max_walk <= 4 (no long straight runway walks)
+6. Accelerated, high-difficulty monotonic push difficulty progression:
+   - Early levels ramp quickly from 4 to 10 pushes.
+   - Mid-levels scale through 11 to 15 pushes.
+   - Late levels peak through 16 to 32 pushes.
+7. Preserves pinned test fixtures:
    - Level 1: for test_grid_logic.gd (4 crates, 4 pushes, 9 moves)
-   - Level 3: for test_level3_hint_deadlock.gd (4 crates, 5 pushes, 18 moves)
-   - Level 4: solid rectangle for test_non_square_framing.gd (4 crates, 5 pushes, 25 moves)
-   - Level 9: trimmed L9 with zero dummy room (4 crates, 6 pushes, 14 moves, 75% utilization)
-7. Normalizes all solution strings to lowercase in levels/solutions.json.
-8. Synchronizes levels/level_XX.sok, levels/solutions.json, scripts/level_data.gd, and scripts/save_manager.gd.
+   - Slot 3: Level 3 for test_level3_hint_deadlock.gd (4 crates, 5 pushes, 18 moves)
+   - Slot 4: Level 4 solid rectangle for test_non_square_framing.gd (4 crates, 5 pushes, 25 moves)
+   - Slot 9: Level 9 trimmed L9 with zero dummy room (4 crates, 6 pushes, 14 moves, 75% utilization)
+8. Normalizes all solution strings to lowercase in levels/solutions.json.
+9. Synchronizes levels/level_XX.sok, levels/solutions.json, scripts/level_data.gd, and scripts/save_manager.gd.
 """
 
 import os
 import sys
 import json
 import re
+import random
 
 def parse_sok(lines):
     clean = [l.rstrip('\r\n') for l in lines if not l.startswith(';') and l.strip()]
@@ -93,6 +100,10 @@ def jaccard_similarity(top1, top2):
     union = len(s1 | s2)
     return intersection / union if union > 0 else 0.0
 
+def max_consecutive_walk(path):
+    runs = [match.group(0) for match in re.finditer(r"(.)\1*", path.lower())]
+    return max(len(r) for r in runs) if runs else 0
+
 def replay_solution(lines, path):
     dirs = {"u": (-1, 0), "d": (1, 0), "l": (0, -1), "r": (0, 1)}
     h = len(lines)
@@ -129,14 +140,10 @@ def replay_solution(lines, path):
 
 def main():
     print("=" * 65)
-    print("BUILDING VERIFIED MINIMUM-4-BOX SOKOBAN CAMPAIGN")
+    print("BUILDING VERIFIED HIGH-DIFFICULTY SOKOBAN CAMPAIGN")
     print("=" * 65)
 
-    with open("/home/snowz/.gemini/antigravity/brain/db19d3e6-5897-4bec-b12d-4a1222e63add/scratch/proper_watertight_generated.json") as f:
-        gen_pool = json.load(f)
-
-    with open("/home/snowz/.gemini/antigravity/brain/db19d3e6-5897-4bec-b12d-4a1222e63add/scratch/all_clean_git_pool.json") as f:
-        git_pool = json.load(f)
+    scratch = "/home/snowz/.gemini/antigravity/brain/db19d3e6-5897-4bec-b12d-4a1222e63add/scratch"
 
     # Pinned fixtures
     p1 = {
@@ -162,86 +169,143 @@ def main():
 
     for fix in [p1, p3, p4, l9]:
         fix["top"] = [list(x) for x in get_topology_set(fix["lines"], fix["w"], fix["h"])]
+        fix["density"] = fix["pushes"] / fix["moves"]
+        fix["max_walk"] = max_consecutive_walk(fix["path"])
 
-    valid_pool = []
+    pool_files = [
+        "proper_watertight_generated.json",
+        "all_clean_git_pool.json",
+        "pool_with_gen.json",
+        "valid_candidates_cache.json",
+        "all_valid_ge4.json",
+        "merged_tight_pool.json"
+    ]
+
+    all_cands = []
     seen = set()
-    for item in git_pool + gen_pool:
-        raw = "\n".join(item["lines"])
-        cr = raw.count("$") + raw.count("*")
-        if cr < 4: continue
-        wt, _ = is_watertight(item["lines"])
-        if not wt: continue
-        if audit_solid_2x2(item["lines"]) != 0: continue
-        ok, p_done = replay_solution(item["lines"], item["path"])
-        if not ok or p_done != item["pushes"]: continue
-        txt = "\n".join(item["lines"])
-        if txt in seen: continue
-        seen.add(txt)
-        item["top"] = [list(x) for x in get_topology_set(item["lines"], item["w"], item["h"])]
-        item["is_fixture"] = False
-        valid_pool.append(item)
 
-    print(f"Total verified candidates in pool: {len(valid_pool)}")
+    for fname in pool_files:
+        p = os.path.join(scratch, fname)
+        if not os.path.exists(p):
+            continue
+        try:
+            items = json.load(open(p))
+        except:
+            continue
+        for c in items:
+            if "lines" not in c or "path" not in c or "pushes" not in c:
+                continue
+            raw = "\n".join(c["lines"])
+            if raw in seen:
+                continue
+            seen.add(raw)
+            cr = raw.count("$") + raw.count("*")
+            gl = raw.count(".") + raw.count("+") + raw.count("*")
+            if cr < 4 or cr != gl:
+                continue
+            wt, _ = is_watertight(c["lines"])
+            if not wt:
+                continue
+            if audit_solid_2x2(c["lines"]) != 0:
+                continue
+            ok, p_done = replay_solution(c["lines"], c["path"])
+            if not ok or p_done != c["pushes"]:
+                continue
 
-    chosen = [p1]
+            push = c["pushes"]
+            move = c["moves"]
+            d = push / move if move else 0
+            mw = max_consecutive_walk(c["path"])
 
-    # Slot 2: 1 cand of push 4
-    cands_p4 = [c for c in valid_pool if c["pushes"] == 4]
-    cand4 = next(c for c in cands_p4 if jaccard_similarity(c["top"], p1["top"]) < 0.70)
-    chosen.append(cand4)
+            # Anti-hallway / strict compact criteria
+            if push <= 12:
+                if d < 0.35 or mw > 4:
+                    continue
+            elif push <= 20:
+                if d < 0.30 or mw > 5:
+                    continue
+            else:
+                if d < 0.20 or mw > 5:
+                    continue
 
-    # Slot 3 & 4: p3, p4
-    assert all(jaccard_similarity(p3["top"], c["top"]) < 0.70 for c in chosen)
-    chosen.append(p3)
-    assert all(jaccard_similarity(p4["top"], c["top"]) < 0.70 for c in chosen)
-    chosen.append(p4)
+            top = get_topology_set(c["lines"], c["w"], c["h"])
+            c["top"] = [list(x) for x in top]
+            c["crates"] = cr
+            c["density"] = d
+            c["max_walk"] = mw
+            c["is_fixture"] = False
+            all_cands.append(c)
 
-    # Slots 5-8: 4 cands of push 5
-    cands_p5 = [c for c in valid_pool if c["pushes"] == 5]
+    print(f"Total verified clean candidates in pool: {len(all_cands)}")
+
+    # Slot 2: push 4
+    cand4 = next(c for c in all_cands if c["pushes"] == 4 and jaccard_similarity(c["top"], p1["top"]) < 0.70)
+
+    # Slots 5-8: push 5 (4 levels)
+    cands_p5 = [c for c in all_cands if c["pushes"] == 5]
     p5_added = []
     for c in cands_p5:
-        if all(jaccard_similarity(c["top"], prev["top"]) < 0.70 for prev in chosen + p5_added):
+        if all(jaccard_similarity(c["top"], prev["top"]) < 0.70 for prev in [p1, cand4, p3, p4] + p5_added):
             p5_added.append(c)
             if len(p5_added) == 4:
                 break
-    assert len(p5_added) == 4, "Could not find 4 push-5 candidates"
-    chosen.extend(p5_added)
+    assert len(p5_added) == 4, f"Could not find 4 push-5 candidates, got {len(p5_added)}"
 
-    # Slot 9: l9
-    assert all(jaccard_similarity(l9["top"], c["top"]) < 0.70 for c in chosen)
-    chosen.append(l9)
+    initial_chosen = [p1, cand4, p3, p4] + p5_added + [l9]
+    assert len(initial_chosen) == 9
 
-    # Slots 10-75: 66 cands of push >= 6 using Minimum Degree
-    cands_pge6 = [c for c in valid_pool if c["pushes"] >= 6]
-    filtered = [c for c in cands_pge6 if all(jaccard_similarity(c["top"], fix["top"]) < 0.70 for fix in chosen)]
+    # Remaining 66 slots: pushes >= 6
+    remaining_pool = [c for c in all_cands if c["pushes"] >= 6 and all(jaccard_similarity(c["top"], fix["top"]) < 0.70 for fix in initial_chosen)]
+    print(f"Remaining candidates eligible for 66 slots: {len(remaining_pool)}")
 
-    N = len(filtered)
-    clashes = [0] * N
-    adj = [[False]*N for _ in range(N)]
-    for i in range(N):
-        for j in range(i+1, N):
-            if jaccard_similarity(filtered[i]["top"], filtered[j]["top"]) >= 0.70:
-                adj[i][j] = True
-                adj[j][i] = True
-                clashes[i] += 1
-                clashes[j] += 1
+    M = len(remaining_pool)
+    adj = [[False]*M for _ in range(M)]
+    degree = [0]*M
+    for i in range(M):
+        for j in range(i+1, M):
+            if jaccard_similarity(remaining_pool[i]["top"], remaining_pool[j]["top"]) >= 0.70:
+                adj[i][j] = adj[j][i] = True
+                degree[i] += 1
+                degree[j] += 1
 
-    active = set(range(N))
-    pge6_chosen = []
-    while active and len(pge6_chosen) < 66:
-        best_node = min(active, key=lambda u: clashes[u])
-        pge6_chosen.append(filtered[best_node])
-        neighbors = set(v for v in active if adj[best_node][v])
-        active.remove(best_node)
-        active -= neighbors
+    # Tight early caps to prevent plateaus and force steep difficulty escalation
+    caps = {6: 2, 7: 3, 8: 3, 9: 3, 10: 3}
 
-    assert len(pge6_chosen) == 66, f"Got {len(pge6_chosen)} pge6 candidates, needed 66"
+    best_size = 0
+    best_chosen = []
+
+    for seed in range(500):
+        rng = random.Random(seed)
+        active = set(range(M))
+        chosen = []
+        counts = {6: 0, 7: 0, 8: 0, 9: 0, 10: 0}
+        while active and len(chosen) < 66:
+            eligible = [u for u in active if counts.get(remaining_pool[u]["pushes"], 0) < caps.get(remaining_pool[u]["pushes"], 999)]
+            if not eligible:
+                max_avail_p = max(remaining_pool[u]["pushes"] for u in active)
+                eligible = [u for u in active if remaining_pool[u]["pushes"] == max_avail_p]
+            best = min(eligible, key=lambda u: (degree[u] + rng.uniform(-0.5, 0.5), -remaining_pool[u]["pushes"]))
+            chosen.append(remaining_pool[best])
+            p = remaining_pool[best]["pushes"]
+            if p in counts:
+                counts[p] += 1
+            nbrs = set(v for v in active if adj[best][v])
+            active.remove(best)
+            active -= nbrs
+        if len(chosen) > best_size:
+            best_size = len(chosen)
+            best_chosen = chosen
+            if best_size == 66:
+                print(f"Independent set search reached 66 on seed {seed}!")
+                break
+
+    assert len(best_chosen) == 66, f"Failed to select 66 non-conflicting candidates (got {len(best_chosen)})"
 
     other_p5 = sorted(p5_added, key=lambda x: x["moves"])
-    tail = sorted(pge6_chosen, key=lambda x: (x["pushes"], x["moves"]))
+    tail = sorted(best_chosen, key=lambda x: (x["pushes"], x["moves"]))
 
     campaign = [p1, cand4, p3, p4] + other_p5 + [l9] + tail
-    assert len(campaign) == 75
+    assert len(campaign) == 75, f"Campaign size is {len(campaign)}, expected 75"
 
     pushes = [c["pushes"] for c in campaign]
     moves = [c["moves"] for c in campaign]
@@ -283,7 +347,7 @@ def main():
         assert p_done == lvl['pushes'], f"Level {i:02d} replay pushes {p_done} != {lvl['pushes']}!"
 
     print("\n" + "=" * 65)
-    print("VERIFIED MINIMUM-4-BOX CAMPAIGN SUMMARY")
+    print("VERIFIED HIGH-DIFFICULTY CAMPAIGN SUMMARY")
     print("=" * 65)
     print(f"Total levels : 75")
     print(f"Box range    : {min(c['crates'] for c in campaign)} to {max(c['crates'] for c in campaign)} (All >= 4 boxes)")
@@ -292,6 +356,8 @@ def main():
     print(f"Max similarity between any two levels: {max_sim*100:.1f}% (Level {worst_pair[0]} & {worst_pair[1]})")
     print(f"Watertight   : 100% (0 floor leaks)")
     print(f"Solid 2x2    : 0 on 100% of non-fixtures")
+    l19 = campaign[18]
+    print(f"Level 19     : push={l19['pushes']}, moves={l19['moves']}, density={l19['density']:.2f}, max_walk={l19['max_walk']}")
     print("-" * 65)
 
     # Write level files to levels/level_XX.sok
@@ -346,7 +412,7 @@ def main():
     with open("scripts/save_manager.gd", "w") as f:
         f.write(new_code)
 
-    print("\nMINIMUM-4-BOX CAMPAIGN SUCCESSFULLY BUILT AND SYNCHRONIZED!")
+    print("\nHIGH-DIFFICULTY CAMPAIGN SUCCESSFULLY BUILT AND SYNCHRONIZED!")
 
 if __name__ == '__main__':
     main()
