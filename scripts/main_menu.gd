@@ -21,6 +21,13 @@ var icon_star_full: Texture2D = preload("res://assets/icons/icon_star_full.png")
 var icon_lock: Texture2D = preload("res://assets/icons/icon_lock.png")
 var icon_play: Texture2D = preload("res://assets/icons/icon_play.png")
 var icon_check: Texture2D = preload("res://assets/icons/icon_check.png")
+var icon_hint: Texture2D = preload("res://assets/icons/icon_hint.png")
+var icon_calendar: Texture2D = preload("res://assets/icons/icon_calendar.png")
+var icon_flame: Texture2D = preload("res://assets/icons/icon_flame.png")
+var icon_sector_1: Texture2D = preload("res://assets/icons/icon_sector_1.png")
+var icon_sector_2: Texture2D = preload("res://assets/icons/icon_sector_2.png")
+var icon_sector_3: Texture2D = preload("res://assets/icons/icon_sector_3.png")
+var icon_sector_4: Texture2D = preload("res://assets/icons/icon_sector_4.png")
 
 var tex_player_down: Texture2D = preload("res://assets/player_down.png")
 var tex_player_down_w1: Texture2D = preload("res://assets/player_down_walk1.png")
@@ -1280,6 +1287,10 @@ func _update_menu_state() -> void:
 			daily_shift_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			daily_shift_btn.theme_type_variation = &"SecondaryButton"
 			daily_shift_btn.add_theme_font_size_override("font_size", 14)
+			daily_shift_btn.icon = icon_calendar
+			daily_shift_btn.expand_icon = true
+			daily_shift_btn.add_theme_constant_override("icon_max_width", 22)
+			daily_shift_btn.add_theme_constant_override("h_separation", 8)
 			daily_shift_btn.pressed.connect(_on_daily_shift_pressed)
 			_attach_spring_physics(daily_shift_btn)
 			var dual_deck: Control = deck.find_child("DualDeck", false, false) as Control
@@ -1290,17 +1301,21 @@ func _update_menu_state() -> void:
 				deck.add_child(daily_shift_btn)
 
 	if daily_shift_btn != null and save_mgr != null and save_mgr.has_method("get_daily_challenge_info"):
+		daily_shift_btn.icon = icon_calendar
+		daily_shift_btn.expand_icon = true
+		daily_shift_btn.add_theme_constant_override("icon_max_width", 22)
+		daily_shift_btn.add_theme_constant_override("h_separation", 8)
 		var d_info: Dictionary = save_mgr.get_daily_challenge_info()
 		var streak_count: int = d_info.get("streak", 0)
 		var is_done: bool = d_info.get("is_completed", false)
 		if is_done:
-			daily_shift_btn.text = "📅 DAILY SHIFT: CLEARED ✓ (STREAK: %d 🔥)" % streak_count
+			daily_shift_btn.text = "DAILY SHIFT: CLEARED ✓ (STREAK: %d)" % streak_count
 			daily_shift_btn.modulate = Color(0.80, 1.0, 0.85)
 		else:
 			if streak_count > 0:
-				daily_shift_btn.text = "📅 DAILY SHIFT • %d STREAK 🔥 (+3 HINTS)" % streak_count
+				daily_shift_btn.text = "DAILY SHIFT • %d STREAK (+3 HINTS)" % streak_count
 			else:
-				daily_shift_btn.text = "📅 DAILY SHIFT • PLAY (+3 HINTS)"
+				daily_shift_btn.text = "DAILY SHIFT • PLAY (+3 HINTS)"
 			daily_shift_btn.modulate = Color(1.0, 0.92, 0.55)
 
 
@@ -1408,7 +1423,7 @@ func _refresh_level_grid_buttons() -> void:
 		var vaults: Array[Dictionary] = save_mgr.get_all_star_vaults()
 		for v in vaults:
 			if total_stars < v["stars"]:
-				next_vault_info = " • Next Vault: %s %s (%d★)" % [v.get("icon", "📦"), v.get("name", ""), v["stars"]]
+				next_vault_info = " • Next Vault: %s (%d★)" % [v.get("name", "Supply Cache"), v["stars"]]
 				break
 
 	var stars_count_lbl: Label = find_child("StarsCountLabel", true, false) as Label
@@ -1431,19 +1446,19 @@ func _refresh_level_grid_buttons() -> void:
 
 	var s1_badge: Label = find_child("Sector1Badge", true, false) as Label
 	if s1_badge != null:
-		s1_badge.text = "📦 S1: %d/45 ★" % s1_stars
+		s1_badge.text = "S1: %d/45 ★" % s1_stars
 
 	var s2_badge: Label = find_child("Sector2Badge", true, false) as Label
 	if s2_badge != null:
-		s2_badge.text = "❄ S2: %d/60 ★" % s2_stars
+		s2_badge.text = "S2: %d/60 ★" % s2_stars
 
 	var s3_badge: Label = find_child("Sector3Badge", true, false) as Label
 	if s3_badge != null:
-		s3_badge.text = "⚡ S3: %d/45 ★" % s3_stars
+		s3_badge.text = "S3: %d/45 ★" % s3_stars
 
 	var s4_badge: Label = find_child("Sector4Badge", true, false) as Label
 	if s4_badge != null:
-		s4_badge.text = "⚛ S4: %d/75 ★" % s4_stars
+		s4_badge.text = "S4: %d/75 ★" % s4_stars
 
 	for child in level_grid.get_children():
 		if not child is Button:
@@ -1608,8 +1623,15 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 
 	if title_lbl:
 		title_lbl.text = "★ STAR VAULT UNLOCKED! ★"
+	var icon_rect: TextureRect = star_vault_modal.find_child("VaultIconRect", true, false) as TextureRect
+	if icon_rect:
+		if vault.get("reward_type") == "hints":
+			icon_rect.texture = icon_hint
+		else:
+			icon_rect.texture = icon_locker
 	if icon_lbl:
-		icon_lbl.text = vault.get("icon", "📦")
+		icon_lbl.text = ""
+		icon_lbl.visible = false
 	if name_lbl:
 		name_lbl.text = "%s (%d Stars)" % [vault.get("name", "Supply Cache"), vault.get("stars", 15)]
 	if desc_lbl:
@@ -1686,9 +1708,16 @@ func _create_star_vault_modal() -> PanelContainer:
 
 	var icon_lbl: Label = Label.new()
 	icon_lbl.name = "VaultIconLabel"
-	icon_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	icon_lbl.add_theme_font_size_override("font_size", 42)
+	icon_lbl.visible = false
 	vbox.add_child(icon_lbl)
+
+	var icon_rect: TextureRect = TextureRect.new()
+	icon_rect.name = "VaultIconRect"
+	icon_rect.custom_minimum_size = Vector2(56, 56)
+	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon_rect.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	vbox.add_child(icon_rect)
 
 	var name_lbl: Label = Label.new()
 	name_lbl.name = "VaultNameLabel"

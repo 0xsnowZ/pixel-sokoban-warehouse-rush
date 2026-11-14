@@ -780,7 +780,7 @@ func _update_ui() -> void:
 		if is_daily_challenge:
 			var daily_info: Dictionary = save_mgr.get_daily_challenge_info() if save_mgr else {}
 			var streak_val: int = daily_info.get("streak", 0)
-			level_label.text = "DAILY SHIFT • %d 🔥" % streak_val
+			level_label.text = "DAILY SHIFT • STREAK: %d" % streak_val
 		else:
 			level_label.text = loc_mgr.tr_text("GAME_LEVEL_LABEL", [current_level_index + 1, level_paths.size()])
 		stats_label.text = "%s%s   •   %s%s" % [
@@ -808,7 +808,7 @@ func _update_ui() -> void:
 		if is_daily_challenge:
 			var daily_info: Dictionary = save_mgr.get_daily_challenge_info() if save_mgr else {}
 			var streak_val: int = daily_info.get("streak", 0)
-			level_label.text = "DAILY SHIFT • %d 🔥" % streak_val
+			level_label.text = "DAILY SHIFT • STREAK: %d" % streak_val
 		else:
 			level_label.text = "LEVEL %d / %d" % [current_level_index + 1, level_paths.size()]
 		stats_label.text = "MOVES: %d%s   •   PUSHES: %d%s" % [grid.moves_count, star_target_sub, grid.pushes_count, best_str]
@@ -944,7 +944,7 @@ func _on_level_won() -> void:
 		if is_daily_challenge:
 			var d_res: Dictionary = save_mgr.record_daily_challenge_completed()
 			var cur_streak: int = d_res.get("streak", 1)
-			_show_hint_toast("DAILY SHIFT CLEARED! +3 HINTS • %d DAY STREAK 🔥" % cur_streak, Color(1.0, 0.85, 0.25))
+			_show_hint_toast("DAILY SHIFT CLEARED! +3 HINTS • %d DAY STREAK" % cur_streak, Color(1.0, 0.85, 0.25))
 	_check_achievements()
 	if ad_mgr:
 		ad_mgr.record_level_completed(current_level_index)

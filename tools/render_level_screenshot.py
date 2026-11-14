@@ -64,11 +64,16 @@ def render_level_image(lvl_num, out_filename):
     f_reg_13 = get_font(13, False)
 
     # Top bar badge & level title
-    # Home, audio, gesture buttons
-    for i, icon in enumerate(["⌂", "♪", "✋"]):
+    # Home, audio, gesture buttons with authentic icon textures
+    top_icons = [
+        Image.open(os.path.join(ASSETS_DIR, "icons", "icon_home.png")).convert("RGBA").resize((22, 22), Image.Resampling.LANCZOS),
+        Image.open(os.path.join(ASSETS_DIR, "icons", "icon_music_on.png")).convert("RGBA").resize((22, 22), Image.Resampling.LANCZOS),
+        Image.open(os.path.join(ASSETS_DIR, "icons", "icon_control_swipe.png")).convert("RGBA").resize((22, 22), Image.Resampling.LANCZOS),
+    ]
+    for i, ico in enumerate(top_icons):
         bx = 14 + i * 46
         draw.rounded_rectangle([bx, 14, bx + 38, 56], radius=6, fill=(28, 38, 56), outline=(65, 85, 120), width=1)
-        draw.text((bx + 11, 23), icon, font=f_bold_18, fill=(240, 245, 255))
+        screen.alpha_composite(ico, (bx + 8, 24))
 
     # Level indicator badge
     lvl_badge = f"{ch_name} • LEVEL {lvl_num} / 75 • ★★★"
@@ -90,15 +95,21 @@ def render_level_image(lvl_num, out_filename):
     # Bottom action bar
     draw.rectangle([0, H - 76, W, H], fill=(18, 24, 36, 245))
     draw.line([(0, H - 76), (W, H - 76)], fill=(45, 60, 85), width=2)
-    # Buttons: Undo, Hint, Restart
+    # Buttons: Undo, Hint, Restart with authentic icon textures
     draw.rounded_rectangle([14, H - 62, 160, H - 18], radius=8, fill=(28, 38, 56), outline=(65, 85, 120), width=1)
-    draw.text((55, H - 48), "Undo ↶", font=f_bold_14, fill=(180, 205, 235))
+    ico_undo = Image.open(os.path.join(ASSETS_DIR, "icons", "icon_undo.png")).convert("RGBA").resize((20, 20), Image.Resampling.LANCZOS)
+    screen.alpha_composite(ico_undo, (42, H - 50))
+    draw.text((68, H - 48), "Undo", font=f_bold_14, fill=(180, 205, 235))
 
     draw.rounded_rectangle([175, H - 62, 365, H - 18], radius=8, fill=(215, 175, 45), outline=(255, 230, 100), width=1)
-    draw.text((230, H - 48), "Hint 💡 (4)", font=f_bold_14, fill=(30, 24, 10))
+    ico_hint = Image.open(os.path.join(ASSETS_DIR, "icons", "icon_hint.png")).convert("RGBA").resize((20, 20), Image.Resampling.LANCZOS)
+    screen.alpha_composite(ico_hint, (215, H - 50))
+    draw.text((242, H - 48), "Hint (4)", font=f_bold_14, fill=(30, 24, 10))
 
     draw.rounded_rectangle([380, H - 62, W - 14, H - 18], radius=8, fill=(140, 45, 45), outline=(195, 75, 75), width=1)
-    draw.text((410, H - 48), "Restart ↺", font=f_bold_14, fill=(255, 240, 240))
+    ico_restart = Image.open(os.path.join(ASSETS_DIR, "icons", "icon_restart.png")).convert("RGBA").resize((20, 20), Image.Resampling.LANCZOS)
+    screen.alpha_composite(ico_restart, (400, H - 50))
+    draw.text((426, H - 48), "Restart", font=f_bold_14, fill=(255, 240, 240))
 
     # Textures loading
     tex_wall = Image.open(os.path.join(ASSETS_DIR, wall_tex_file)).convert("RGBA")
