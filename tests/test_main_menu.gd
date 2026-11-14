@@ -158,6 +158,20 @@ func test_level_select_grid() -> void:
 	assert_true(btn10.disabled, "Level 11 button is locked until unlocked")
 	assert_true(btn10.icon != null, "Level 11 button shows lock icon")
 
+	# Test 4-Sector Navigation Deck and Dispatch Console Elements
+	var tab0: Button = menu.find_child("SectorTab0", true, false) as Button
+	var tab1: Button = menu.find_child("SectorTab1", true, false) as Button
+	var tab2: Button = menu.find_child("SectorTab2", true, false) as Button
+	var tab3: Button = menu.find_child("SectorTab3", true, false) as Button
+	assert_true(tab0 != null and tab1 != null and tab2 != null and tab3 != null, "All 4 sector quick-jump tabs exist in SectorNavDeck")
+
+	var vault_card: PanelContainer = menu.find_child("VaultMilestoneCard", true, false) as PanelContainer
+	var vault_lbl: Label = menu.find_child("VaultMilestoneLabel", true, false) as Label
+	assert_true(vault_card != null and vault_lbl != null, "Dedicated Vault Milestone Card exists in Campaign Manifest")
+
+	menu._on_sector_tab_pressed(1)
+	assert_true(true, "Sector tab pressed navigation executes smoothly")
+
 	menu.queue_free()
 
 

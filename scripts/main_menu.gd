@@ -28,6 +28,20 @@ var icon_sector_1: Texture2D = preload("res://assets/icons/icon_sector_1.png")
 var icon_sector_2: Texture2D = preload("res://assets/icons/icon_sector_2.png")
 var icon_sector_3: Texture2D = preload("res://assets/icons/icon_sector_3.png")
 var icon_sector_4: Texture2D = preload("res://assets/icons/icon_sector_4.png")
+var icon_undo: Texture2D = preload("res://assets/icons/icon_undo.png")
+
+# Thematic Sector Dispatch Styling & Cached StyleBoxes
+var _sector_styles_completed: Array[StyleBoxFlat] = []
+var _sector_styles_hover: Array[StyleBoxFlat] = []
+var _sector_styles_pressed: Array[StyleBoxFlat] = []
+var _frontier_style: StyleBoxFlat = null
+var _locked_style: StyleBoxFlat = null
+var _sector_font_colors: Array[Color] = [
+	Color(1.0, 0.94, 0.78),
+	Color(0.85, 0.95, 1.0),
+	Color(1.0, 0.92, 0.75),
+	Color(0.95, 0.85, 1.0)
+]
 
 var tex_player_down: Texture2D = preload("res://assets/player_down.png")
 var tex_player_down_w1: Texture2D = preload("res://assets/player_down_walk1.png")
@@ -281,6 +295,15 @@ func _ready() -> void:
 		continue_btn.icon = null
 	if play_btn:
 		play_btn.icon = null
+
+	_init_sector_styles()
+	_setup_sector_tabs()
+	if back_btn:
+		back_btn.icon = icon_undo
+		back_btn.expand_icon = true
+		back_btn.add_theme_constant_override("icon_max_width", 18)
+		back_btn.add_theme_constant_override("h_separation", 6)
+		back_btn.text = "RETURN"
 
 	_show_main_view()
 	_update_menu_state()
@@ -1399,10 +1422,204 @@ func _build_level_grid() -> void:
 	_refresh_level_grid_buttons()
 
 
+func _init_sector_styles() -> void:
+	if _sector_styles_completed.size() > 0:
+		return
+
+	var sector_bg_colors: Array[Color] = [
+		Color(0.11, 0.14, 0.19, 1.0), # S1: Cargo Bay
+		Color(0.08, 0.14, 0.22, 1.0), # S2: Cold Storage
+		Color(0.14, 0.13, 0.18, 1.0), # S3: Cyber Depot
+		Color(0.13, 0.09, 0.22, 1.0)  # S4: Quantum Vault
+	]
+	var sector_border_colors: Array[Color] = [
+		Color(0.88, 0.68, 0.22, 1.0), # Brass / Amber
+		Color(0.28, 0.78, 0.96, 1.0), # Cryo Cyan
+		Color(0.98, 0.75, 0.18, 1.0), # Laser Gold
+		Color(0.78, 0.45, 0.96, 1.0)  # Quantum Violet
+	]
+
+	for i in range(4):
+		var base_bg: Color = sector_bg_colors[i]
+		var border_col: Color = sector_border_colors[i]
+
+		var norm: StyleBoxFlat = StyleBoxFlat.new()
+		norm.bg_color = base_bg
+		norm.border_color = border_col
+		norm.border_width_left = 2
+		norm.border_width_top = 2
+		norm.border_width_right = 2
+		norm.border_width_bottom = 4
+		norm.corner_radius_top_left = 8
+		norm.corner_radius_top_right = 8
+		norm.corner_radius_bottom_right = 8
+		norm.corner_radius_bottom_left = 8
+		norm.shadow_color = Color(border_col.r, border_col.g, border_col.b, 0.22)
+		norm.shadow_size = 3
+		norm.shadow_offset = Vector2(0, 2)
+		norm.content_margin_left = 4.0
+		norm.content_margin_top = 5.0
+		norm.content_margin_right = 4.0
+		norm.content_margin_bottom = 5.0
+		_sector_styles_completed.append(norm)
+
+		var hov: StyleBoxFlat = norm.duplicate()
+		hov.bg_color = base_bg.lightened(0.12)
+		hov.shadow_color = Color(border_col.r, border_col.g, border_col.b, 0.35)
+		hov.shadow_size = 5
+		_sector_styles_hover.append(hov)
+
+		var prs: StyleBoxFlat = norm.duplicate()
+		prs.bg_color = base_bg.darkened(0.15)
+		prs.border_width_top = 4
+		prs.border_width_bottom = 2
+		prs.shadow_size = 1
+		_sector_styles_pressed.append(prs)
+
+	# Frontier unlocked style
+	_frontier_style = StyleBoxFlat.new()
+	_frontier_style.bg_color = Color(0.24, 0.18, 0.08, 1.0)
+	_frontier_style.border_color = Color(1.0, 0.85, 0.22, 1.0)
+	_frontier_style.border_width_left = 2
+	_frontier_style.border_width_top = 2
+	_frontier_style.border_width_right = 2
+	_frontier_style.border_width_bottom = 4
+	_frontier_style.corner_radius_top_left = 8
+	_frontier_style.corner_radius_top_right = 8
+	_frontier_style.corner_radius_bottom_right = 8
+	_frontier_style.corner_radius_bottom_left = 8
+	_frontier_style.shadow_color = Color(1.0, 0.85, 0.22, 0.40)
+	_frontier_style.shadow_size = 6
+	_frontier_style.shadow_offset = Vector2(0, 2)
+	_frontier_style.content_margin_left = 4.0
+	_frontier_style.content_margin_top = 5.0
+	_frontier_style.content_margin_right = 4.0
+	_frontier_style.content_margin_bottom = 5.0
+
+	# Locked style
+	_locked_style = StyleBoxFlat.new()
+	_locked_style.bg_color = Color(0.08, 0.10, 0.14, 1.0)
+	_locked_style.border_color = Color(0.18, 0.22, 0.28, 0.85)
+	_locked_style.border_width_left = 1
+	_locked_style.border_width_top = 1
+	_locked_style.border_width_right = 1
+	_locked_style.border_width_bottom = 3
+	_locked_style.corner_radius_top_left = 8
+	_locked_style.corner_radius_top_right = 8
+	_locked_style.corner_radius_bottom_right = 8
+	_locked_style.corner_radius_bottom_left = 8
+	_locked_style.content_margin_left = 4.0
+	_locked_style.content_margin_top = 5.0
+	_locked_style.content_margin_right = 4.0
+	_locked_style.content_margin_bottom = 5.0
+
+
+func _setup_sector_tabs() -> void:
+	var tab_icons: Array[Texture2D] = [icon_sector_1, icon_sector_2, icon_sector_3, icon_sector_4]
+	var tab_colors: Array[Color] = [
+		Color(0.88, 0.68, 0.22),
+		Color(0.28, 0.78, 0.96),
+		Color(0.98, 0.75, 0.18),
+		Color(0.78, 0.45, 0.96)
+	]
+
+	var vault_card: PanelContainer = find_child("VaultMilestoneCard", true, false) as PanelContainer
+	if vault_card != null:
+		var sb: StyleBoxFlat = StyleBoxFlat.new()
+		sb.bg_color = Color(0.06, 0.08, 0.12, 0.90)
+		sb.border_color = Color(0.85, 0.65, 0.20, 0.65)
+		sb.border_width_left = 1
+		sb.border_width_top = 1
+		sb.border_width_right = 1
+		sb.border_width_bottom = 1
+		sb.corner_radius_top_left = 6
+		sb.corner_radius_top_right = 6
+		sb.corner_radius_bottom_right = 6
+		sb.corner_radius_bottom_left = 6
+		vault_card.add_theme_stylebox_override("panel", sb)
+
+	for i in range(4):
+		var tab_btn: Button = find_child("SectorTab%d" % i, true, false) as Button
+		if tab_btn == null:
+			continue
+
+		var icon_rect: TextureRect = tab_btn.find_child("Icon", true, false) as TextureRect
+		if icon_rect != null and i < tab_icons.size():
+			icon_rect.texture = tab_icons[i]
+
+		var col: Color = tab_colors[i]
+		var tab_norm: StyleBoxFlat = StyleBoxFlat.new()
+		tab_norm.bg_color = Color(0.08, 0.10, 0.15, 0.95)
+		tab_norm.border_color = Color(col.r, col.g, col.b, 0.55)
+		tab_norm.border_width_left = 1
+		tab_norm.border_width_top = 1
+		tab_norm.border_width_right = 1
+		tab_norm.border_width_bottom = 2
+		tab_norm.corner_radius_top_left = 8
+		tab_norm.corner_radius_top_right = 8
+		tab_norm.corner_radius_bottom_right = 8
+		tab_norm.corner_radius_bottom_left = 8
+		tab_btn.add_theme_stylebox_override("normal", tab_norm)
+
+		var tab_hov: StyleBoxFlat = tab_norm.duplicate()
+		tab_hov.bg_color = Color(0.12, 0.15, 0.22, 1.0)
+		tab_hov.border_color = col
+		tab_hov.shadow_color = Color(col.r, col.g, col.b, 0.3)
+		tab_hov.shadow_size = 4
+		tab_btn.add_theme_stylebox_override("hover", tab_hov)
+
+		var tab_prs: StyleBoxFlat = tab_norm.duplicate()
+		tab_prs.bg_color = Color(0.06, 0.08, 0.12, 1.0)
+		tab_prs.border_color = col
+		tab_btn.add_theme_stylebox_override("pressed", tab_prs)
+
+		if not tab_btn.pressed.is_connected(_on_sector_tab_pressed.bind(i)):
+			tab_btn.pressed.connect(_on_sector_tab_pressed.bind(i))
+		_attach_spring_physics(tab_btn)
+
+
+func _on_sector_tab_pressed(ch_idx: int) -> void:
+	if audio_mgr:
+		audio_mgr.play_click()
+	if haptic_mgr:
+		haptic_mgr.vibrate_click()
+
+	var tab_btn: Button = find_child("SectorTab%d" % ch_idx, true, false) as Button
+	if tab_btn != null:
+		var pulse_tw: Tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tab_btn.pivot_offset = tab_btn.size / 2.0
+		pulse_tw.tween_property(tab_btn, "scale", Vector2(1.08, 1.08), 0.12)
+		pulse_tw.tween_property(tab_btn, "scale", Vector2.ONE, 0.15)
+
+	var scroll_cnt: ScrollContainer = find_child("Scroll", true, false) as ScrollContainer
+	if scroll_cnt == null or level_grid == null:
+		return
+
+	if ch_idx == 0:
+		var tw: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.tween_property(scroll_cnt, "scroll_vertical", 0, 0.35)
+	else:
+		var start_lvl: int = 0
+		match ch_idx:
+			1: start_lvl = 15
+			2: start_lvl = 35
+			3: start_lvl = 50
+		if start_lvl < level_grid.get_child_count():
+			var btn: Button = level_grid.get_child(start_lvl) as Button
+			if btn != null:
+				var v_scroll: VScrollBar = scroll_cnt.get_v_scroll_bar()
+				var max_scroll: float = maxf(0.0, v_scroll.max_value - scroll_cnt.size.y) if v_scroll else 5000.0
+				var target_scroll: float = clampf(level_grid.position.y + btn.position.y - 8.0, 0.0, max_scroll)
+				var tw: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+				tw.tween_property(scroll_cnt, "scroll_vertical", int(target_scroll), 0.35)
+
+
 func _refresh_level_grid_buttons() -> void:
 	if current_level_pulse_tw != null and current_level_pulse_tw.is_valid():
 		current_level_pulse_tw.kill()
 		current_level_pulse_tw = null
+
+	_init_sector_styles()
 
 	var active_frontier_btn: Button = null
 	var unlocked_lvl: int = save_mgr.unlocked_level if save_mgr else 0
@@ -1410,7 +1627,7 @@ func _refresh_level_grid_buttons() -> void:
 
 	if has_node("LevelSelectView/TopBar/Margin/HBox/TotalStarsLabel") and save_mgr != null:
 		var stars_lbl: Label = get_node("LevelSelectView/TopBar/Margin/HBox/TotalStarsLabel") as Label
-		stars_lbl.text = "%d / 225 Stars" % total_stars
+		stars_lbl.text = "%d / 225 ★" % total_stars
 
 	# Update Campaign Banner card if present
 	var pb: ProgressBar = find_child("ProgressBar", true, false) as ProgressBar
@@ -1419,16 +1636,37 @@ func _refresh_level_grid_buttons() -> void:
 		pb.value = float(total_stars)
 
 	var next_vault_info: String = ""
+	var next_vault_name: String = ""
+	var next_vault_stars: int = 0
 	if save_mgr != null and save_mgr.has_method("get_all_star_vaults"):
 		var vaults: Array[Dictionary] = save_mgr.get_all_star_vaults()
 		for v in vaults:
 			if total_stars < v["stars"]:
-				next_vault_info = " • Next Vault: %s (%d★)" % [v.get("name", "Supply Cache"), v["stars"]]
+				next_vault_name = v.get("name", "Supply Cache")
+				next_vault_stars = v["stars"]
+				next_vault_info = " • Next Vault: %s (%d★)" % [next_vault_name, next_vault_stars]
 				break
 
 	var stars_count_lbl: Label = find_child("StarsCountLabel", true, false) as Label
+	var vault_card: PanelContainer = find_child("VaultMilestoneCard", true, false) as PanelContainer
+	var vault_lbl: Label = find_child("VaultMilestoneLabel", true, false) as Label
+	var vault_icon_rect: TextureRect = find_child("VaultIcon", true, false) as TextureRect
+
 	if stars_count_lbl != null:
-		stars_count_lbl.text = "%d / 225 Stars Collected%s" % [total_stars, next_vault_info]
+		if vault_card != null and vault_lbl != null:
+			stars_count_lbl.text = "%d / 225 Stars Collected" % total_stars
+		else:
+			stars_count_lbl.text = "%d / 225 Stars Collected%s" % [total_stars, next_vault_info]
+
+	if vault_card != null and vault_lbl != null:
+		if next_vault_name != "":
+			vault_lbl.text = "NEXT VAULT: %s (%d★)" % [next_vault_name.to_upper(), next_vault_stars]
+			if vault_icon_rect != null:
+				vault_icon_rect.texture = icon_trophy
+		else:
+			vault_lbl.text = "ALL VAULT REWARDS SECURED ✓"
+			if vault_icon_rect != null:
+				vault_icon_rect.texture = icon_check
 
 	var completion_lbl: Label = find_child("CompletionLabel", true, false) as Label
 	if completion_lbl != null and save_mgr != null:
@@ -1446,19 +1684,19 @@ func _refresh_level_grid_buttons() -> void:
 
 	var s1_badge: Label = find_child("Sector1Badge", true, false) as Label
 	if s1_badge != null:
-		s1_badge.text = "S1: %d/45 ★" % s1_stars
+		s1_badge.text = "%d/45 ★" % s1_stars
 
 	var s2_badge: Label = find_child("Sector2Badge", true, false) as Label
 	if s2_badge != null:
-		s2_badge.text = "S2: %d/60 ★" % s2_stars
+		s2_badge.text = "%d/60 ★" % s2_stars
 
 	var s3_badge: Label = find_child("Sector3Badge", true, false) as Label
 	if s3_badge != null:
-		s3_badge.text = "S3: %d/45 ★" % s3_stars
+		s3_badge.text = "%d/45 ★" % s3_stars
 
 	var s4_badge: Label = find_child("Sector4Badge", true, false) as Label
 	if s4_badge != null:
-		s4_badge.text = "S4: %d/75 ★" % s4_stars
+		s4_badge.text = "%d/75 ★" % s4_stars
 
 	for child in level_grid.get_children():
 		if not child is Button:
@@ -1470,7 +1708,6 @@ func _refresh_level_grid_buttons() -> void:
 
 		var ch_idx: int = save_mgr.get_chapter_index(lvl_idx) if (save_mgr != null and save_mgr.has_method("get_chapter_index")) else (0 if lvl_idx < 15 else (1 if lvl_idx < 35 else (2 if lvl_idx < 50 else 3)))
 		var ch_info: Dictionary = save_mgr.get_chapter_info(ch_idx) if (save_mgr != null and save_mgr.has_method("get_chapter_info")) else {"color": Color(1.0, 1.0, 1.0)}
-		var ch_col: Color = ch_info.get("color", Color(1.0, 1.0, 1.0))
 		var opt_moves: int = save_mgr.get_optimal_moves(lvl_idx) if save_mgr else 15
 		var ch_title_str: String = ch_info.get("name", "Cargo Bay")
 		if loc_mgr and loc_mgr.has_method("tr_text"):
@@ -1493,12 +1730,21 @@ func _refresh_level_grid_buttons() -> void:
 			child.disabled = false
 			child.theme_type_variation = &"LevelBtnCompleted"
 			child.modulate = Color.WHITE
+			if ch_idx < _sector_styles_completed.size():
+				child.add_theme_stylebox_override("normal", _sector_styles_completed[ch_idx])
+				child.add_theme_stylebox_override("hover", _sector_styles_hover[ch_idx])
+				child.add_theme_stylebox_override("pressed", _sector_styles_pressed[ch_idx])
+				child.add_theme_color_override("font_color", _sector_font_colors[ch_idx])
 		elif is_unlocked:
 			child.text = "%d" % [lvl_idx + 1]
 			child.icon = null
 			child.disabled = false
 			child.theme_type_variation = &"LevelBtnCurrent"
 			child.modulate = Color.WHITE
+			if _frontier_style != null:
+				child.add_theme_stylebox_override("normal", _frontier_style)
+				child.add_theme_stylebox_override("hover", _frontier_style)
+				child.add_theme_stylebox_override("pressed", _frontier_style)
 			if active_frontier_btn == null:
 				active_frontier_btn = child
 		else:
@@ -1516,6 +1762,9 @@ func _refresh_level_grid_buttons() -> void:
 			child.disabled = true
 			child.theme_type_variation = &"LevelBtnLocked"
 			child.modulate = Color.WHITE
+			if _locked_style != null:
+				child.add_theme_stylebox_override("disabled", _locked_style)
+				child.add_theme_stylebox_override("normal", _locked_style)
 
 	if active_frontier_btn != null and active_frontier_btn.is_inside_tree():
 		var p_sz: Vector2 = active_frontier_btn.custom_minimum_size if active_frontier_btn.size == Vector2.ZERO else active_frontier_btn.size

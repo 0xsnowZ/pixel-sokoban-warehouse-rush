@@ -418,9 +418,9 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "جاهز! المس للبدء"
 	},
 	"LEVEL_SELECT_TITLE": {
-		"en": "SELECT LEVEL",
-		"fr": "CHOIX DU NIVEAU",
-		"ar": "اختيار المستوى"
+		"en": "SECTOR DISPATCH",
+		"fr": "DISPATCH DES SECTEURS",
+		"ar": "توزيع القطاعات"
 	},
 	"WIN_BANNER": {
 		"en": "LEVEL COMPLETED!",
