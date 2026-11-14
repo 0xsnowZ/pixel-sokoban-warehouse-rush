@@ -71,7 +71,9 @@ def main():
     print(f"Already have {len(generated)} existing candidates: {by_p}")
 
     random.seed(int(time.time()))
-    random.shuffle(compact_variants)
+    # Prioritize templates that are NOT yet in generated sources
+    existing_bases = set(c["source"].split("_4c_")[0].split(":")[1].rsplit("_", 1)[0] for c in generated if ":" in c["source"] and "_4c_" in c["source"])
+    compact_variants.sort(key=lambda v: (0 if v[0].rsplit("_", 1)[0] not in existing_bases else 1, random.random()))
 
     t0 = time.time()
     time_limit = 60.0  # run for 60 seconds

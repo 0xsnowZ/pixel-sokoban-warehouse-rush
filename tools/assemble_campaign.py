@@ -29,6 +29,52 @@ from build_authentic_push_campaign import (
     jaccard_similarity, replay_solution, check_candidate_architecture
 )
 
+def get_challenge(lines, sol):
+    grid = [list(r) for r in lines]
+    H = len(grid)
+    W = max(len(r) for r in grid)
+    for r in range(H):
+        if len(grid[r]) < W:
+            grid[r] += [' '] * (W - len(grid[r]))
+    px, py = -1, -1
+    boxes = set()
+    goals = set()
+    for y in range(H):
+        for x in range(W):
+            ch = grid[y][x]
+            if ch in ('@', '+'): px, py = x, y
+            if ch in ('+', '.', '*'): goals.add((x, y))
+            if ch in ('$', '*'): boxes.add((x, y))
+    box_id_map = {pos: i for i, pos in enumerate(sorted(list(boxes)))}
+    dirs = {'u': (0, -1), 'd': (0, 1), 'l': (-1, 0), 'r': (1, 0)}
+    pushes = 0
+    box_pushed_seq = []
+    anti_greedy = 0
+    for ch in sol:
+        dx, dy = dirs[ch.lower()]
+        nx, ny = px + dx, py + dy
+        if (nx, ny) in box_id_map:
+            bid = box_id_map.pop((nx, ny))
+            bx, by = nx + dx, ny + dy
+            box_id_map[(bx, by)] = bid
+            box_pushed_seq.append(bid)
+            pushes += 1
+            if (nx, ny) in goals and (bx, by) not in goals:
+                anti_greedy += 1
+            else:
+                d_before = min(abs(nx - gx) + abs(ny - gy) for gx, gy in goals)
+                d_after = min(abs(bx - gx) + abs(by - gy) for gx, gy in goals)
+                if d_after > d_before:
+                    anti_greedy += 1
+        px, py = nx, ny
+    switches = 0
+    for i in range(1, len(box_pushed_seq)):
+        if box_pushed_seq[i] != box_pushed_seq[i-1]:
+            switches += 1
+    K = len(boxes)
+    ent = switches / max(1, (K - 1))
+    return ent * (1 + anti_greedy)
+
 def main():
     print("=" * 65)
     print("ASSEMBLING MAXIMUM-DIFFICULTY MONOTONIC SOKOBAN CAMPAIGN")
@@ -53,6 +99,7 @@ def main():
     }
     for fix in [p1, p3, p4]:
         fix["top_set"] = set(tuple(x) for x in get_topology_set(fix["lines"], fix["w"], fix["h"]))
+        fix["challenge"] = get_challenge(fix["lines"], fix["path"])
 
     # 8 Endgame levels + 1 Reference Level 11 = 9 Grandmaster Endgame levels
     endgame_specs = [
@@ -103,6 +150,7 @@ def main():
         "is_fixture": False
     }
     ref11_cand["top_set"] = set(tuple(x) for x in get_topology_set(ref11_lines, ref11_cand["w"], ref11_cand["h"]))
+    ref11_cand["challenge"] = get_challenge(ref11_lines, ref11_cand["path"])
     endgame.append(ref11_cand)
 
     print(f"Loaded {len(endgame)} endgame levels.")
@@ -137,10 +185,18 @@ def main():
     print(f"Total raw candidates loaded: {len(all_cands)}")
     clean = []
     for c in all_cands:
+        raw = "\n".join(c["lines"])
+        cr = raw.count("$") + raw.count("*")
+        if cr != 4:
+            continue
         ok, res = check_candidate_architecture(c)
         if ok:
             c["top_set"] = set(tuple(x) for x in get_topology_set(c["lines"], c["w"], c["h"]))
+            c["challenge"] = get_challenge(c["lines"], c["path"])
             clean.append(c)
+
+    for eg in endgame:
+        eg["challenge"] = get_challenge(eg["lines"], eg["path"])
 
     fixed_refs = [p1, p3, p4] + endgame
     clean = [c for c in clean if all(len(c["top_set"] & x["top_set"])/len(c["top_set"] | x["top_set"]) < 0.70 for x in fixed_refs)]
@@ -176,7 +232,6 @@ def main():
     pre_fixed = [source_to_idx[s] for s in wanted_expert_sources]
 
     # Remaining target counts for maximum difficulty progression (sum = 57; 57 + 6 expert = 63 + 3 fixtures + 9 endgame = 75)
-    # Elevated first 50 difficulty: levels 48, 49, 50 reach P=15!
     rem_target_counts = {
         4: 1, 5: 1,
         6: 2, 7: 2, 8: 4, 9: 4,
@@ -186,9 +241,8 @@ def main():
 
     order = sorted(rem_target_counts.keys(), key=lambda p: len(by_p.get(p, [])) / rem_target_counts[p])
 
-    # Seed 73 yields max similarity 68.4% (< 70%), all-time high 2,799 total optimal moves,
-    # and peak cognitive challenge score (433.2) with P=15 on levels 48, 49, 50.
-    rng = random.Random(73)
+    # Initial selection from optimal seed 467 (max sim 68.4%)
+    rng = random.Random(467)
     chosen_set = set(pre_fixed)
     chosen_list = list(pre_fixed)
     for p in order:
@@ -204,6 +258,29 @@ def main():
         assert len(picked) == req, f"Could not satisfy bucket P={p}"
         chosen_set.update(picked)
         chosen_list.extend(picked)
+
+    # Local Hill-Climbing Challenge Maximizer
+    print("Running Cognitive Challenge local hill-climbing optimization...")
+    total_improved_steps = 0
+    for step in range(1, 200):
+        improved = False
+        indices = list(range(len(pre_fixed), len(chosen_list)))
+        rng.shuffle(indices)
+        for idx in indices:
+            curr = chosen_list[idx]
+            curr_p = clean[curr]["pushes"]
+            curr_c = clean[curr]["challenge"]
+            other_chosen = set(chosen_list) - {curr}
+            cands = [i for i in by_p[curr_p] if i not in other_chosen and clean[i]["challenge"] > curr_c and not (conflicts[i] & other_chosen)]
+            if cands:
+                cands.sort(key=lambda i: clean[i]["challenge"], reverse=True)
+                chosen_list[idx] = cands[0]
+                improved = True
+                total_improved_steps += 1
+                break
+        if not improved:
+            break
+    print(f"Hill-climbing completed with {total_improved_steps} improvements.")
 
     chosen_cands = [clean[i] for i in chosen_list]
 
@@ -238,7 +315,7 @@ def main():
         cr = raw.count("$") + raw.count("*")
         gl = raw.count(".") + raw.count("+") + raw.count("*")
         og = raw.count("*")
-        assert cr >= 4, f"L{i:02d} has only {cr} crates!"
+        assert cr == 4, f"L{i:02d} has {cr} crates (expected exactly 4)!"
         assert cr == gl, f"L{i:02d} crates != goals!"
         assert og <= 1, f"L{i:02d} has {og} on goals!"
         wt, reason = is_watertight(c["lines"])
@@ -249,6 +326,10 @@ def main():
         ok, p_done = replay_solution(c["lines"], c["path"])
         assert ok and p_done == c["pushes"], f"L{i:02d} replay failed!"
 
+    c70 = sum(c["challenge"] for c in campaign[:70])
+    c50 = sum(c["challenge"] for c in campaign[:50])
+    c_tot = sum(c["challenge"] for c in campaign)
+
     print("\n" + "=" * 65)
     print("ALL 75 LEVELS VERIFIED 100% PERFECTLY!")
     print("=" * 65)
@@ -256,6 +337,9 @@ def main():
     print(f"Pushes       : {pushes}")
     print(f"Moves        : {moves}")
     print(f"Total moves  : {sum(moves)}")
+    print(f"L1-70 Challenge: {c70:.2f} (mean {c70/70:.2f}/level)")
+    print(f"L1-50 Challenge: {c50:.2f} (mean {c50/50:.2f}/level)")
+    print(f"Total Campaign Challenge: {c_tot:.2f}")
     print(f"Max pairwise similarity: {max_sim*100:.1f}% (between L{worst[0]} and L{worst[1]})")
 
     # Write levels/level_XX.sok
