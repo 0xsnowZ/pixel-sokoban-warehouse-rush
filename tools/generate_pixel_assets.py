@@ -229,139 +229,206 @@ def create_crate_goal():
 
 
 def create_goal_pad():
-    # Circular Targeting Scope with Milled Bezel & Precision Reticle Borders
-    # 100% transparent exterior background so stone floor tiles flow seamlessly around the circle.
+    # Industrial Hydraulic Pallet Loading Dock Plate (Theme: Warehouse Freight Logistics)
+    # 100% thematic cohesion with Pixel Sokoban: Warehouse Rush
+    # Zero scope/military crosshairs. Octagonal chamfered plate with diamond treadplate,
+    # safety hazard stripes, pallet alignment brackets, inward cargo guide arrows, and runway LEDs.
     img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    cx, cy = SIZE // 2, SIZE // 2
+    cx, cy = 64, 64
 
-    # 1. Subtle, ethereal circular lens bloom on floor (transparent ground)
-    for r in range(58, 20, -4):
-        a = int(18 * (58 - r) / 38.0)
-        draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(40, 210, 130, a))
+    # 1. Outer Dimensions: 104x104 (Leaving 12px clean floor margin on all 4 sides)
+    pad = 12
+    x0, y0 = pad, pad
+    x1, y1 = SIZE - pad, SIZE - pad
+    chamfer = 14
 
-    # 2. Outer Mechanical Scope Bezel (Cast iron & tactical olive/bronze rim)
-    # Diameter: 108px (r = 54px)
-    r_outer = 54
-    # Deep outer drop shadow into floor
-    draw.ellipse([cx - r_outer - 1, cy - r_outer - 1, cx + r_outer + 1, cy + r_outer + 1],
-                 outline=(10, 14, 20, 255), width=2)
-    # Heavy outer milled bezel ring
-    draw.ellipse([cx - r_outer, cy - r_outer, cx + r_outer, cy + r_outer],
-                 fill=(32, 54, 40, 255), outline=(18, 30, 24, 255), width=2)
-    # Metallic bevel highlight ring
-    r_bevel = 50
-    draw.ellipse([cx - r_bevel, cy - r_bevel, cx + r_bevel, cy + r_bevel],
-                 fill=(48, 88, 62, 255), outline=(24, 44, 32, 255), width=1)
-    # Inner rim step
-    r_rim = 46
-    draw.ellipse([cx - r_rim, cy - r_rim, cx + r_rim, cy + r_rim],
-                 fill=(22, 38, 30, 255), outline=(14, 24, 20, 255), width=1)
+    # 8-point Octagonal Contour
+    oct_pts = [
+        (x0 + chamfer, y0), (x1 - chamfer, y0),
+        (x1, y0 + chamfer), (x1, y1 - chamfer),
+        (x1 - chamfer, y1), (x0 + chamfer, y1),
+        (x0, y1 - chamfer), (x0, y0 + chamfer)
+    ]
 
-    # 8 Precision Perimeter Scope Hex Bolts / Rivets
-    for i in range(8):
-        ang = i * (math.pi / 4.0)
-        bx = cx + math.cos(ang) * (r_outer - 4)
-        by = cy + math.sin(ang) * (r_outer - 4)
-        # Bolt shadow
-        draw.ellipse([bx - 2.5, by - 2.5, bx + 2.5, by + 2.5], fill=(12, 18, 14, 255))
-        # Bolt steel body
-        draw.ellipse([bx - 1.5, by - 1.5, bx + 1.5, by + 1.5], fill=(140, 175, 155, 255))
-        # Specular glint
-        draw.point((int(bx), int(by)), fill=(235, 255, 245, 255))
+    # 1. Soft Ambient Drop Shadow cast into warehouse floor planks
+    shadow_pts = [(p[0] + 1, p[1] + 2) for p in oct_pts]
+    draw.polygon(shadow_pts, fill=(10, 14, 18, 175))
 
-    # 4 Cardinal Scope Turret Alignment Notches (N, S, E, W bracket grips on outer rim)
-    notch_len = 6
-    for ang in [0, math.pi / 2, math.pi, 3 * math.pi / 2]:
-        nx0 = cx + math.cos(ang) * (r_outer - notch_len)
-        ny0 = cy + math.sin(ang) * (r_outer - notch_len)
-        nx1 = cx + math.cos(ang) * (r_outer + 1)
-        ny1 = cy + math.sin(ang) * (r_outer + 1)
-        draw.line([(nx0, ny0), (nx1, ny1)], fill=(75, 175, 110, 255), width=3)
-        draw.line([(nx0, ny0), (nx1, ny1)], fill=(200, 255, 220, 255), width=1)
+    # 2. Heavy Cast-Steel Base Frame (Milled Gunmetal Steel)
+    draw.polygon(oct_pts, fill=(34, 40, 50, 255), outline=(16, 20, 26, 255))
 
-    # 3. Recessed Dark Optical Lens Well (Deep cyan/teal lens glass)
-    r_well = 44
-    draw.ellipse([cx - r_well, cy - r_well, cx + r_well, cy + r_well],
-                 fill=(14, 28, 38, 255), outline=(8, 16, 22, 255), width=2)
-    # Inner lens curvature depth shadow (top-left)
-    draw.arc([cx - r_well + 1, cy - r_well + 1, cx + r_well - 1, cy + r_well - 1],
-             180, 270, fill=(6, 12, 18, 240), width=3)
-    # Inner lens light catch (bottom-right)
-    draw.arc([cx - r_well + 1, cy - r_well + 1, cx + r_well - 1, cy + r_well - 1],
-             0, 90, fill=(30, 80, 95, 180), width=1)
+    # Top & Left bright metallic bevel rim
+    draw.line([(x0 + chamfer, y0), (x1 - chamfer, y0)], fill=(75, 88, 106, 255), width=2)
+    draw.line([(x0, y0 + chamfer), (x0 + chamfer, y0)], fill=(85, 100, 120, 255), width=2)
+    draw.line([(x0, y0 + chamfer), (x0, y1 - chamfer)], fill=(75, 88, 106, 255), width=2)
 
-    # 4. Outer Calibrated Targeting Reticle Ring (r = 33px)
-    r_ring1 = 33
-    draw.ellipse([cx - r_ring1, cy - r_ring1, cx + r_ring1, cy + r_ring1],
-                 outline=(28, 85, 95, 200), width=2)
-    draw.ellipse([cx - r_ring1, cy - r_ring1, cx + r_ring1, cy + r_ring1],
-                 outline=(55, 175, 130, 240), width=1)
+    # Bottom & Right dark shadow rim
+    draw.line([(x0 + chamfer, y1), (x1 - chamfer, y1)], fill=(18, 22, 28, 255), width=2)
+    draw.line([(x1 - chamfer, y1), (x1, y1 - chamfer)], fill=(16, 20, 26, 255), width=2)
+    draw.line([(x1, y0 + chamfer), (x1, y1 - chamfer)], fill=(18, 22, 28, 255), width=2)
 
-    # 4 Cardinal Gap Breaks in outer reticle ring for authentic scope calibration
-    gap = 4
-    for ang in [0, math.pi / 2, math.pi, 3 * math.pi / 2]:
-        gx = cx + math.cos(ang) * r_ring1
-        gy = cy + math.sin(ang) * r_ring1
-        draw.ellipse([gx - gap, gy - gap, gx + gap, gy + gap], fill=(14, 28, 38, 255))
+    # 3. Industrial Safety Hazard Stripes along the 4 Cardinal Edges
+    # Matches the 'WAREHOUSE RUSH' title logo hazard branding
+    h_thick = 8
+    stripe_w = 7
 
-    # Calibration Degree Ticks along outer reticle ring (every 30 degrees)
-    for i in range(12):
-        if i % 3 != 0:
-            ang = i * (math.pi / 6.0)
-            tx0 = cx + math.cos(ang) * (r_ring1 - 3)
-            ty0 = cy + math.sin(ang) * (r_ring1 - 3)
-            tx1 = cx + math.cos(ang) * (r_ring1 + 3)
-            ty1 = cy + math.sin(ang) * (r_ring1 + 3)
-            draw.line([(tx0, ty0), (tx1, ty1)], fill=(45, 140, 110, 220), width=1)
+    # Top Edge Hazard Striping
+    top_y0 = y0 + 2
+    top_y1 = top_y0 + h_thick
+    for sx in range(x0 + chamfer + 2, x1 - chamfer - 2, stripe_w * 2):
+        draw.polygon([
+            (sx, top_y0), (min(x1 - chamfer - 2, sx + stripe_w), top_y0),
+            (min(x1 - chamfer - 2, sx + stripe_w - 4), top_y1), (max(x0 + chamfer + 2, sx - 4), top_y1)
+        ], fill=(245, 180, 30, 255))
+        draw.polygon([
+            (min(x1 - chamfer - 2, sx + stripe_w), top_y0), (min(x1 - chamfer - 2, sx + stripe_w * 2), top_y0),
+            (min(x1 - chamfer - 2, sx + stripe_w * 2 - 4), top_y1), (min(x1 - chamfer - 2, sx + stripe_w - 4), top_y1)
+        ], fill=(22, 26, 34, 255))
 
-    # 5. Inner Precision Scope Ring (r = 20px)
-    r_ring2 = 20
-    draw.ellipse([cx - r_ring2, cy - r_ring2, cx + r_ring2, cy + r_ring2],
-                 outline=(20, 60, 75, 200), width=2)
-    draw.ellipse([cx - r_ring2, cy - r_ring2, cx + r_ring2, cy + r_ring2],
-                 outline=(65, 215, 145, 255), width=1)
+    # Bottom Edge Hazard Striping
+    bot_y1 = y1 - 2
+    bot_y0 = bot_y1 - h_thick
+    for sx in range(x0 + chamfer + 2, x1 - chamfer - 2, stripe_w * 2):
+        draw.polygon([
+            (sx, bot_y0), (min(x1 - chamfer - 2, sx + stripe_w), bot_y0),
+            (min(x1 - chamfer - 2, sx + stripe_w + 4), bot_y1), (max(x0 + chamfer + 2, sx + 4), bot_y1)
+        ], fill=(245, 180, 30, 255))
+        draw.polygon([
+            (min(x1 - chamfer - 2, sx + stripe_w), bot_y0), (min(x1 - chamfer - 2, sx + stripe_w * 2), bot_y0),
+            (min(x1 - chamfer - 2, sx + stripe_w * 2 + 4), bot_y1), (min(x1 - chamfer - 2, sx + stripe_w + 4), bot_y1)
+        ], fill=(22, 26, 34, 255))
 
-    # 6. Fine Scope Crosshairs (+) with Hash Marks
-    # Horizontal crosshair: Left from cx - 42 to cx - 8; Right from cx + 8 to cx + 42
-    draw.line([(cx - 42, cy), (cx - 8, cy)], fill=(20, 50, 65, 255), width=2)
-    draw.line([(cx - 42, cy), (cx - 8, cy)], fill=(75, 225, 150, 255), width=1)
-    draw.line([(cx + 8, cy), (cx + 42, cy)], fill=(20, 50, 65, 255), width=2)
-    draw.line([(cx + 8, cy), (cx + 42, cy)], fill=(75, 225, 150, 255), width=1)
+    # Left Edge Hazard Striping
+    left_x0 = x0 + 2
+    left_x1 = left_x0 + h_thick
+    for sy in range(y0 + chamfer + 2, y1 - chamfer - 2, stripe_w * 2):
+        draw.polygon([
+            (left_x0, sy), (left_x1, max(y0 + chamfer + 2, sy - 4)),
+            (left_x1, min(y1 - chamfer - 2, sy + stripe_w - 4)), (left_x0, min(y1 - chamfer - 2, sy + stripe_w))
+        ], fill=(245, 180, 30, 255))
+        draw.polygon([
+            (left_x0, min(y1 - chamfer - 2, sy + stripe_w)), (left_x1, min(y1 - chamfer - 2, sy + stripe_w - 4)),
+            (left_x1, min(y1 - chamfer - 2, sy + stripe_w * 2 - 4)), (left_x0, min(y1 - chamfer - 2, sy + stripe_w * 2))
+        ], fill=(22, 26, 34, 255))
 
-    # Vertical crosshair: Top from cy - 42 to cy - 8; Bottom from cy + 8 to cy + 42
-    draw.line([(cx, cy - 42), (cx, cy - 8)], fill=(20, 50, 65, 255), width=2)
-    draw.line([(cx, cy - 42), (cx, cy - 8)], fill=(75, 225, 150, 255), width=1)
-    draw.line([(cx, cy + 8), (cx, cy + 42)], fill=(20, 50, 65, 255), width=2)
-    draw.line([(cx, cy + 8), (cx, cy + 42)], fill=(75, 225, 150, 255), width=1)
+    # Right Edge Hazard Striping
+    right_x1 = x1 - 2
+    right_x0 = right_x1 - h_thick
+    for sy in range(y0 + chamfer + 2, y1 - chamfer - 2, stripe_w * 2):
+        draw.polygon([
+            (right_x0, max(y0 + chamfer + 2, sy - 4)), (right_x1, sy),
+            (right_x1, min(y1 - chamfer - 2, sy + stripe_w)), (right_x0, min(y1 - chamfer - 2, sy + stripe_w - 4))
+        ], fill=(245, 180, 30, 255))
+        draw.polygon([
+            (right_x0, min(y1 - chamfer - 2, sy + stripe_w - 4)), (right_x1, min(y1 - chamfer - 2, sy + stripe_w)),
+            (right_x1, min(y1 - chamfer - 2, sy + stripe_w * 2)), (right_x0, min(y1 - chamfer - 2, sy + stripe_w * 2 - 4))
+        ], fill=(22, 26, 34, 255))
 
-    # Crosshair Measuring Hash Marks (Elevation & Windage Ticks at d = 14, 26)
-    for d in [14, 26]:
-        draw.line([(cx - d, cy - 2), (cx - d, cy + 2)], fill=(65, 215, 145, 240), width=1)
-        draw.line([(cx + d, cy - 2), (cx + d, cy + 2)], fill=(65, 215, 145, 240), width=1)
-        draw.line([(cx - 2, cy - d), (cx + 2, cy - d)], fill=(65, 215, 145, 240), width=1)
-        draw.line([(cx - 2, cy + d), (cx + 2, cy + d)], fill=(65, 215, 145, 240), width=1)
+    # 4. 4 Heavy Cast-Steel Corner Guide Chamfers with Industrial Hex Mounting Bolts
+    corners = [
+        (x0, y0, 1, 1),
+        (x1, y0, -1, 1),
+        (x0, y1, 1, -1),
+        (x1, y1, -1, -1)
+    ]
+    for bx, by, sx, sy in corners:
+        p1 = (bx + sx * chamfer, by)
+        p2 = (bx, by + sy * chamfer)
+        p_in = (bx + sx * (chamfer - 3), by + sy * (chamfer - 3))
+        draw.polygon([p1, p2, p_in], fill=(48, 56, 70, 255), outline=(22, 26, 34, 255))
 
-    # 7. Center Focal Reticle: Precision Luminous Core Diamond & Specular Glint
-    r_core = 7
+        bolt_x = bx + sx * 9
+        bolt_y = by + sy * 9
+        draw.ellipse([bolt_x - 3, bolt_y - 3, bolt_x + 3, bolt_y + 3], fill=(14, 18, 24, 255))
+        draw.ellipse([bolt_x - 2, bolt_y - 2, bolt_x + 2, bolt_y + 2], fill=(160, 175, 195, 255))
+        draw.point((int(bolt_x), int(bolt_y)), fill=(255, 255, 255, 255))
+
+    # 5. Recessed Inner Steel Deck Plate (Diamond Treadplate / Checker Plate)
+    deck_pad = pad + 11
+    dx0, dy0 = deck_pad, deck_pad
+    dx1, dy1 = SIZE - deck_pad, SIZE - deck_pad
+    d_chamf = 8
+    deck_pts = [
+        (dx0 + d_chamf, dy0), (dx1 - d_chamf, dy0),
+        (dx1, dy0 + d_chamf), (dx1, dy1 - d_chamf),
+        (dx1 - d_chamf, dy1), (dx0 + d_chamf, dy1),
+        (dx0, dy1 - d_chamf), (dx0, dy0 + d_chamf)
+    ]
+    draw.polygon(deck_pts, fill=(24, 28, 36, 255), outline=(14, 18, 24, 255))
+
+    # Draw Embossed Diamond-Tread Pattern
+    step = 9
+    for ty in range(dy0 + 4, dy1 - 4, step):
+        for tx in range(dx0 + 4, dx1 - 4, step):
+            tcx = tx + 4
+            tcy = ty + 4
+            if tcx > dx0 + 4 and tcx < dx1 - 4 and tcy > dy0 + 4 and tcy < dy1 - 4:
+                draw.line([(tcx - 2, tcy), (tcx + 2, tcy)], fill=(48, 58, 72, 180), width=2)
+                draw.line([(tcx - 2, tcy + 1), (tcx + 2, tcy + 1)], fill=(14, 18, 24, 200), width=1)
+                tcx2 = tx + 8
+                tcy2 = ty + 8
+                if tcx2 < dx1 - 4 and tcy2 < dy1 - 4:
+                    draw.line([(tcx2, tcy2 - 2), (tcx2, tcy2 + 2)], fill=(48, 58, 72, 180), width=2)
+                    draw.line([(tcx2 + 1, tcy2 - 2), (tcx2 + 1, tcy2 + 2)], fill=(14, 18, 24, 200), width=1)
+
+    # 6. Center Warehouse Cargo Stencil (Industrial Yellow Floor Marking)
+    st_r = 24
+    st_len = 11
+    col_stencil = (255, 195, 45, 255)
+    col_shadow = (30, 22, 10, 240)
+
+    for sx, sy in [(1, 1), (-1, 1), (1, -1), (-1, -1)]:
+        px = cx + sx * st_r
+        py = cy + sy * st_r
+        draw.line([(px, py + 1), (px - sx * st_len, py + 1)], fill=col_shadow, width=2)
+        draw.line([(px + 1, py), (px + 1, py - sy * st_len)], fill=col_shadow, width=2)
+        draw.line([(px, py), (px - sx * st_len, py)], fill=col_stencil, width=2)
+        draw.line([(px, py), (px, py - sy * st_len)], fill=col_stencil, width=2)
+
+    # Inward Cargo Loading Arrows: Left (▶), Right (◀)
+    arr_d = 13
     draw.polygon([
-        (cx, cy - r_core),
-        (cx + r_core, cy),
-        (cx, cy + r_core),
-        (cx - r_core, cy)
-    ], fill=(70, 235, 155, 255), outline=(18, 55, 40, 255), width=1)
-
+        (cx - arr_d - 6, cy - 6),
+        (cx - arr_d, cy),
+        (cx - arr_d - 6, cy + 6)
+    ], fill=col_stencil, outline=col_shadow)
     draw.polygon([
-        (cx, cy - 4),
-        (cx + 4, cy),
-        (cx, cy + 4),
-        (cx - 4, cy)
-    ], fill=(180, 255, 220, 255))
+        (cx + arr_d + 6, cy - 6),
+        (cx + arr_d, cy),
+        (cx + arr_d + 6, cy + 6)
+    ], fill=col_stencil, outline=col_shadow)
 
-    draw.ellipse([cx - 2, cy - 2, cx + 2, cy + 2], fill=(255, 255, 255, 255))
+    # Top & Bottom Inward Chevrons (▼ from top, ▲ from bottom)
+    draw.polygon([
+        (cx - 5, cy - arr_d - 5),
+        (cx + 5, cy - arr_d - 5),
+        (cx, cy - arr_d)
+    ], fill=col_stencil, outline=col_shadow)
+    draw.polygon([
+        (cx - 5, cy + arr_d + 5),
+        (cx + 5, cy + arr_d + 5),
+        (cx, cy + arr_d)
+    ], fill=col_stencil, outline=col_shadow)
+
+    # Center Stenciled Freight Diamond (◆) matching crate manifest stamp
+    d_sz = 6
+    draw.polygon([
+        (cx, cy - d_sz), (cx + d_sz, cy),
+        (cx, cy + d_sz), (cx - d_sz, cy)
+    ], fill=col_stencil, outline=col_shadow)
+    draw.point((cx, cy), fill=(255, 255, 220, 255))
+
+    # 7. 4 Flush-Mounted Runway Guidance LEDs at Corner Docks
+    for sx, sy in [(1, 1), (-1, 1), (1, -1), (-1, -1)]:
+        lx = cx + sx * 38
+        ly = cy + sy * 38
+        draw.ellipse([lx - 3.5, ly - 3.5, lx + 3.5, ly + 3.5], fill=(14, 18, 24, 255))
+        draw.ellipse([lx - 2, ly - 2, lx + 2, ly + 2], fill=(255, 180, 35, 255))
+        draw.point((int(lx), int(ly)), fill=(255, 245, 215, 255))
 
     img.save(os.path.join(OUTPUT_DIR, "goal_pad.png"))
-    print("Saved goal_pad.png (Polished Circular Scope Pad)")
+    print("Saved goal_pad.png (Industrial Pallet Loading Dock Plate)")
 
 
 def create_wall_brick():

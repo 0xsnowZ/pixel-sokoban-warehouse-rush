@@ -2449,47 +2449,58 @@ func _draw_board_vignette(_effective_origin: Vector2, _board_pixel_size: Vector2
 
 
 func _draw_goal_hazard_brackets(rect: Rect2, _ch: Dictionary) -> void:
-	# Circular Targeting Scope - Docked & Locked State ("TARGET ACQUIRED & LOCKED")
+	# Industrial Hydraulic Pallet Dock - Docked & Locked State ("CARGO SECURED & LOCKED")
 	var center: Vector2 = rect.get_center()
 
-	# 1. Circular Emerald Target Lock Perimeter Ring (r = 46/128 * tile_size)
-	var r_lock: float = tile_size * (46.0 / 128.0)
-	draw_arc(center, r_lock, 0.0, TAU, 36, Color(0.20, 1.0, 0.50, 0.45), 1.5, true)
+	# 1. 4 Corner Runway Guidance Diodes switch to solid high-visibility emerald green
+	# Position matches exact LED diode placement in assets/goal_pad.png (38 / 128)
+	var led_offset: float = tile_size * (38.0 / 128.0)
+	var lock_col: Color = Color(0.22, 1.0, 0.52, 0.95)
+	for dx in [-1.0, 1.0]:
+		for dy in [-1.0, 1.0]:
+			var diode_pos: Vector2 = center + Vector2(dx * led_offset, dy * led_offset)
+			# Soft beacon halo
+			draw_circle(diode_pos, 3.2, Color(0.20, 1.0, 0.50, 0.35))
+			# Sharp LED diode core
+			draw_circle(diode_pos, 1.4, lock_col)
 
-	# 2. 4 Cardinal Solid Emerald Target Lock Nodes
-	for ang in [0.0, PI * 0.5, PI, PI * 1.5]:
-		var p_node: Vector2 = center + Vector2(cos(ang), sin(ang)) * r_lock
-		draw_circle(p_node, 3.2, Color(0.20, 1.0, 0.50, 0.40))
-		draw_circle(p_node, 1.5, Color(0.80, 1.0, 0.90, 0.95))
+	# 2. Crisp perimeter dock lock framing under crate
+	var pad: float = tile_size * (14.0 / 128.0)
+	var lock_rect: Rect2 = Rect2(rect.position + Vector2(pad, pad), Vector2(tile_size - pad * 2.0, tile_size - pad * 2.0))
+	draw_rect(lock_rect, Color(0.25, 1.0, 0.55, 0.32), false, 1.4)
 
 
-func _draw_goal_light_pillar(rect: Rect2, goal_pos: Vector2i, _ch: Dictionary, time_sec: float) -> void:
-	# Circular Targeting Scope with Precision Scope Reticle Borders (Active Sonar & Radar Sweep)
+func _draw_goal_light_pillar(rect: Rect2, goal_pos: Vector2i, ch: Dictionary, time_sec: float) -> void:
+	# Industrial Hydraulic Pallet Loading Dock (Theme: Warehouse Freight Logistics)
+	# Smooth, glitch-free guidance lighting matching the warehouse theme
 	var center: Vector2 = rect.get_center()
 	var phase_offset: float = float(goal_pos.x * 7 + goal_pos.y * 13) * 0.2
 	var wave: float = sin(time_sec * 3.2 + phase_offset) * 0.5 + 0.5
 
-	# 1. Concentric Sonar Wave expanding through the optical lens well
-	var cycle: float = fmod(time_sec * 0.65 + phase_offset * 0.15, 1.0)
-	var r_ring: float = lerpf(tile_size * 0.08, tile_size * 0.32, cycle)
-	var a_ring: float = sin(cycle * PI) * 0.38
-	draw_arc(center, r_ring, 0.0, TAU, 32, Color(0.25, 0.92, 0.55, a_ring), 1.2, true)
+	var amber_col: Color = ch.get("badge_color", Color(1.0, 0.76, 0.20))
 
-	# 2. Smooth 360-degree radar sweep line
-	var rot_angle: float = time_sec * 2.6 + phase_offset
-	var r_sweep: float = tile_size * 0.31
-	var sweep_target: Vector2 = center + Vector2(cos(rot_angle), sin(rot_angle)) * r_sweep
-	draw_line(center, sweep_target, Color(0.40, 1.0, 0.65, 0.28), 1.0)
+	# 1. 4 Corner Flush Guidance LEDs (Pulsing Amber Docking Beacons)
+	# Position matches exact diode placement in assets/goal_pad.png (38 / 128)
+	var led_offset: float = tile_size * (38.0 / 128.0)
+	for dx in [-1.0, 1.0]:
+		for dy in [-1.0, 1.0]:
+			var diode_pos: Vector2 = center + Vector2(dx * led_offset, dy * led_offset)
+			# Soft beacon halo
+			draw_circle(diode_pos, 3.4, Color(amber_col.r, amber_col.g, amber_col.b, 0.22 + 0.18 * wave))
+			# Sharp LED diode core
+			draw_circle(diode_pos, 1.3, Color(1.0, 0.95, 0.82, 0.65 + 0.35 * wave))
 
-	# 3. 4 Cardinal Scope Turret Notch Pulses (at r = 50/128 * tile_size)
-	var notch_r: float = tile_size * (50.0 / 128.0)
-	for ang in [0.0, PI * 0.5, PI, PI * 1.5]:
-		var p_notch: Vector2 = center + Vector2(cos(ang), sin(ang)) * notch_r
-		draw_circle(p_notch, 2.2, Color(0.25, 0.92, 0.55, 0.30 + 0.30 * wave))
-		draw_circle(p_notch, 1.0, Color(0.85, 1.0, 0.90, 0.65 + 0.35 * wave))
+	# 2. Inward Cargo Guidance Pulse (Moving along the 4 cardinal guide tracks toward center)
+	var cycle: float = fmod(time_sec * 0.70 + phase_offset * 0.15, 1.0)
+	var in_dist: float = lerpf(tile_size * 0.26, tile_size * 0.08, cycle)
+	var pulse_alpha: float = sin(cycle * PI) * 0.40
+	var pulse_col: Color = Color(amber_col.r, amber_col.g, amber_col.b, pulse_alpha)
+	# 4 cardinal inward guide dots
+	for dir in [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)]:
+		draw_circle(center + dir * in_dist, 1.5, pulse_col)
 
-	# 4. Center Specular White-Hot Pin
-	draw_circle(center, 1.8, Color(1.0, 1.0, 1.0, 0.75 + 0.25 * wave))
+	# 3. Center Freight Diamond Specular Glint
+	draw_circle(center, 1.8, Color(1.0, 0.96, 0.85, 0.70 + 0.30 * wave))
 
 
 func _draw_player_headlamp(effective_origin: Vector2) -> void:
