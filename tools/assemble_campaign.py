@@ -54,12 +54,13 @@ def main():
     for fix in [p1, p3, p4]:
         fix["top_set"] = set(tuple(x) for x in get_topology_set(fix["lines"], fix["w"], fix["h"]))
 
-    # 7 Endgame levels
+    # 8 Endgame levels + 1 Reference Level 11 = 9 Grandmaster Endgame levels
     endgame_specs = [
         ("dcf20b4", 64, 21),
         ("dcf20b4", 66, 22),
         ("0257650", 33, 23),
         ("0257650", 47, 23),
+        ("669c94e", 39, 26),
         ("dcf20b4", 69, 27),
         ("dcf20b4", 72, 30),
         ("dcf20b4", 74, 32),
@@ -174,18 +175,19 @@ def main():
     source_to_idx = {c["source"]: i for i, c in enumerate(clean)}
     pre_fixed = [source_to_idx[s] for s in wanted_expert_sources]
 
-    # Remaining target counts for maximum difficulty progression (sum = 58; 58 + 6 expert = 64)
+    # Remaining target counts for maximum difficulty progression (sum = 57; 57 + 6 expert = 63 + 3 fixtures + 9 endgame = 75)
+    # Elevated first 50 difficulty: levels 48, 49, 50 reach P=15!
     rem_target_counts = {
         4: 1, 5: 1,
-        6: 2, 7: 3, 8: 4, 9: 4,
-        10: 5, 11: 6, 12: 6, 13: 8, 14: 8, 15: 10
+        6: 2, 7: 2, 8: 4, 9: 4,
+        10: 4, 11: 6, 12: 6, 13: 7, 14: 7, 15: 13
     }
-    assert sum(rem_target_counts.values()) == 58
+    assert sum(rem_target_counts.values()) == 57
 
     order = sorted(rem_target_counts.keys(), key=lambda p: len(by_p.get(p, [])) / rem_target_counts[p])
 
-    # Trial seed 1396 yields max similarity 68.8% (< 70%) and record 2,689 total optimal moves
-    rng = random.Random(1396)
+    # Seed 1 yields max similarity 68.4% (< 70%) and record 2,781 total optimal moves with P=15 at levels 48, 49, 50
+    rng = random.Random(1)
     chosen_set = set(pre_fixed)
     chosen_list = list(pre_fixed)
     for p in order:
