@@ -2453,61 +2453,51 @@ func _draw_goal_hazard_brackets(rect: Rect2, _ch: Dictionary) -> void:
 	var center: Vector2 = rect.get_center()
 
 	# 4 Corner Guide Beacons switch to solid high-visibility emerald green
-	var arm_offset: float = tile_size * 0.383
+	# Exact integer-aligned diode offset matching assets/goal_pad.png (46 / 128)
+	var arm_offset: float = tile_size * (46.0 / 128.0)
 	var lock_col: Color = Color(0.25, 1.0, 0.55, 0.95)
 	for dx in [-1.0, 1.0]:
 		for dy in [-1.0, 1.0]:
 			var beacon_pos: Vector2 = center + Vector2(dx * arm_offset, dy * arm_offset)
 			# Soft beacon halo
-			draw_circle(beacon_pos, 2.8, Color(0.20, 1.0, 0.50, 0.30))
+			draw_circle(beacon_pos, 3.0, Color(0.20, 1.0, 0.50, 0.35))
 			# Sharp LED diode core
 			draw_circle(beacon_pos, 1.3, lock_col)
 
-	# Crisp perimeter lock alignment framing under crate
-	var pad: float = tile_size * (12.0 / 128.0)
+	# Crisp perimeter lock alignment framing under crate (pad = 14 / 128)
+	var pad: float = tile_size * (14.0 / 128.0)
 	var lock_rect: Rect2 = Rect2(rect.position + Vector2(pad, pad), Vector2(tile_size - pad * 2.0, tile_size - pad * 2.0))
-	draw_rect(lock_rect, Color(0.25, 1.0, 0.55, 0.25), false, 1.2)
+	draw_rect(lock_rect, Color(0.25, 1.0, 0.55, 0.28), false, 1.2)
 
 
 func _draw_goal_light_pillar(rect: Rect2, goal_pos: Vector2i, ch: Dictionary, time_sec: float) -> void:
-	# Concept A: Industrial Hazard Stencil & LED Drop Zone (Active Guidance Beacon)
+	# Concept A: Industrial Hazard Stencil & LED Drop Zone (Active Guidance Beacon - Glitch-Free)
 	var center: Vector2 = rect.get_center()
 	var phase_offset: float = float(goal_pos.x * 7 + goal_pos.y * 13) * 0.2
-	var wave: float = sin(time_sec * 3.2 + phase_offset) * 0.15
+	var wave: float = sin(time_sec * 3.0 + phase_offset) * 0.5 + 0.5
 
 	var amber_beacon: Color = ch.get("badge_color", Color(1.0, 0.78, 0.20))
 
-	# 1. 4 Corner Pallet Dock Alignment Indicator Strobes (Pulsing Amber Guidance LEDs)
-	var arm_offset: float = tile_size * 0.383
-	var beacon_alpha: float = clampf(0.70 + wave * 2.0, 0.35, 1.0)
+	# 1. 4 Corner Pallet Dock Alignment Strobes (Pulsing Amber Guidance LEDs)
+	# Integer-aligned to exact diode center (46 / 128)
+	var arm_offset: float = tile_size * (46.0 / 128.0)
+	var beacon_alpha: float = clampf(0.50 + wave * 0.50, 0.30, 1.0)
 	for dx in [-1.0, 1.0]:
 		for dy in [-1.0, 1.0]:
 			var beacon_pos: Vector2 = center + Vector2(dx * arm_offset, dy * arm_offset)
 			# Soft beacon halo
-			draw_circle(beacon_pos, 3.2, Color(amber_beacon.r, amber_beacon.g, amber_beacon.b, 0.25 * beacon_alpha))
+			draw_circle(beacon_pos, 3.2, Color(amber_beacon.r, amber_beacon.g, amber_beacon.b, 0.28 * beacon_alpha))
 			# Sharp LED diode core
-			draw_circle(beacon_pos, 1.3, Color(1.0, 0.96, 0.80, beacon_alpha))
+			draw_circle(beacon_pos, 1.3, Color(1.0, 0.96, 0.82, 0.60 + 0.40 * wave))
 
-	# 2. Precision Inward Cargo Delivery Chevrons (Sweeping toward center diamond)
-	var ch_cycle: float = fmod(time_sec * 0.40 + phase_offset * 0.1, 1.0)
-	var ch_dist: float = tile_size * (0.28 - ch_cycle * 0.12)
-	var ch_alpha: float = clampf(0.35 + wave, 0.15, 0.50)
-	var c_col: Color = Color(amber_beacon.r, amber_beacon.g, amber_beacon.b, ch_alpha)
-
-	# 4 Cardinal Inward Arrow Ticks
-	# Horizontal ticks
-	draw_line(center + Vector2(-ch_dist, -2.5), center + Vector2(-ch_dist + 2.5, 0.0), c_col, 1.2)
-	draw_line(center + Vector2(-ch_dist, 2.5), center + Vector2(-ch_dist + 2.5, 0.0), c_col, 1.2)
-	draw_line(center + Vector2(ch_dist, -2.5), center + Vector2(ch_dist - 2.5, 0.0), c_col, 1.2)
-	draw_line(center + Vector2(ch_dist, 2.5), center + Vector2(ch_dist - 2.5, 0.0), c_col, 1.2)
-	# Vertical ticks
-	draw_line(center + Vector2(-2.5, -ch_dist), center + Vector2(0.0, -ch_dist + 2.5), c_col, 1.2)
-	draw_line(center + Vector2(2.5, -ch_dist), center + Vector2(0.0, -ch_dist + 2.5), c_col, 1.2)
-	draw_line(center + Vector2(-2.5, ch_dist), center + Vector2(0.0, ch_dist - 2.5), c_col, 1.2)
-	draw_line(center + Vector2(2.5, ch_dist), center + Vector2(0.0, ch_dist - 2.5), c_col, 1.2)
+	# 2. Smooth Concentric Holographic Sonar Wave (Breathes gracefully inside the reticle)
+	var scan_cycle: float = fmod(time_sec * 0.65 + phase_offset * 0.15, 1.0)
+	var r_wave: float = lerpf(tile_size * 0.07, tile_size * 0.15, scan_cycle)
+	var a_wave: float = sin(scan_cycle * PI) * 0.45
+	draw_arc(center, r_wave, 0.0, TAU, 28, Color(amber_beacon.r, amber_beacon.g, amber_beacon.b, a_wave), 1.2, true)
 
 	# 3. Center Cargo Stencil Core Specular Sparkle
-	draw_circle(center, 1.8, Color(1.0, 0.98, 0.88, clampf(0.85 + wave * 1.5, 0.50, 1.0)))
+	draw_circle(center, 1.8, Color(1.0, 0.98, 0.88, 0.70 + 0.30 * wave))
 
 
 func _draw_player_headlamp(effective_origin: Vector2) -> void:

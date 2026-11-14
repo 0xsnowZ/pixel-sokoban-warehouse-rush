@@ -236,15 +236,12 @@ def create_goal_pad():
 
     cx, cy = SIZE // 2, SIZE // 2
 
-    # 1. Subtle, warm warehouse ambient floor bloom (very soft, no murky dark patch)
-    for r in range(42, 12, -4):
-        alpha = int(16 * (42 - r) / 30.0)
-        draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(255, 195, 45, alpha))
-
-    # 2. 4 Corner Industrial Hazard Brackets (Painted directly onto the warehouse floor)
-    pad = 12
+    # 1. 4 Corner Industrial Hazard Brackets (Symmetric & Integer-Aligned)
+    # Outer corner anchor points at pad = 14: (14, 14), (114, 14), (14, 114), (114, 114)
     bracket_len = 28
     bracket_w = 8
+    pad = 14
+
     corners = [
         (pad, pad, 1, 1),
         (SIZE - pad, pad, -1, 1),
@@ -254,68 +251,78 @@ def create_goal_pad():
 
     for x, y, dx, dy in corners:
         # L-bracket horizontal leg
-        hx0, hx1 = min(x, x + dx * bracket_len), max(x, x + dx * bracket_len)
-        hy0, hy1 = min(y, y + dy * bracket_w), max(y, y + dy * bracket_w)
-        # L-bracket vertical leg
-        vx0, vx1 = min(x, x + dx * bracket_w), max(x, x + dx * bracket_w)
-        vy0, vy1 = min(y, y + dy * bracket_len), max(y, y + dy * bracket_len)
+        hx0 = min(x, x + dx * bracket_len)
+        hx1 = max(x, x + dx * bracket_len)
+        hy0 = min(y, y + dy * bracket_w)
+        hy1 = max(y, y + dy * bracket_w)
 
-        # Base high-visibility safety yellow paint
+        # L-bracket vertical leg
+        vx0 = min(x, x + dx * bracket_w)
+        vx1 = max(x, x + dx * bracket_w)
+        vy0 = min(y, y + dy * bracket_len)
+        vy1 = max(y, y + dy * bracket_len)
+
+        # Base high-visibility safety yellow
         draw.rectangle([hx0, hy0, hx1, hy1], fill=(250, 205, 35, 255), outline=(22, 24, 30, 255))
         draw.rectangle([vx0, vy0, vx1, vy1], fill=(250, 205, 35, 255), outline=(22, 24, 30, 255))
 
-        # Black industrial hazard diagonal stripes (alternating safety chevron stripes)
-        step = 7
-        for s in range(0, bracket_len, step):
-            sx0 = x + dx * s
-            sx1 = x + dx * min(s + 3.5, bracket_len)
-            bx0, bx1 = min(sx0, sx1), max(sx0, sx1)
-            draw.rectangle([bx0, hy0 + 1, bx1, hy1 - 1], fill=(24, 26, 32, 255))
+        # Black hazard diagonal stripes: Exactly 3 alternating black blocks on each arm
+        for i in range(3):
+            s_start = 8 + i * 6
+            s_end = s_start + 3
+            sx0 = min(x + dx * s_start, x + dx * s_end)
+            sx1 = max(x + dx * s_start, x + dx * s_end)
+            draw.rectangle([sx0, hy0 + 1, sx1, hy1 - 1], fill=(22, 24, 30, 255))
 
-        for s in range(bracket_w, bracket_len, step):
-            sy0 = y + dy * s
-            sy1 = y + dy * min(s + 3.5, bracket_len)
-            by0, by1 = min(sy0, sy1), max(sy0, sy1)
-            draw.rectangle([vx0 + 1, by0, vx1 - 1, by1], fill=(24, 26, 32, 255))
+        for i in range(3):
+            s_start = 8 + i * 6
+            s_end = s_start + 3
+            sy0 = min(y + dy * s_start, y + dy * s_end)
+            sy1 = max(y + dy * s_start, y + dy * s_end)
+            draw.rectangle([vx0 + 1, sy0, vx1 - 1, sy1], fill=(22, 24, 30, 255))
 
-        # Precision steel anchor bolt with recessed guidance LED diode
-        bx = x + dx * 3.5
-        by = y + dy * 3.5
-        draw.ellipse([bx - 3.5, by - 3.5, bx + 3.5, by + 3.5], fill=(16, 18, 22, 255))
-        draw.ellipse([bx - 2.5, by - 2.5, bx + 2.5, by + 2.5], fill=(255, 195, 45, 255))
-        draw.point((bx, by), fill=(255, 255, 245, 255))
+        # Precision Corner Anchor Rivet & Amber Guidance LED Diode (Integer centered at pad + 4)
+        bx = x + dx * 4
+        by = y + dy * 4
+        # Steel mounting base (7x7)
+        draw.rectangle([bx - 3, by - 3, bx + 3, by + 3], fill=(24, 28, 36, 255), outline=(12, 14, 18, 255))
+        # Amber LED Diode (5x5)
+        draw.rectangle([bx - 2, by - 2, bx + 2, by + 2], fill=(255, 195, 45, 255))
+        # Specular bright core (3x3)
+        draw.rectangle([bx - 1, by - 1, bx + 1, by + 1], fill=(255, 255, 220, 255))
+        draw.point((bx, by), fill=(255, 255, 255, 255))
 
-    # 3. Center Painted Stencil: Industrial Cargo Target & Diamond Crosshair
+    # 2. Center Painted Stencil: Clean Circular Reticle & Cargo Diamond
+    # NO clashing protruding crosshair ticks that collide with animation!
     r_target = 18
-    # Outer targeting ring with dark definition border
+
+    # Outer dashed reticle: clean circle with dark definition outline
     draw.ellipse([cx - r_target, cy - r_target, cx + r_target, cy + r_target],
-                 outline=(20, 22, 28, 220), width=3)
+                 outline=(22, 24, 30, 255), width=3)
     draw.ellipse([cx - r_target, cy - r_target, cx + r_target, cy + r_target],
                  outline=(250, 205, 35, 255), width=2)
 
-    # Stenciled inner cargo diamond
+    # 4 Cardinal Gap Cuts in the ring for authentic stenciled look
+    gap = 3
+    draw.rectangle([cx - gap, cy - r_target - 2, cx + gap, cy - r_target + 2], fill=(0, 0, 0, 0))
+    draw.rectangle([cx - gap, cy + r_target - 2, cx + gap, cy + r_target + 2], fill=(0, 0, 0, 0))
+    draw.rectangle([cx - r_target - 2, cy - gap, cx - r_target + 2, cy + gap], fill=(0, 0, 0, 0))
+    draw.rectangle([cx + r_target - 2, cy - gap, cx + r_target + 2, cy + gap], fill=(0, 0, 0, 0))
+
+    # Clean Stenciled Cargo Diamond in Center
     d_sz = 9
     draw.polygon([
         (cx, cy - d_sz),
         (cx + d_sz, cy),
         (cx, cy + d_sz),
         (cx - d_sz, cy)
-    ], fill=(250, 205, 35, 240), outline=(22, 24, 30, 255))
+    ], fill=(250, 205, 35, 255), outline=(22, 24, 30, 255))
 
-    # 4 Cardinal Crosshair Alignment Ticks
-    for ang in [0, math.pi / 2, math.pi, 3 * math.pi / 2]:
-        x0 = cx + math.cos(ang) * (r_target - 4)
-        y0 = cy + math.sin(ang) * (r_target - 4)
-        x1 = cx + math.cos(ang) * (r_target + 6)
-        y1 = cy + math.sin(ang) * (r_target + 6)
-        draw.line([(x0, y0), (x1, y1)], fill=(20, 22, 28, 255), width=3)
-        draw.line([(x0, y0), (x1, y1)], fill=(250, 205, 35, 255), width=2)
-
-    # Center Specular Focal Point
-    draw.ellipse([cx - 2, cy - 2, cx + 2, cy + 2], fill=(255, 255, 245, 255))
+    # Center Specular Core
+    draw.ellipse([cx - 2, cy - 2, cx + 2, cy + 2], fill=(255, 255, 240, 255))
 
     img.save(os.path.join(OUTPUT_DIR, "goal_pad.png"))
-    print("Saved goal_pad.png (Concept A: Industrial Hazard Stencil)")
+    print("Saved goal_pad.png (Concept A: Industrial Hazard Stencil - Pixel Perfect)")
 
 
 def create_wall_brick():
