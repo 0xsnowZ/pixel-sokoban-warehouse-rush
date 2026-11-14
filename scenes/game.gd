@@ -2449,55 +2449,47 @@ func _draw_board_vignette(_effective_origin: Vector2, _board_pixel_size: Vector2
 
 
 func _draw_goal_hazard_brackets(rect: Rect2, _ch: Dictionary) -> void:
-	# Concept A: Industrial Cargo Drop Zone - Docked & Locked State ("CARGO SECURED")
+	# Circular Targeting Scope - Docked & Locked State ("TARGET ACQUIRED & LOCKED")
 	var center: Vector2 = rect.get_center()
 
-	# 4 Corner Guide Beacons switch to solid high-visibility emerald green
-	# Exact integer-aligned diode offset matching assets/goal_pad.png (46 / 128)
-	var arm_offset: float = tile_size * (46.0 / 128.0)
-	var lock_col: Color = Color(0.25, 1.0, 0.55, 0.95)
-	for dx in [-1.0, 1.0]:
-		for dy in [-1.0, 1.0]:
-			var beacon_pos: Vector2 = center + Vector2(dx * arm_offset, dy * arm_offset)
-			# Soft beacon halo
-			draw_circle(beacon_pos, 3.0, Color(0.20, 1.0, 0.50, 0.35))
-			# Sharp LED diode core
-			draw_circle(beacon_pos, 1.3, lock_col)
+	# 1. Circular Emerald Target Lock Perimeter Ring (r = 46/128 * tile_size)
+	var r_lock: float = tile_size * (46.0 / 128.0)
+	draw_arc(center, r_lock, 0.0, TAU, 36, Color(0.20, 1.0, 0.50, 0.45), 1.5, true)
 
-	# Crisp perimeter lock alignment framing under crate (pad = 14 / 128)
-	var pad: float = tile_size * (14.0 / 128.0)
-	var lock_rect: Rect2 = Rect2(rect.position + Vector2(pad, pad), Vector2(tile_size - pad * 2.0, tile_size - pad * 2.0))
-	draw_rect(lock_rect, Color(0.25, 1.0, 0.55, 0.28), false, 1.2)
+	# 2. 4 Cardinal Solid Emerald Target Lock Nodes
+	for ang in [0.0, PI * 0.5, PI, PI * 1.5]:
+		var p_node: Vector2 = center + Vector2(cos(ang), sin(ang)) * r_lock
+		draw_circle(p_node, 3.2, Color(0.20, 1.0, 0.50, 0.40))
+		draw_circle(p_node, 1.5, Color(0.80, 1.0, 0.90, 0.95))
 
 
-func _draw_goal_light_pillar(rect: Rect2, goal_pos: Vector2i, ch: Dictionary, time_sec: float) -> void:
-	# Concept A: Industrial Hazard Stencil & LED Drop Zone (Active Guidance Beacon - Glitch-Free)
+func _draw_goal_light_pillar(rect: Rect2, goal_pos: Vector2i, _ch: Dictionary, time_sec: float) -> void:
+	# Circular Targeting Scope with Precision Scope Reticle Borders (Active Sonar & Radar Sweep)
 	var center: Vector2 = rect.get_center()
 	var phase_offset: float = float(goal_pos.x * 7 + goal_pos.y * 13) * 0.2
-	var wave: float = sin(time_sec * 3.0 + phase_offset) * 0.5 + 0.5
+	var wave: float = sin(time_sec * 3.2 + phase_offset) * 0.5 + 0.5
 
-	var amber_beacon: Color = ch.get("badge_color", Color(1.0, 0.78, 0.20))
+	# 1. Concentric Sonar Wave expanding through the optical lens well
+	var cycle: float = fmod(time_sec * 0.65 + phase_offset * 0.15, 1.0)
+	var r_ring: float = lerpf(tile_size * 0.08, tile_size * 0.32, cycle)
+	var a_ring: float = sin(cycle * PI) * 0.38
+	draw_arc(center, r_ring, 0.0, TAU, 32, Color(0.25, 0.92, 0.55, a_ring), 1.2, true)
 
-	# 1. 4 Corner Pallet Dock Alignment Strobes (Pulsing Amber Guidance LEDs)
-	# Integer-aligned to exact diode center (46 / 128)
-	var arm_offset: float = tile_size * (46.0 / 128.0)
-	var beacon_alpha: float = clampf(0.50 + wave * 0.50, 0.30, 1.0)
-	for dx in [-1.0, 1.0]:
-		for dy in [-1.0, 1.0]:
-			var beacon_pos: Vector2 = center + Vector2(dx * arm_offset, dy * arm_offset)
-			# Soft beacon halo
-			draw_circle(beacon_pos, 3.2, Color(amber_beacon.r, amber_beacon.g, amber_beacon.b, 0.28 * beacon_alpha))
-			# Sharp LED diode core
-			draw_circle(beacon_pos, 1.3, Color(1.0, 0.96, 0.82, 0.60 + 0.40 * wave))
+	# 2. Smooth 360-degree radar sweep line
+	var rot_angle: float = time_sec * 2.6 + phase_offset
+	var r_sweep: float = tile_size * 0.31
+	var sweep_target: Vector2 = center + Vector2(cos(rot_angle), sin(rot_angle)) * r_sweep
+	draw_line(center, sweep_target, Color(0.40, 1.0, 0.65, 0.28), 1.0)
 
-	# 2. Smooth Concentric Holographic Sonar Wave (Breathes gracefully inside the reticle)
-	var scan_cycle: float = fmod(time_sec * 0.65 + phase_offset * 0.15, 1.0)
-	var r_wave: float = lerpf(tile_size * 0.07, tile_size * 0.15, scan_cycle)
-	var a_wave: float = sin(scan_cycle * PI) * 0.45
-	draw_arc(center, r_wave, 0.0, TAU, 28, Color(amber_beacon.r, amber_beacon.g, amber_beacon.b, a_wave), 1.2, true)
+	# 3. 4 Cardinal Scope Turret Notch Pulses (at r = 50/128 * tile_size)
+	var notch_r: float = tile_size * (50.0 / 128.0)
+	for ang in [0.0, PI * 0.5, PI, PI * 1.5]:
+		var p_notch: Vector2 = center + Vector2(cos(ang), sin(ang)) * notch_r
+		draw_circle(p_notch, 2.2, Color(0.25, 0.92, 0.55, 0.30 + 0.30 * wave))
+		draw_circle(p_notch, 1.0, Color(0.85, 1.0, 0.90, 0.65 + 0.35 * wave))
 
-	# 3. Center Cargo Stencil Core Specular Sparkle
-	draw_circle(center, 1.8, Color(1.0, 0.98, 0.88, 0.70 + 0.30 * wave))
+	# 4. Center Specular White-Hot Pin
+	draw_circle(center, 1.8, Color(1.0, 1.0, 1.0, 0.75 + 0.25 * wave))
 
 
 func _draw_player_headlamp(effective_origin: Vector2) -> void:

@@ -229,100 +229,139 @@ def create_crate_goal():
 
 
 def create_goal_pad():
-    # Concept A: Industrial Hazard Stencil & LED Drop Zone (Authentic Warehouse Freight Target)
-    # 100% transparent ground so stone floor planks and seams flow continuously underneath!
+    # Circular Targeting Scope with Milled Bezel & Precision Reticle Borders
+    # 100% transparent exterior background so stone floor tiles flow seamlessly around the circle.
     img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-
     cx, cy = SIZE // 2, SIZE // 2
 
-    # 1. 4 Corner Industrial Hazard Brackets (Symmetric & Integer-Aligned)
-    # Outer corner anchor points at pad = 14: (14, 14), (114, 14), (14, 114), (114, 114)
-    bracket_len = 28
-    bracket_w = 8
-    pad = 14
+    # 1. Subtle, ethereal circular lens bloom on floor (transparent ground)
+    for r in range(58, 20, -4):
+        a = int(18 * (58 - r) / 38.0)
+        draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(40, 210, 130, a))
 
-    corners = [
-        (pad, pad, 1, 1),
-        (SIZE - pad, pad, -1, 1),
-        (pad, SIZE - pad, 1, -1),
-        (SIZE - pad, SIZE - pad, -1, -1),
-    ]
+    # 2. Outer Mechanical Scope Bezel (Cast iron & tactical olive/bronze rim)
+    # Diameter: 108px (r = 54px)
+    r_outer = 54
+    # Deep outer drop shadow into floor
+    draw.ellipse([cx - r_outer - 1, cy - r_outer - 1, cx + r_outer + 1, cy + r_outer + 1],
+                 outline=(10, 14, 20, 255), width=2)
+    # Heavy outer milled bezel ring
+    draw.ellipse([cx - r_outer, cy - r_outer, cx + r_outer, cy + r_outer],
+                 fill=(32, 54, 40, 255), outline=(18, 30, 24, 255), width=2)
+    # Metallic bevel highlight ring
+    r_bevel = 50
+    draw.ellipse([cx - r_bevel, cy - r_bevel, cx + r_bevel, cy + r_bevel],
+                 fill=(48, 88, 62, 255), outline=(24, 44, 32, 255), width=1)
+    # Inner rim step
+    r_rim = 46
+    draw.ellipse([cx - r_rim, cy - r_rim, cx + r_rim, cy + r_rim],
+                 fill=(22, 38, 30, 255), outline=(14, 24, 20, 255), width=1)
 
-    for x, y, dx, dy in corners:
-        # L-bracket horizontal leg
-        hx0 = min(x, x + dx * bracket_len)
-        hx1 = max(x, x + dx * bracket_len)
-        hy0 = min(y, y + dy * bracket_w)
-        hy1 = max(y, y + dy * bracket_w)
+    # 8 Precision Perimeter Scope Hex Bolts / Rivets
+    for i in range(8):
+        ang = i * (math.pi / 4.0)
+        bx = cx + math.cos(ang) * (r_outer - 4)
+        by = cy + math.sin(ang) * (r_outer - 4)
+        # Bolt shadow
+        draw.ellipse([bx - 2.5, by - 2.5, bx + 2.5, by + 2.5], fill=(12, 18, 14, 255))
+        # Bolt steel body
+        draw.ellipse([bx - 1.5, by - 1.5, bx + 1.5, by + 1.5], fill=(140, 175, 155, 255))
+        # Specular glint
+        draw.point((int(bx), int(by)), fill=(235, 255, 245, 255))
 
-        # L-bracket vertical leg
-        vx0 = min(x, x + dx * bracket_w)
-        vx1 = max(x, x + dx * bracket_w)
-        vy0 = min(y, y + dy * bracket_len)
-        vy1 = max(y, y + dy * bracket_len)
+    # 4 Cardinal Scope Turret Alignment Notches (N, S, E, W bracket grips on outer rim)
+    notch_len = 6
+    for ang in [0, math.pi / 2, math.pi, 3 * math.pi / 2]:
+        nx0 = cx + math.cos(ang) * (r_outer - notch_len)
+        ny0 = cy + math.sin(ang) * (r_outer - notch_len)
+        nx1 = cx + math.cos(ang) * (r_outer + 1)
+        ny1 = cy + math.sin(ang) * (r_outer + 1)
+        draw.line([(nx0, ny0), (nx1, ny1)], fill=(75, 175, 110, 255), width=3)
+        draw.line([(nx0, ny0), (nx1, ny1)], fill=(200, 255, 220, 255), width=1)
 
-        # Base high-visibility safety yellow
-        draw.rectangle([hx0, hy0, hx1, hy1], fill=(250, 205, 35, 255), outline=(22, 24, 30, 255))
-        draw.rectangle([vx0, vy0, vx1, vy1], fill=(250, 205, 35, 255), outline=(22, 24, 30, 255))
+    # 3. Recessed Dark Optical Lens Well (Deep cyan/teal lens glass)
+    r_well = 44
+    draw.ellipse([cx - r_well, cy - r_well, cx + r_well, cy + r_well],
+                 fill=(14, 28, 38, 255), outline=(8, 16, 22, 255), width=2)
+    # Inner lens curvature depth shadow (top-left)
+    draw.arc([cx - r_well + 1, cy - r_well + 1, cx + r_well - 1, cy + r_well - 1],
+             180, 270, fill=(6, 12, 18, 240), width=3)
+    # Inner lens light catch (bottom-right)
+    draw.arc([cx - r_well + 1, cy - r_well + 1, cx + r_well - 1, cy + r_well - 1],
+             0, 90, fill=(30, 80, 95, 180), width=1)
 
-        # Black hazard diagonal stripes: Exactly 3 alternating black blocks on each arm
-        for i in range(3):
-            s_start = 8 + i * 6
-            s_end = s_start + 3
-            sx0 = min(x + dx * s_start, x + dx * s_end)
-            sx1 = max(x + dx * s_start, x + dx * s_end)
-            draw.rectangle([sx0, hy0 + 1, sx1, hy1 - 1], fill=(22, 24, 30, 255))
+    # 4. Outer Calibrated Targeting Reticle Ring (r = 33px)
+    r_ring1 = 33
+    draw.ellipse([cx - r_ring1, cy - r_ring1, cx + r_ring1, cy + r_ring1],
+                 outline=(28, 85, 95, 200), width=2)
+    draw.ellipse([cx - r_ring1, cy - r_ring1, cx + r_ring1, cy + r_ring1],
+                 outline=(55, 175, 130, 240), width=1)
 
-        for i in range(3):
-            s_start = 8 + i * 6
-            s_end = s_start + 3
-            sy0 = min(y + dy * s_start, y + dy * s_end)
-            sy1 = max(y + dy * s_start, y + dy * s_end)
-            draw.rectangle([vx0 + 1, sy0, vx1 - 1, sy1], fill=(22, 24, 30, 255))
+    # 4 Cardinal Gap Breaks in outer reticle ring for authentic scope calibration
+    gap = 4
+    for ang in [0, math.pi / 2, math.pi, 3 * math.pi / 2]:
+        gx = cx + math.cos(ang) * r_ring1
+        gy = cy + math.sin(ang) * r_ring1
+        draw.ellipse([gx - gap, gy - gap, gx + gap, gy + gap], fill=(14, 28, 38, 255))
 
-        # Precision Corner Anchor Rivet & Amber Guidance LED Diode (Integer centered at pad + 4)
-        bx = x + dx * 4
-        by = y + dy * 4
-        # Steel mounting base (7x7)
-        draw.rectangle([bx - 3, by - 3, bx + 3, by + 3], fill=(24, 28, 36, 255), outline=(12, 14, 18, 255))
-        # Amber LED Diode (5x5)
-        draw.rectangle([bx - 2, by - 2, bx + 2, by + 2], fill=(255, 195, 45, 255))
-        # Specular bright core (3x3)
-        draw.rectangle([bx - 1, by - 1, bx + 1, by + 1], fill=(255, 255, 220, 255))
-        draw.point((bx, by), fill=(255, 255, 255, 255))
+    # Calibration Degree Ticks along outer reticle ring (every 30 degrees)
+    for i in range(12):
+        if i % 3 != 0:
+            ang = i * (math.pi / 6.0)
+            tx0 = cx + math.cos(ang) * (r_ring1 - 3)
+            ty0 = cy + math.sin(ang) * (r_ring1 - 3)
+            tx1 = cx + math.cos(ang) * (r_ring1 + 3)
+            ty1 = cy + math.sin(ang) * (r_ring1 + 3)
+            draw.line([(tx0, ty0), (tx1, ty1)], fill=(45, 140, 110, 220), width=1)
 
-    # 2. Center Painted Stencil: Clean Circular Reticle & Cargo Diamond
-    # NO clashing protruding crosshair ticks that collide with animation!
-    r_target = 18
+    # 5. Inner Precision Scope Ring (r = 20px)
+    r_ring2 = 20
+    draw.ellipse([cx - r_ring2, cy - r_ring2, cx + r_ring2, cy + r_ring2],
+                 outline=(20, 60, 75, 200), width=2)
+    draw.ellipse([cx - r_ring2, cy - r_ring2, cx + r_ring2, cy + r_ring2],
+                 outline=(65, 215, 145, 255), width=1)
 
-    # Outer dashed reticle: clean circle with dark definition outline
-    draw.ellipse([cx - r_target, cy - r_target, cx + r_target, cy + r_target],
-                 outline=(22, 24, 30, 255), width=3)
-    draw.ellipse([cx - r_target, cy - r_target, cx + r_target, cy + r_target],
-                 outline=(250, 205, 35, 255), width=2)
+    # 6. Fine Scope Crosshairs (+) with Hash Marks
+    # Horizontal crosshair: Left from cx - 42 to cx - 8; Right from cx + 8 to cx + 42
+    draw.line([(cx - 42, cy), (cx - 8, cy)], fill=(20, 50, 65, 255), width=2)
+    draw.line([(cx - 42, cy), (cx - 8, cy)], fill=(75, 225, 150, 255), width=1)
+    draw.line([(cx + 8, cy), (cx + 42, cy)], fill=(20, 50, 65, 255), width=2)
+    draw.line([(cx + 8, cy), (cx + 42, cy)], fill=(75, 225, 150, 255), width=1)
 
-    # 4 Cardinal Gap Cuts in the ring for authentic stenciled look
-    gap = 3
-    draw.rectangle([cx - gap, cy - r_target - 2, cx + gap, cy - r_target + 2], fill=(0, 0, 0, 0))
-    draw.rectangle([cx - gap, cy + r_target - 2, cx + gap, cy + r_target + 2], fill=(0, 0, 0, 0))
-    draw.rectangle([cx - r_target - 2, cy - gap, cx - r_target + 2, cy + gap], fill=(0, 0, 0, 0))
-    draw.rectangle([cx + r_target - 2, cy - gap, cx + r_target + 2, cy + gap], fill=(0, 0, 0, 0))
+    # Vertical crosshair: Top from cy - 42 to cy - 8; Bottom from cy + 8 to cy + 42
+    draw.line([(cx, cy - 42), (cx, cy - 8)], fill=(20, 50, 65, 255), width=2)
+    draw.line([(cx, cy - 42), (cx, cy - 8)], fill=(75, 225, 150, 255), width=1)
+    draw.line([(cx, cy + 8), (cx, cy + 42)], fill=(20, 50, 65, 255), width=2)
+    draw.line([(cx, cy + 8), (cx, cy + 42)], fill=(75, 225, 150, 255), width=1)
 
-    # Clean Stenciled Cargo Diamond in Center
-    d_sz = 9
+    # Crosshair Measuring Hash Marks (Elevation & Windage Ticks at d = 14, 26)
+    for d in [14, 26]:
+        draw.line([(cx - d, cy - 2), (cx - d, cy + 2)], fill=(65, 215, 145, 240), width=1)
+        draw.line([(cx + d, cy - 2), (cx + d, cy + 2)], fill=(65, 215, 145, 240), width=1)
+        draw.line([(cx - 2, cy - d), (cx + 2, cy - d)], fill=(65, 215, 145, 240), width=1)
+        draw.line([(cx - 2, cy + d), (cx + 2, cy + d)], fill=(65, 215, 145, 240), width=1)
+
+    # 7. Center Focal Reticle: Precision Luminous Core Diamond & Specular Glint
+    r_core = 7
     draw.polygon([
-        (cx, cy - d_sz),
-        (cx + d_sz, cy),
-        (cx, cy + d_sz),
-        (cx - d_sz, cy)
-    ], fill=(250, 205, 35, 255), outline=(22, 24, 30, 255))
+        (cx, cy - r_core),
+        (cx + r_core, cy),
+        (cx, cy + r_core),
+        (cx - r_core, cy)
+    ], fill=(70, 235, 155, 255), outline=(18, 55, 40, 255), width=1)
 
-    # Center Specular Core
-    draw.ellipse([cx - 2, cy - 2, cx + 2, cy + 2], fill=(255, 255, 240, 255))
+    draw.polygon([
+        (cx, cy - 4),
+        (cx + 4, cy),
+        (cx, cy + 4),
+        (cx - 4, cy)
+    ], fill=(180, 255, 220, 255))
+
+    draw.ellipse([cx - 2, cy - 2, cx + 2, cy + 2], fill=(255, 255, 255, 255))
 
     img.save(os.path.join(OUTPUT_DIR, "goal_pad.png"))
-    print("Saved goal_pad.png (Concept A: Industrial Hazard Stencil - Pixel Perfect)")
+    print("Saved goal_pad.png (Polished Circular Scope Pad)")
 
 
 def create_wall_brick():
