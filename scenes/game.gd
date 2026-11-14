@@ -2122,36 +2122,22 @@ func _draw() -> void:
 		var has_crate: bool = grid.crates.has(goal_pos)
 
 		if not has_crate:
-			# --- Empty Goal: Clean Docking Station ---
-			var pad_inset: float = tile_size * 0.06
-			var pad_rect: Rect2 = rect.grow(-pad_inset)
-
-			# 1. Dark recessed industrial floor plate
-			draw_rect(pad_rect, Color(0.08, 0.10, 0.14, 0.90))
-
-			# 2. Clean corner precision brackets
-			_draw_goal_hazard_brackets(rect, ch)
-
-			# 3. Clean goal docking graphic
-			var goal_mod: Color = Color(0.18, 0.95, 0.55, 0.85)
+			# --- Empty Goal: Precision Cargo Docking Station ---
+			var goal_mod: Color = Color(1.0, 1.0, 1.0, 0.98)
 			if current_chapter_idx == 1:
-				goal_mod = Color(0.35, 0.88, 1.0, 0.85)
+				goal_mod = Color(0.88, 0.95, 1.00, 0.98)
 			elif current_chapter_idx == 2:
-				goal_mod = Color(0.20, 0.98, 0.60, 0.90)
+				goal_mod = Color(0.90, 1.00, 0.95, 0.98)
+			elif current_chapter_idx == 3:
+				goal_mod = Color(0.96, 0.90, 1.00, 0.98)
 			draw_texture_rect(tex_goal, rect, false, goal_mod)
 
-			# 4. Concentric optical target reticle
-			var ring_r: float = tile_size * 0.24
-			var ring_col: Color = Color(goal_mod.r, goal_mod.g, goal_mod.b, 0.35 + pulse * 0.10)
-			draw_arc(center, ring_r, 0.0, TAU, 32, ring_col, 1.5, true)
-			draw_circle(center, 2.5, core_col)
-
-			# 5. Clean self-contained docking illumination (inside tile)
+			# Clean precision docking beacon illumination
 			_draw_goal_light_pillar(rect, goal_pos, ch, time_sec)
 		else:
 			# --- Filled Goal: Clean Docking Under-Glow beneath crate ---
+			draw_texture_rect(tex_goal, rect, false, Color(1.0, 1.0, 1.0, 0.55))
 			_draw_goal_hazard_brackets(rect, ch)
-			draw_texture_rect(tex_goal, rect, false, Color(1.0, 1.0, 1.0, 0.45))
 
 	# 3.5. Draw Floating Ambient Warehouse Motes (Option B)
 	_draw_ambient_motes(effective_origin, board_pixel_size, ch)
@@ -2522,33 +2508,34 @@ func _draw_goal_light_pillar(rect: Rect2, goal_pos: Vector2i, _ch: Dictionary, t
 	var phase_offset: float = float(goal_pos.x * 7 + goal_pos.y * 13) * 0.2
 	var wave: float = sin(time_sec * 3.0 + phase_offset) * 0.08
 
-	var beam_col: Color = Color(0.18, 0.95, 0.55) # Chapter 0: emerald
+	var beam_col: Color = Color(0.20, 0.95, 0.65) # Chapter 0: emerald
 	if current_chapter_idx == 1:
 		beam_col = Color(0.35, 0.88, 1.00) # Chapter 1: cryo cyan
 	elif current_chapter_idx == 2:
-		beam_col = Color(0.20, 0.98, 0.60) # Chapter 2: cyber laser emerald
+		beam_col = Color(0.25, 0.98, 0.70) # Chapter 2: cyber laser emerald
+	elif current_chapter_idx == 3:
+		beam_col = Color(0.85, 0.50, 1.00) # Chapter 3: quantum violet
 
-	# Self-contained docking station illumination strictly inside the tile (no vertical polygon bleeding!)
-	# 1. Soft radial target illumination pool
-	var glow_r: float = tile_size * 0.26
-	var glow_alpha: float = clampf(0.16 + wave, 0.10, 0.24)
+	# Elegant self-contained docking beacon illumination
+	# 1. Soft ambient illumination pool beneath beacon
+	var glow_r: float = tile_size * 0.22
+	var glow_alpha: float = clampf(0.12 + wave, 0.08, 0.20)
 	draw_circle(center, glow_r, Color(beam_col.r, beam_col.g, beam_col.b, glow_alpha))
 
-	# 2. Concentric optical alignment ring
-	var ring_r: float = tile_size * 0.18
-	draw_arc(center, ring_r, 0.0, TAU, 24, Color(beam_col.r, beam_col.g, beam_col.b, 0.35 + wave), 1.2, true)
+	# 2. Precision holographic diamond beacon pulse
+	var d_sz: float = tile_size * 0.12
+	var d_col: Color = Color(beam_col.r, beam_col.g, beam_col.b, 0.35 + wave * 1.5)
+	var pts: PackedVector2Array = PackedVector2Array([
+		center + Vector2(0, -d_sz),
+		center + Vector2(d_sz, 0),
+		center + Vector2(0, d_sz),
+		center + Vector2(-d_sz, 0),
+		center + Vector2(0, -d_sz)
+	])
+	draw_polyline(pts, d_col, 1.2, true)
 
-	# 3. Precision optical alignment crosshair ticks (strictly within tile)
-	var tick_in: float = tile_size * 0.08
-	var tick_out: float = tile_size * 0.15
-	var tick_col: Color = Color(1.0, 1.0, 1.0, 0.50 + wave)
-	draw_line(center - Vector2(tick_out, 0), center - Vector2(tick_in, 0), tick_col, 1.2)
-	draw_line(center + Vector2(tick_in, 0), center + Vector2(tick_out, 0), tick_col, 1.2)
-	draw_line(center - Vector2(0, tick_out), center - Vector2(0, tick_in), tick_col, 1.2)
-	draw_line(center + Vector2(0, tick_in), center + Vector2(0, tick_out), tick_col, 1.2)
-
-	# 4. Bright central emitter diode
-	draw_circle(center, 2.5, Color(1.0, 1.0, 1.0, 0.85 + wave))
+	# 3. Bright central emitter diode
+	draw_circle(center, 2.0, Color(1.0, 1.0, 1.0, 0.85 + wave))
 
 
 func _draw_player_headlamp(effective_origin: Vector2) -> void:
