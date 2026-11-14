@@ -4,6 +4,9 @@ tools/synthesize_compact_hard_puzzles.py
 
 Synthesizes high-difficulty, compact Sokoban puzzles:
 - Minimum 4 boxes (crates >= 4)
+- Compact templates (14 <= floor <= 24 tiles)
+- Zero dummy wings, zero giant empty voids
+- At most 1 crate on goal at start (on_goals <= 1)
 - 100% Watertight single-tile perimeter ('#')
 - solid_2x2 == 0
 - High push density: pushes / moves >= 0.35
@@ -26,21 +29,20 @@ from new_level_generator import TEMPLATES
 from generate_all_templates import MORE_TEMPLATES, rot90, get_interior_floor, render_sok, is_watertight, audit_solid_2x2, get_topology_set
 from generate_hard_retro_puzzles import manhattan, get_reachable, solve_forward
 
-random.seed(42)
+random.seed(999)
 
 def max_consecutive_walk(path):
     runs = [match.group(0) for match in re.finditer(r"(.)\1*", path.lower())]
     return max(len(r) for r in runs) if runs else 0
 
-def synthesize_compact_retro(vname, vlines, num_crates, min_pushes=11, max_attempts=40):
+def synthesize_compact_retro(vname, vlines, num_crates, min_pushes=10, max_attempts=30):
     walls, floor, h, w = get_interior_floor(vlines)
     floor_list = list(floor)
-    if len(floor_list) < num_crates + 5:
+    if len(floor_list) < num_crates + 5 or len(floor_list) > 24:
         return None
 
     for attempt in range(max_attempts):
         seed_tile = random.choice(floor_list)
-        # Cluster-seed goals: choose nearest floor tiles to seed
         goals = tuple(sorted(sorted(floor_list, key=lambda p: manhattan(p, seed_tile))[:num_crates]))
         goal_set = set(goals)
         cur_crates = list(goals)
@@ -57,7 +59,7 @@ def synthesize_compact_retro(vname, vlines, num_crates, min_pushes=11, max_attem
         candidates = []
 
         # Retrograde pulls
-        for step in range(60):
+        for step in range(50):
             c_set = set(cur_crates)
             reachable = get_reachable(player, floor, walls, c_set)
 
@@ -91,10 +93,13 @@ def synthesize_compact_retro(vname, vlines, num_crates, min_pushes=11, max_attem
 
             # Snapshot candidates after step 10
             if step >= 10 and step % 3 == 0:
-                candidates.append((step, tuple(goals), player, tuple(cur_crates)))
+                # Enforce at most 1 crate on goal at spawn!
+                on_goals = len(set(cur_crates).intersection(goal_set))
+                if on_goals <= 1:
+                    candidates.append((step, tuple(goals), player, tuple(cur_crates)))
 
         for step, g_cand, p_cand, c_cand in reversed(candidates):
-            res = solve_forward(walls, floor, g_cand, p_cand, c_cand, max_states=30000)
+            res = solve_forward(walls, floor, g_cand, p_cand, c_cand, max_states=20000)
             if res and res["solvable"] and res["pushes"] >= min_pushes:
                 p = res["pushes"]
                 m = res["moves"]
@@ -105,7 +110,7 @@ def synthesize_compact_retro(vname, vlines, num_crates, min_pushes=11, max_attem
                     lines = render_sok(walls, floor, g_cand, c_cand, p_cand, h, w)
                     if is_watertight(lines) and audit_solid_2x2(lines) == 0:
                         return {
-                            "source": f"retro_compact:{vname}_{num_crates}c_{p}p_att{attempt}",
+                            "source": f"compact_retro:{vname}_{num_crates}c_{p}p_att{attempt}",
                             "lines": lines,
                             "w": w,
                             "h": h,
@@ -135,45 +140,50 @@ def main():
     for name, tmpl in MORE_TEMPLATES:
         all_templates.append((name, tmpl))
 
-    variants = []
+    # Filter to compact templates (floor <= 24)
+    compact_templates = []
     for name, tmpl in all_templates:
+        lines0 = [l.rstrip() for l in tmpl.strip("\n").split("\n")]
+        _, fl, _, _ = get_interior_floor(lines0)
+        if 14 <= len(fl) <= 24:
+            compact_templates.append((name, tmpl))
+
+    print(f"Compact templates (14 <= floor <= 24): {len(compact_templates)}")
+
+    variants = []
+    for name, tmpl in compact_templates:
         lines0 = [l.rstrip() for l in tmpl.strip("\n").split("\n")]
         variants.append((f"{name}_0", lines0))
         variants.append((f"{name}_90", rot90(lines0)))
         variants.append((f"{name}_180", rot90(rot90(lines0))))
         variants.append((f"{name}_270", rot90(rot90(rot90(lines0)))))
 
-    # Shuffle variants for diverse coverage
     random.shuffle(variants)
-
-    print(f"Searching across {len(variants)} rotation variants...")
+    print(f"Searching across {len(variants)} compact rotation variants...")
     t0 = time.time()
     added = 0
+    seen = set("\n".join(c["lines"]) for c in pool)
 
-    seen_signatures = set("\n".join(c["lines"]) for c in pool)
-
-    for min_p in [14, 13, 12, 11]:
+    for min_p in [12, 11, 10, 9]:
         for vname, vlines in variants:
-            for num_crates in [4, 5]:
-                cand = synthesize_compact_retro(vname, vlines, num_crates, min_pushes=min_p, max_attempts=15)
-                if cand:
-                    sig = "\n".join(cand["lines"])
-                    if sig not in seen_signatures:
-                        seen_signatures.add(sig)
-                        pool.append(cand)
-                        added += 1
-                        print(f"  + [{added}] {cand['source']}: {cand['pushes']}p, {cand['moves']}m, d={cand['density']:.2f}, mw={cand['max_walk']}")
-                        if added >= 50:
-                            break
-            if added >= 50:
+            cand = synthesize_compact_retro(vname, vlines, 4, min_pushes=min_p, max_attempts=15)
+            if cand:
+                sig = "\n".join(cand["lines"])
+                if sig not in seen:
+                    seen.add(sig)
+                    pool.append(cand)
+                    added += 1
+                    print(f"  + [{added}] {cand['source']}: {cand['pushes']}p, {cand['moves']}m, d={cand['density']:.2f}, mw={cand['max_walk']}")
+                    if added >= 40:
+                        break
+            if added >= 40:
                 break
-        if added >= 50:
+        if added >= 40:
             break
 
-    print(f"\nAdded {added} high-difficulty compact puzzles in {time.time()-t0:.1f}s. Pool size: {len(pool)}")
+    print(f"\nAdded {added} compact high-difficulty puzzles in {time.time()-t0:.1f}s. Pool size: {len(pool)}")
     with open(pool_path, "w") as f:
         json.dump(pool, f, indent=2)
 
 if __name__ == "__main__":
     main()
-
