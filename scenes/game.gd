@@ -2448,74 +2448,66 @@ func _draw_board_vignette(_effective_origin: Vector2, _board_pixel_size: Vector2
 	pass
 
 
-func _draw_goal_hazard_brackets(rect: Rect2, ch: Dictionary) -> void:
-	# Warehouse Docked & Locked State: Hydraulic dock compressed, corner beacons solid green-gold
+func _draw_goal_hazard_brackets(rect: Rect2, _ch: Dictionary) -> void:
+	# Concept A: Industrial Cargo Drop Zone - Docked & Locked State ("CARGO SECURED")
 	var center: Vector2 = rect.get_center()
-	var time_sec: float = float(Time.get_ticks_msec()) / 1000.0
-	var wave: float = sin(time_sec * 2.5 + rect.position.x * 0.05 + rect.position.y * 0.08) * 0.05
 
-	# Heavy hydraulic ground foundation
-	var base_r: float = tile_size * 0.44
-	var gold_aura: Color = ch.get("goal_aura", Color(0.98, 0.82, 0.20))
-	draw_circle(center, base_r, Color(gold_aura.r, gold_aura.g, gold_aura.b, 0.22 + wave))
-
-	# 4 Corner Cargo Lock Beacons: Solid green-gold "CARGO SECURED"
-	var arm_offset: float = tile_size * 0.27
-	var lock_col: Color = Color(0.40, 1.0, 0.65, 0.85) # High-visibility warehouse green-gold indicator
+	# 4 Corner Guide Beacons switch to solid high-visibility emerald green
+	var arm_offset: float = tile_size * 0.383
+	var lock_col: Color = Color(0.25, 1.0, 0.55, 0.95)
 	for dx in [-1.0, 1.0]:
 		for dy in [-1.0, 1.0]:
 			var beacon_pos: Vector2 = center + Vector2(dx * arm_offset, dy * arm_offset)
-			draw_circle(beacon_pos, 2.8, Color(lock_col.r, lock_col.g, lock_col.b, 0.35))
-			draw_circle(beacon_pos, 1.4, lock_col)
+			# Soft beacon halo
+			draw_circle(beacon_pos, 2.8, Color(0.20, 1.0, 0.50, 0.30))
+			# Sharp LED diode core
+			draw_circle(beacon_pos, 1.3, lock_col)
+
+	# Crisp perimeter lock alignment framing under crate
+	var pad: float = tile_size * (12.0 / 128.0)
+	var lock_rect: Rect2 = Rect2(rect.position + Vector2(pad, pad), Vector2(tile_size - pad * 2.0, tile_size - pad * 2.0))
+	draw_rect(lock_rect, Color(0.25, 1.0, 0.55, 0.25), false, 1.2)
 
 
 func _draw_goal_light_pillar(rect: Rect2, goal_pos: Vector2i, ch: Dictionary, time_sec: float) -> void:
+	# Concept A: Industrial Hazard Stencil & LED Drop Zone (Active Guidance Beacon)
 	var center: Vector2 = rect.get_center()
 	var phase_offset: float = float(goal_pos.x * 7 + goal_pos.y * 13) * 0.2
-	var wave: float = sin(time_sec * 3.0 + phase_offset) * 0.12
+	var wave: float = sin(time_sec * 3.2 + phase_offset) * 0.15
 
-	var amber_beacon: Color = ch.get("badge_color", Color(1.0, 0.72, 0.18))
+	var amber_beacon: Color = ch.get("badge_color", Color(1.0, 0.78, 0.20))
 
-	# 1. Sodium-Vapor Floor Warmth Pool
-	var r_glow: float = tile_size * 0.22
-	var alpha_glow: float = clampf(0.12 + wave, 0.05, 0.22)
-	draw_circle(center, r_glow, Color(amber_beacon.r, amber_beacon.g, amber_beacon.b, alpha_glow))
-
-	# 2. 4 Corner Pallet Dock Alignment Indicator Strobes (Pulsing Amber Guidance Beacons)
-	var arm_offset: float = tile_size * 0.27
-	var beacon_alpha: float = clampf(0.65 + wave * 2.2, 0.35, 1.0)
+	# 1. 4 Corner Pallet Dock Alignment Indicator Strobes (Pulsing Amber Guidance LEDs)
+	var arm_offset: float = tile_size * 0.383
+	var beacon_alpha: float = clampf(0.70 + wave * 2.0, 0.35, 1.0)
 	for dx in [-1.0, 1.0]:
 		for dy in [-1.0, 1.0]:
 			var beacon_pos: Vector2 = center + Vector2(dx * arm_offset, dy * arm_offset)
 			# Soft beacon halo
 			draw_circle(beacon_pos, 3.2, Color(amber_beacon.r, amber_beacon.g, amber_beacon.b, 0.25 * beacon_alpha))
 			# Sharp LED diode core
-			draw_circle(beacon_pos, 1.4, Color(1.0, 0.95, 0.75, beacon_alpha))
+			draw_circle(beacon_pos, 1.3, Color(1.0, 0.96, 0.80, beacon_alpha))
 
-	# 3. Precision Inward Cargo Delivery Chevrons
-	var ch_cycle: float = fmod(time_sec * 0.35 + phase_offset * 0.1, 1.0)
-	var ch_dist: float = tile_size * (0.24 - ch_cycle * 0.10)
+	# 2. Precision Inward Cargo Delivery Chevrons (Sweeping toward center diamond)
+	var ch_cycle: float = fmod(time_sec * 0.40 + phase_offset * 0.1, 1.0)
+	var ch_dist: float = tile_size * (0.28 - ch_cycle * 0.12)
 	var ch_alpha: float = clampf(0.35 + wave, 0.15, 0.50)
 	var c_col: Color = Color(amber_beacon.r, amber_beacon.g, amber_beacon.b, ch_alpha)
-	# Inward arrow ticks
-	draw_line(center + Vector2(-ch_dist, -3.0), center + Vector2(-ch_dist + 3.0, 0.0), c_col, 1.2)
-	draw_line(center + Vector2(-ch_dist, 3.0), center + Vector2(-ch_dist + 3.0, 0.0), c_col, 1.2)
-	draw_line(center + Vector2(ch_dist, -3.0), center + Vector2(ch_dist - 3.0, 0.0), c_col, 1.2)
-	draw_line(center + Vector2(ch_dist, 3.0), center + Vector2(ch_dist - 3.0, 0.0), c_col, 1.2)
 
-	# 4. Pneumatic Steam Wisps (Procedural Ambient Hydraulic Condensation Venting)
-	for i in range(3):
-		var t_steam: float = time_sec * 0.65 + float(i) * 0.333 + phase_offset * 0.4
-		var s_cycle: float = fmod(t_steam, 1.0)
-		var y_drift: float = -s_cycle * (tile_size * 0.38)
-		var x_drift: float = sin(t_steam * 3.0 + float(i) * 2.0) * (tile_size * 0.06)
-		var steam_pos: Vector2 = center + Vector2(x_drift, y_drift)
-		var steam_alpha: float = sin(s_cycle * PI) * 0.45
-		var steam_sz: float = lerpf(1.5, 3.8, s_cycle)
-		draw_circle(steam_pos, steam_sz, Color(0.92, 0.94, 0.98, steam_alpha))
+	# 4 Cardinal Inward Arrow Ticks
+	# Horizontal ticks
+	draw_line(center + Vector2(-ch_dist, -2.5), center + Vector2(-ch_dist + 2.5, 0.0), c_col, 1.2)
+	draw_line(center + Vector2(-ch_dist, 2.5), center + Vector2(-ch_dist + 2.5, 0.0), c_col, 1.2)
+	draw_line(center + Vector2(ch_dist, -2.5), center + Vector2(ch_dist - 2.5, 0.0), c_col, 1.2)
+	draw_line(center + Vector2(ch_dist, 2.5), center + Vector2(ch_dist - 2.5, 0.0), c_col, 1.2)
+	# Vertical ticks
+	draw_line(center + Vector2(-2.5, -ch_dist), center + Vector2(0.0, -ch_dist + 2.5), c_col, 1.2)
+	draw_line(center + Vector2(2.5, -ch_dist), center + Vector2(0.0, -ch_dist + 2.5), c_col, 1.2)
+	draw_line(center + Vector2(-2.5, ch_dist), center + Vector2(0.0, ch_dist - 2.5), c_col, 1.2)
+	draw_line(center + Vector2(2.5, ch_dist), center + Vector2(0.0, ch_dist - 2.5), c_col, 1.2)
 
-	# 5. Pressure Valve Brass Core Sparkle
-	draw_circle(center, 2.0, Color(1.0, 0.88, 0.40, clampf(0.80 + wave * 1.5, 0.60, 1.0)))
+	# 3. Center Cargo Stencil Core Specular Sparkle
+	draw_circle(center, 1.8, Color(1.0, 0.98, 0.88, clampf(0.85 + wave * 1.5, 0.50, 1.0)))
 
 
 func _draw_player_headlamp(effective_origin: Vector2) -> void:

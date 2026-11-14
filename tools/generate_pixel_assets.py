@@ -229,115 +229,93 @@ def create_crate_goal():
 
 
 def create_goal_pad():
-    # Authentic Industrial Cargo Dock / Hydraulic Freight Bay (Matches Pixel Porter Warehouse Theme!)
-    # 100% transparent exterior background so stone floor tiles flow seamlessly even when clustered.
+    # Concept A: Industrial Hazard Stencil & LED Drop Zone (Authentic Warehouse Freight Target)
+    # 100% transparent ground so stone floor planks and seams flow continuously underneath!
     img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
     cx, cy = SIZE // 2, SIZE // 2
 
-    # 1. Subtle warm warehouse floor glow (sodium-vapor amber)
-    for r in range(48, 16, -3):
-        alpha = int(22 * (48 - r) / 32.0)
-        draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(245, 175, 40, alpha))
+    # 1. Subtle, warm warehouse ambient floor bloom (very soft, no murky dark patch)
+    for r in range(42, 12, -4):
+        alpha = int(16 * (42 - r) / 30.0)
+        draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(255, 195, 45, alpha))
 
-    # 2. Recessed floor cavity carved into stone floor (drop shadow top/left, light catch bottom/right)
-    # Freight pallet bay footprint: 86x86 px (leaves stone floor visible all around)
-    dock_sz = 86
-    x0, y0 = cx - dock_sz // 2, cy - dock_sz // 2
-    x1, y1 = cx + dock_sz // 2, cy + dock_sz // 2
+    # 2. 4 Corner Industrial Hazard Brackets (Painted directly onto the warehouse floor)
+    pad = 12
+    bracket_len = 28
+    bracket_w = 8
+    corners = [
+        (pad, pad, 1, 1),
+        (SIZE - pad, pad, -1, 1),
+        (pad, SIZE - pad, 1, -1),
+        (SIZE - pad, SIZE - pad, -1, -1),
+    ]
 
-    # Stone cavity bevel
-    draw.rounded_rectangle([x0 - 2, y0 - 2, x1 + 2, y1 + 2], radius=8,
-                           fill=(18, 22, 28, 240), outline=(8, 10, 14, 255), width=2)
-    # Deep inner shadow top/left
-    draw.line([(x0, y0), (x1, y0)], fill=(6, 8, 10, 255), width=2)
-    draw.line([(x0, y0), (x0, y1)], fill=(6, 8, 10, 255), width=2)
-    # Light catch on stone edge bottom/right
-    draw.line([(x0, y1), (x1, y1)], fill=(70, 85, 110, 160), width=1)
-    draw.line([(x1, y0), (x1, y1)], fill=(70, 85, 110, 160), width=1)
+    for x, y, dx, dy in corners:
+        # L-bracket horizontal leg
+        hx0, hx1 = min(x, x + dx * bracket_len), max(x, x + dx * bracket_len)
+        hy0, hy1 = min(y, y + dy * bracket_w), max(y, y + dy * bracket_w)
+        # L-bracket vertical leg
+        vx0, vx1 = min(x, x + dx * bracket_w), max(x, x + dx * bracket_w)
+        vy0, vy1 = min(y, y + dy * bracket_len), max(y, y + dy * bracket_len)
 
-    # 3. Heavy Cast-Steel Freight Deck (Diamond-tread plate)
-    deck_pad = 4
-    dx0, dy0 = x0 + deck_pad, y0 + deck_pad
-    dx1, dy1 = x1 - deck_pad, y1 - deck_pad
-    draw.rounded_rectangle([dx0, dy0, dx1, dy1], radius=6,
-                           fill=(32, 38, 48, 255), outline=(20, 24, 32, 255), width=1)
+        # Base high-visibility safety yellow paint
+        draw.rectangle([hx0, hy0, hx1, hy1], fill=(250, 205, 35, 255), outline=(22, 24, 30, 255))
+        draw.rectangle([vx0, vy0, vx1, vy1], fill=(250, 205, 35, 255), outline=(22, 24, 30, 255))
 
-    # Deck perimeter bevel
-    draw.line([(dx0 + 2, dy0 + 1), (dx1 - 2, dy0 + 1)], fill=(95, 115, 145, 220), width=1)
-    draw.line([(dx0 + 1, dy0 + 2), (dx0 + 1, dy1 - 2)], fill=(95, 115, 145, 220), width=1)
-    draw.line([(dx0 + 2, dy1 - 1), (dx1 - 2, dy1 - 1)], fill=(14, 16, 22, 255), width=1)
-    draw.line([(dx1 - 1, dy0 + 2), (dx1 - 1, dy1 - 2)], fill=(14, 16, 22, 255), width=1)
+        # Black industrial hazard diagonal stripes (alternating safety chevron stripes)
+        step = 7
+        for s in range(0, bracket_len, step):
+            sx0 = x + dx * s
+            sx1 = x + dx * min(s + 3.5, bracket_len)
+            bx0, bx1 = min(sx0, sx1), max(sx0, sx1)
+            draw.rectangle([bx0, hy0 + 1, bx1, hy1 - 1], fill=(24, 26, 32, 255))
 
-    # Subtle Industrial Diamond Tread Cross-hatching
-    for i in range(-50, 60, 10):
-        lx0 = max(dx0 + 4, dx0 + 4 + i)
-        ly0 = dy0 + 4
-        lx1 = min(dx1 - 4, dx0 + 4 + i + (dy1 - dy0 - 8))
-        ly1 = min(dy1 - 4, dy0 + 4 + (lx1 - lx0))
-        if lx0 < dx1 - 4 and lx1 > dx0 + 4:
-            draw.line([(lx0, ly0), (lx1, ly1)], fill=(42, 50, 64, 140), width=1)
+        for s in range(bracket_w, bracket_len, step):
+            sy0 = y + dy * s
+            sy1 = y + dy * min(s + 3.5, bracket_len)
+            by0, by1 = min(sy0, sy1), max(sy0, sy1)
+            draw.rectangle([vx0 + 1, by0, vx1 - 1, by1], fill=(24, 26, 32, 255))
 
-    # 4. Cast-Iron Corner Alignment Guide Chocks (Heavy warehouse pallet corner stops)
-    chock_len = 18
-    chock_thick = 6
-    for (px, py), sx, sy in [
-        ((dx0 + 1, dy0 + 1), 1, 1),
-        ((dx1 - 1, dy0 + 1), -1, 1),
-        ((dx0 + 1, dy1 - 1), 1, -1),
-        ((dx1 - 1, dy1 - 1), -1, -1),
-    ]:
-        hx0, hx1 = min(px, px + sx * chock_len), max(px, px + sx * chock_len)
-        hy0, hy1 = min(py, py + sy * chock_thick), max(py, py + sy * chock_thick)
-        draw.rectangle([hx0, hy0, hx1, hy1], fill=(55, 65, 82, 255), outline=(22, 26, 34, 255))
+        # Precision steel anchor bolt with recessed guidance LED diode
+        bx = x + dx * 3.5
+        by = y + dy * 3.5
+        draw.ellipse([bx - 3.5, by - 3.5, bx + 3.5, by + 3.5], fill=(16, 18, 22, 255))
+        draw.ellipse([bx - 2.5, by - 2.5, bx + 2.5, by + 2.5], fill=(255, 195, 45, 255))
+        draw.point((bx, by), fill=(255, 255, 245, 255))
 
-        vx0, vx1 = min(px, px + sx * chock_thick), max(px, px + sx * chock_thick)
-        vy0, vy1 = min(py, py + sy * chock_len), max(py, py + sy * chock_len)
-        draw.rectangle([vx0, vy0, vx1, vy1], fill=(55, 65, 82, 255), outline=(22, 26, 34, 255))
+    # 3. Center Painted Stencil: Industrial Cargo Target & Diamond Crosshair
+    r_target = 18
+    # Outer targeting ring with dark definition border
+    draw.ellipse([cx - r_target, cy - r_target, cx + r_target, cy + r_target],
+                 outline=(20, 22, 28, 220), width=3)
+    draw.ellipse([cx - r_target, cy - r_target, cx + r_target, cy + r_target],
+                 outline=(250, 205, 35, 255), width=2)
 
-        # Precision Hex Bolts on guide chocks
-        bx = px + sx * 4
-        by = py + sy * 4
-        draw.ellipse([bx - 2, by - 2, bx + 2, by + 2], fill=(16, 20, 26, 255))
-        draw.ellipse([bx - 1.5, by - 1.5, bx + 1.5, by + 1.5], fill=(160, 185, 215, 255))
-        draw.point((bx - 0.5, by - 0.5), fill=(255, 255, 255, 255))
+    # Stenciled inner cargo diamond
+    d_sz = 9
+    draw.polygon([
+        (cx, cy - d_sz),
+        (cx + d_sz, cy),
+        (cx, cy + d_sz),
+        (cx - d_sz, cy)
+    ], fill=(250, 205, 35, 240), outline=(22, 24, 30, 255))
 
-        # Recessed Sodium-Vapor Indicator LED socket
-        lx = px + sx * 13
-        ly = py + sy * 3
-        draw.ellipse([lx - 2, ly - 2, lx + 2, ly + 2], fill=(20, 24, 30, 255))
-        draw.ellipse([lx - 1.5, ly - 1.5, lx + 1.5, ly + 1.5], fill=(255, 180, 40, 255))
-        draw.point((lx - 0.5, ly - 0.5), fill=(255, 255, 240, 255))
+    # 4 Cardinal Crosshair Alignment Ticks
+    for ang in [0, math.pi / 2, math.pi, 3 * math.pi / 2]:
+        x0 = cx + math.cos(ang) * (r_target - 4)
+        y0 = cy + math.sin(ang) * (r_target - 4)
+        x1 = cx + math.cos(ang) * (r_target + 6)
+        y1 = cy + math.sin(ang) * (r_target + 6)
+        draw.line([(x0, y0), (x1, y1)], fill=(20, 22, 28, 255), width=3)
+        draw.line([(x0, y0), (x1, y1)], fill=(250, 205, 35, 255), width=2)
 
-    # 5. Center Pneumatic Hydraulic Pressure Valve & Load-Cell Plate
-    r_valve_out = 19
-    r_valve_in = 13
-    draw.ellipse([cx - r_valve_out, cy - r_valve_out, cx + r_valve_out, cy + r_valve_out],
-                 fill=(22, 26, 34, 255), outline=(12, 14, 18, 255), width=1)
-    draw.ellipse([cx - r_valve_in, cy - r_valve_in, cx + r_valve_in, cy + r_valve_in],
-                 fill=(40, 48, 62, 255), outline=(18, 22, 28, 255), width=1)
-
-    # Polished Brass Pressure Ring
-    draw.ellipse([cx - 10, cy - 10, cx + 10, cy + 10],
-                 fill=(180, 135, 40, 255), outline=(100, 75, 20, 255), width=1)
-    draw.ellipse([cx - 8, cy - 8, cx + 8, cy + 8],
-                 fill=(225, 175, 55, 255))
-    draw.ellipse([cx - 6, cy - 6, cx + 6, cy + 6],
-                 fill=(32, 38, 50, 255), outline=(60, 45, 15, 255), width=1)
-
-    # 4 Pneumatic Steam Exhaust Micro-Ports
-    for ang in [math.pi / 4, 3 * math.pi / 4, 5 * math.pi / 4, 7 * math.pi / 4]:
-        vx = cx + math.cos(ang) * 14
-        vy = cy + math.sin(ang) * 14
-        draw.ellipse([vx - 1.5, vy - 1.5, vx + 1.5, vy + 1.5], fill=(10, 12, 16, 255))
-
-    # Center Steam Emitter Valve Core
-    draw.ellipse([cx - 3, cy - 3, cx + 3, cy + 3], fill=(255, 205, 70, 255))
-    draw.ellipse([cx - 1.5, cy - 1.5, cx + 1.5, cy + 1.5], fill=(255, 255, 240, 255))
+    # Center Specular Focal Point
+    draw.ellipse([cx - 2, cy - 2, cx + 2, cy + 2], fill=(255, 255, 245, 255))
 
     img.save(os.path.join(OUTPUT_DIR, "goal_pad.png"))
-    print("Saved goal_pad.png")
+    print("Saved goal_pad.png (Concept A: Industrial Hazard Stencil)")
 
 
 def create_wall_brick():
