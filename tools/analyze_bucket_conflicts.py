@@ -53,3 +53,4 @@ for p in sorted(by_push.keys()):
         if all(len(c["top_set"] & x["top_set"])/len(c["top_set"] | x["top_set"]) < 0.70 for x in indep):
             indep.append(c)
     print(f"P={p:2d}: {len(cands):3d} candidates, greedy max independent set = {len(indep):2d}")
+

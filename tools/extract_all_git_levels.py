@@ -82,3 +82,4 @@ for c in valid_git_levels:
 
 for p in sorted(by_p.keys()):
     print(f"P={p:2d}: {len(by_p[p]):2d} levels")
+

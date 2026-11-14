@@ -122,3 +122,4 @@ for p in sorted(by_p.keys()):
     c_indices = by_p[p]
     p_walls = set(tuple(sorted((y, x) for y in range(clean[i]["h"]) for x in range(len(clean[i]["lines"][y])) if clean[i]["lines"][y][x] == "#")) for i in c_indices)
     print(f"P={p:2d}: {len(c_indices):2d} candidates, {len(p_walls):2d} distinct wall layouts")
+

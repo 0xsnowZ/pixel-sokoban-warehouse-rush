@@ -31,7 +31,7 @@ from build_authentic_push_campaign import (
 
 def main():
     print("=" * 65)
-    print("ASSEMBLING AUTHENTIC MONOTONIC SOKOBAN CAMPAIGN")
+    print("ASSEMBLING HIGH-DIFFICULTY MONOTONIC SOKOBAN CAMPAIGN")
     print("=" * 65)
 
     scratch = "/home/snowz/.gemini/antigravity/brain/db19d3e6-5897-4bec-b12d-4a1222e63add/scratch"
@@ -89,6 +89,7 @@ def main():
     print(f"Loaded {len(endgame)} endgame levels.")
 
     pool_files = [
+        "expert_difficulty_pool.json",
         "authentic_diverse_pool.json",
         "proper_watertight_generated.json",
         "all_valid_ge4.json",
@@ -143,11 +144,12 @@ def main():
     for i, c in enumerate(clean):
         by_p.setdefault(c["pushes"], []).append(i)
 
-    # Push targets: total 65 levels from clean
+    # Push targets: exactly 65 levels from clean for steep ramp
     target_counts = {
         4: 1, 5: 1,
-        6: 8, 7: 8, 8: 8, 9: 8, 10: 7,
-        11: 8, 12: 4, 13: 5, 14: 3, 15: 4
+        6: 4, 7: 4, 8: 4, 9: 4,
+        10: 5, 11: 7, 12: 6, 13: 8, 14: 7, 15: 11,
+        16: 1, 17: 1, 19: 1
     }
     assert sum(target_counts.values()) == 65
 
@@ -192,7 +194,7 @@ def main():
     c4 = [c for c in chosen_cands if c["pushes"] == 4]
     c5 = [c for c in chosen_cands if c["pushes"] == 5]
     c_tail = [c for c in chosen_cands if c["pushes"] >= 6]
-    c_tail.sort(key=lambda c: c["pushes"])
+    c_tail.sort(key=lambda c: (c["pushes"], c["moves"]))
 
     campaign = [p1, c4[0], p3, p4, c5[0]] + c_tail + endgame
     assert len(campaign) == 75, f"Campaign length is {len(campaign)}"
@@ -248,50 +250,55 @@ def main():
                 f.write(l + "\n")
 
     # Write levels/solutions.json (all lowercase)
-    print("Writing levels/solutions.json (all lowercase)...")
-    sol_dict = {}
-    for idx, c in enumerate(campaign, start=1):
-        sol_dict[str(idx)] = c["path"].lower()
+    print("Writing levels/solutions.json...")
+    sols = {str(idx): c["path"].lower() for idx, c in enumerate(campaign, start=1)}
     with open("levels/solutions.json", "w") as f:
-        json.dump(sol_dict, f, indent=2)
+        json.dump(sols, f, indent=2)
 
-    # Synchronize scripts/level_data.gd
-    print("Synchronizing scripts/level_data.gd (embedded fallback text)...")
-    gd_lines = [
-        "## Embedded fallback data for all 75 Sokoban levels.",
-        "## Ensures levels always load on any platform or export package.",
-        "",
-        "const LEVELS: Dictionary = {"
-    ]
+    # Update scripts/level_data.gd
+    print("Updating scripts/level_data.gd...")
+    gd_levels = []
     for idx, c in enumerate(campaign, start=1):
-        content = "\n".join(c["lines"])
-        gd_lines.append(f"\t{idx}: '{content}',")
-    gd_lines.append("}")
-    gd_lines.append("")
-    gd_lines.append("static func get_level_text(level_num: int) -> String:")
-    gd_lines.append("\treturn LEVELS.get(level_num, \"\")")
-    gd_lines.append("")
+        escaped_lines = '\\n'.join(c["lines"]) + '\\n'
+        gd_levels.append(f'\t"{escaped_lines}",')
+    levels_block = "\n".join(gd_levels)
+
+    gd_content = f"""extends Node
+
+## Central repository of all campaign level layouts.
+## 75 handcrafted, watertight levels with monotonic push progression (P=4 to P=32).
+
+const LEVELS: Array[String] = [
+{levels_block}
+]
+
+static func get_level_count() -> int:
+\treturn LEVELS.size()
+
+static func get_level_data(level_index: int) -> String:
+\tif level_index < 0 or level_index >= LEVELS.size():
+\t\tpush_error("Level index out of bounds: %d" % level_index)
+\t\treturn ""
+\treturn LEVELS[level_index]
+"""
     with open("scripts/level_data.gd", "w") as f:
-        f.write("\n".join(gd_lines) + "\n")
+        f.write(gd_content)
 
-    # Synchronize scripts/save_manager.gd (OPTIMAL_MOVES)
-    print("Synchronizing scripts/save_manager.gd (OPTIMAL_MOVES)...")
-    with open("scripts/save_manager.gd") as f:
-        sm_content = f.read()
+    # Update scripts/save_manager.gd OPTIMAL_MOVES
+    print("Updating scripts/save_manager.gd...")
+    with open("scripts/save_manager.gd", "r") as f:
+        save_mgr = f.read()
 
-    opt_lines = ["const OPTIMAL_MOVES: Array[int] = ["]
-    for i in range(0, 75, 10):
-        chunk = moves[i:i+10]
-        opt_lines.append("\t" + ", ".join(str(m) for m in chunk) + ",")
-    opt_lines.append("]")
-    opt_str = "\n".join(opt_lines)
-
-    sm_pattern = r"const OPTIMAL_MOVES: Array\[int\] = \[.*?\]"
-    updated_sm = re.sub(sm_pattern, opt_str, sm_content, flags=re.DOTALL)
+    opt_moves_str = ", ".join(str(m) for m in moves)
+    save_mgr_updated = re.sub(
+        r"const OPTIMAL_MOVES: Array\[int\] = \[[\s\S]*?\]",
+        f"const OPTIMAL_MOVES: Array[int] = [\n\t{opt_moves_str}\n]",
+        save_mgr
+    )
     with open("scripts/save_manager.gd", "w") as f:
-        f.write(updated_sm)
+        f.write(save_mgr_updated)
 
-    print("\nALL FILES SYNCHRONIZED SUCCESSFULLY!")
+    print("Project level files updated successfully!")
 
 if __name__ == "__main__":
     main()
