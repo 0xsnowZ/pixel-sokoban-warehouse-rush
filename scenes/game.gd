@@ -2449,25 +2449,69 @@ func _draw_board_vignette(_effective_origin: Vector2, _board_pixel_size: Vector2
 
 
 func _draw_goal_hazard_brackets(rect: Rect2, ch: Dictionary) -> void:
-	# Subtle, warm golden docking glow beneath the seated crate
+	# Kinetic Docked State: Rhythmic grounding energy field beneath seated crate
 	var center: Vector2 = rect.get_center()
-	var aura_col: Color = ch.get("goal_aura", Color(1.0, 0.82, 0.25, 0.20))
-	draw_circle(center, tile_size * 0.44, aura_col)
+	var time_sec: float = float(Time.get_ticks_msec()) / 1000.0
+	var wave: float = sin(time_sec * 2.2 + rect.position.x * 0.05 + rect.position.y * 0.08) * 0.08
+
+	var aura_col: Color = ch.get("goal_aura", Color(1.0, 0.82, 0.25))
+	var base_r: float = tile_size * 0.44
+	# 1. Warm harmonic foundation aura pulsing gently
+	draw_circle(center, base_r, Color(aura_col.r, aura_col.g, aura_col.b, 0.20 + wave))
+	# 2. Subtle optical lock ring
+	draw_arc(center, base_r - 2.0, 0.0, TAU, 32, Color(aura_col.r, aura_col.g, aura_col.b, 0.35 + wave * 1.5), 1.2)
 
 
-func _draw_goal_light_pillar(rect: Rect2, goal_pos: Vector2i, _ch: Dictionary, time_sec: float) -> void:
+func _draw_goal_light_pillar(rect: Rect2, goal_pos: Vector2i, ch: Dictionary, time_sec: float) -> void:
 	var center: Vector2 = rect.get_center()
 	var phase_offset: float = float(goal_pos.x * 7 + goal_pos.y * 13) * 0.2
-	var wave: float = sin(time_sec * 2.5 + phase_offset) * 0.10
+	var wave: float = sin(time_sec * 2.8 + phase_offset) * 0.12
+	var aura_col: Color = ch.get("goal_aura", Color(1.0, 0.78, 0.22))
 
-	# 1. Atmospheric quantum core breathing bloom
-	var glow_r: float = tile_size * 0.18
-	var glow_alpha: float = clampf(0.14 + wave, 0.06, 0.24)
-	draw_circle(center, glow_r, Color(1.0, 0.75, 0.22, glow_alpha))
+	# 1. Living Heartbeat: Concentric Harmonic Wave expanding outward
+	var cycle: float = fmod(time_sec * 0.45 + phase_offset * 0.12, 1.0)
+	var ripple_r: float = lerpf(tile_size * 0.10, tile_size * 0.38, cycle)
+	var ripple_alpha: float = sin(cycle * PI) * 0.26
+	draw_arc(center, ripple_r, 0.0, TAU, 28, Color(aura_col.r, aura_col.g, aura_col.b, ripple_alpha), 1.2)
 
-	# 2. Precision optical aperture focal pin (incandescent white-hot core)
-	var r_pin: float = 1.6 + wave * 0.4
-	draw_circle(center, r_pin, Color(1.0, 0.98, 0.90, clampf(0.85 + wave * 1.5, 0.60, 1.0)))
+	# 2. Soft atmospheric quantum core breathing bloom
+	var glow_r: float = tile_size * 0.18 + wave * 2.0
+	var glow_alpha: float = clampf(0.16 + wave, 0.08, 0.28)
+	draw_circle(center, glow_r, Color(aura_col.r, aura_col.g, aura_col.b, glow_alpha))
+
+	# 3. Counter-Rotating Gyroscopic Alignment Rings (Ethereal Clockwork Motion)
+	# Outer clockwork ring (rotating clockwise)
+	var r_outer_ring: float = tile_size * 0.28
+	var rot_cw: float = time_sec * 0.45 + phase_offset
+	draw_arc(center, r_outer_ring, 0.0, TAU, 32, Color(aura_col.r, aura_col.g, aura_col.b, 0.22 + wave * 0.5), 1.0)
+	for i in range(4):
+		var ang: float = rot_cw + float(i) * (PI * 0.5)
+		var p_node: Vector2 = center + Vector2(cos(ang), sin(ang)) * r_outer_ring
+		draw_circle(p_node, 1.4, Color(1.0, 0.95, 0.70, 0.55 + wave * 1.5))
+
+	# Inner optical dial (rotating counter-clockwise)
+	var r_inner_ring: float = tile_size * 0.16
+	var rot_ccw: float = -time_sec * 0.65 + phase_offset
+	for i in range(3):
+		var a_mark: float = rot_ccw + float(i) * (TAU / 3.0)
+		var p1: Vector2 = center + Vector2(cos(a_mark), sin(a_mark)) * (r_inner_ring - 2.0)
+		var p2: Vector2 = center + Vector2(cos(a_mark), sin(a_mark)) * (r_inner_ring + 2.0)
+		draw_line(p1, p2, Color(1.0, 0.90, 0.50, 0.45 + wave), 1.2)
+
+	# 4. Ascending Living Ember Wisps (Procedural Ambient Firefly Particles)
+	for i in range(3):
+		var t_mote: float = time_sec * 0.75 + float(i) * 0.333 + phase_offset * 0.5
+		var m_cycle: float = fmod(t_mote, 1.0)
+		var y_rise: float = -m_cycle * (tile_size * 0.42)
+		var x_sway: float = sin(t_mote * 3.5 + float(i) * 2.0) * (tile_size * 0.08)
+		var mote_pos: Vector2 = center + Vector2(x_sway, y_rise)
+		var mote_alpha: float = sin(m_cycle * PI) * 0.70
+		var mote_sz: float = lerpf(1.8, 0.8, m_cycle)
+		draw_circle(mote_pos, mote_sz, Color(1.0, 0.90, 0.45, mote_alpha))
+
+	# 5. Precision optical aperture focal pin (incandescent white-hot core)
+	var r_pin: float = 1.6 + wave * 0.5
+	draw_circle(center, r_pin, Color(1.0, 1.0, 0.95, clampf(0.85 + wave * 1.5, 0.60, 1.0)))
 
 
 func _draw_player_headlamp(effective_origin: Vector2) -> void:
