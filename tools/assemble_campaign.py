@@ -2,7 +2,7 @@
 """
 tools/assemble_campaign.py
 
-Assembles the verified high-difficulty Sokoban campaign:
+Assembles the maximum-difficulty monotonic Sokoban campaign:
 1. Crates >= 4 and crates == goals across 100% of all 75 levels.
 2. Watertight outer walls (0 leaks) across 100% of levels.
 3. Snug walls hugging the playfield: solid_2x2 == 0 on all non-fixtures, 0 dummy wings/rooms.
@@ -31,7 +31,7 @@ from build_authentic_push_campaign import (
 
 def main():
     print("=" * 65)
-    print("ASSEMBLING HIGH-DIFFICULTY MONOTONIC SOKOBAN CAMPAIGN")
+    print("ASSEMBLING MAXIMUM-DIFFICULTY MONOTONIC SOKOBAN CAMPAIGN")
     print("=" * 65)
 
     scratch = "/home/snowz/.gemini/antigravity/brain/db19d3e6-5897-4bec-b12d-4a1222e63add/scratch"
@@ -144,52 +144,36 @@ def main():
     for i, c in enumerate(clean):
         by_p.setdefault(c["pushes"], []).append(i)
 
-    # Push targets: exactly 65 levels from clean for steep ramp
+    # Maximum difficulty target counts (65 clean items)
     target_counts = {
         4: 1, 5: 1,
-        6: 4, 7: 4, 8: 4, 9: 4,
-        10: 5, 11: 7, 12: 6, 13: 8, 14: 7, 15: 11,
+        6: 3, 7: 3, 8: 4, 9: 4,
+        10: 6, 11: 8, 12: 6, 13: 8, 14: 7, 15: 11,
         16: 1, 17: 1, 19: 1
     }
     assert sum(target_counts.values()) == 65
 
-    # MRV ordering: solve most constrained buckets first
     order = sorted(target_counts.keys(), key=lambda p: len(by_p.get(p, [])) / target_counts[p])
 
-    t_search = time.time()
-    found_indices = None
-    for trial in range(50000):
-        rng = random.Random(trial)
-        chosen_set = set()
-        chosen_list = []
-        possible = True
-        for p in order:
-            req = target_counts[p]
-            cands_indices = [idx for idx in by_p.get(p, []) if not (conflicts[idx] & chosen_set)]
-            if len(cands_indices) < req:
-                possible = False
-                break
-            rng.shuffle(cands_indices)
-            picked = []
-            for idx in cands_indices:
-                if not (conflicts[idx] & set(picked)):
-                    picked.append(idx)
-                    if len(picked) == req:
-                        break
-            if len(picked) < req:
-                possible = False
-                break
-            chosen_set.update(picked)
-            chosen_list.extend(picked)
+    # Trial 996 gives max similarity 68.4% and highest move complexity (2,521 total moves)
+    rng = random.Random(996)
+    chosen_set = set()
+    chosen_list = []
+    for p in order:
+        req = target_counts[p]
+        avail = [i for i in by_p.get(p, []) if not (conflicts[i] & chosen_set)]
+        rng.shuffle(avail)
+        picked = []
+        for i in avail:
+            if not (conflicts[i] & set(picked)):
+                picked.append(i)
+                if len(picked) == req:
+                    break
+        assert len(picked) == req, f"Could not satisfy bucket P={p}"
+        chosen_set.update(picked)
+        chosen_list.extend(picked)
 
-        if possible:
-            print(f"Found valid 65-item selection on trial {trial} in {time.time()-t_search:.2f}s!")
-            found_indices = chosen_list
-            break
-
-    assert found_indices is not None, "Failed to assemble campaign"
-
-    chosen_cands = [clean[i] for i in found_indices]
+    chosen_cands = [clean[i] for i in chosen_list]
 
     c4 = [c for c in chosen_cands if c["pushes"] == 4]
     c5 = [c for c in chosen_cands if c["pushes"] == 5]
@@ -239,6 +223,7 @@ def main():
     print(f"Total levels : 75")
     print(f"Pushes       : {pushes}")
     print(f"Moves        : {moves}")
+    print(f"Total moves  : {sum(moves)}")
     print(f"Max pairwise similarity: {max_sim*100:.1f}% (between L{worst[0]} and L{worst[1]})")
 
     # Write levels/level_XX.sok
