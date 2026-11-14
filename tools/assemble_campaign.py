@@ -86,6 +86,24 @@ def main():
         c["top_set"] = set(tuple(x) for x in get_topology_set(lines, c["w"], c["h"]))
         endgame.append(c)
 
+    # Reference Level 11 as the peak Grandmaster Finale (Level 75)
+    with open("/home/snowz/godot/scratch/level_11.sok") as f:
+        ref11_lines = [l.rstrip("\r\n") for l in f if l.strip()]
+
+    ref11_cand = {
+        "source": "ref_levels/11.jpeg",
+        "lines": ref11_lines,
+        "w": max(len(l) for l in ref11_lines),
+        "h": len(ref11_lines),
+        "pushes": 43,
+        "moves": 170,
+        "path": "rdrddddlluuludrddrruulruuldldllurrrurrdldllurdrulllldrrurrdddlluuruuullddldrrluuurrddrruldlldddrruuddlluurllluruurrddldlurrurrdllldddrruuddlluuruurrdldllurdlllurdrruuulld",
+        "crates": 4,
+        "is_fixture": False
+    }
+    ref11_cand["top_set"] = set(tuple(x) for x in get_topology_set(ref11_lines, ref11_cand["w"], ref11_cand["h"]))
+    endgame.append(ref11_cand)
+
     print(f"Loaded {len(endgame)} endgame levels.")
 
     pool_files = [
@@ -144,19 +162,19 @@ def main():
     for i, c in enumerate(clean):
         by_p.setdefault(c["pushes"], []).append(i)
 
-    # Maximum difficulty target counts (65 clean items)
+    # Maximum difficulty target counts (64 clean items, 8 endgame)
     target_counts = {
         4: 1, 5: 1,
         6: 3, 7: 3, 8: 4, 9: 4,
-        10: 6, 11: 8, 12: 6, 13: 8, 14: 7, 15: 11,
+        10: 6, 11: 8, 12: 6, 13: 8, 14: 7, 15: 10,
         16: 1, 17: 1, 19: 1
     }
-    assert sum(target_counts.values()) == 65
+    assert sum(target_counts.values()) == 64
 
     order = sorted(target_counts.keys(), key=lambda p: len(by_p.get(p, [])) / target_counts[p])
 
-    # Trial 996 gives max similarity 68.4% and highest move complexity (2,521 total moves)
-    rng = random.Random(996)
+    # Trial 1051 gives max similarity 68.4% and highest move complexity (2,650 total moves, P=4..43)
+    rng = random.Random(1051)
     chosen_set = set()
     chosen_list = []
     for p in order:
@@ -251,7 +269,7 @@ def main():
     gd_content = f"""extends Node
 
 ## Central repository of all campaign level layouts.
-## 75 handcrafted, watertight levels with monotonic push progression (P=4 to P=32).
+## 75 handcrafted, watertight levels with monotonic push progression (P=4 to P=43).
 
 const LEVELS: Array[String] = [
 {levels_block}
