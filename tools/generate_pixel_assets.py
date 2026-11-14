@@ -204,146 +204,137 @@ def create_crate_goal():
             draw.ellipse([rx - 2, ry - 2, rx + 2, ry + 2], fill=(255, 235, 100, 255))
             draw.point((rx - 1, ry - 1), fill=(255, 255, 255, 255))
 
-    # Precision Quantum Diamond Resonator (High-End Indie Aesthetic - No cartoon stars!)
+    # Heavy Embossed Brass Cargo Manifest Seal (Verified Warehouse Freight)
     center_x, center_y = SIZE // 2, SIZE // 2
+    r_seal = 22
+    draw.ellipse([center_x - r_seal, center_y - r_seal, center_x + r_seal, center_y + r_seal],
+                 fill=(45, 28, 10, 255), outline=(255, 220, 85, 255), width=2)
+    draw.ellipse([center_x - (r_seal - 3), center_y - (r_seal - 3), center_x + (r_seal - 3), center_y + (r_seal - 3)],
+                 fill=(220, 160, 35, 255), outline=(150, 95, 18, 255), width=1)
+    draw.ellipse([center_x - (r_seal - 6), center_y - (r_seal - 6), center_x + (r_seal - 6), center_y + (r_seal - 6)],
+                 fill=(185, 125, 25, 255))
 
-    # Outer magnetic containment ring
-    draw.ellipse([center_x - 25, center_y - 25, center_x + 25, center_y + 25],
-                 fill=(40, 25, 8, 240), outline=(255, 215, 80, 255), width=2)
-    # Inner gold engraved bevel
-    draw.ellipse([center_x - 19, center_y - 19, center_x + 19, center_y + 19],
-                 fill=(220, 155, 30, 255), outline=(140, 85, 15, 255), width=1)
-    draw.ellipse([center_x - 15, center_y - 15, center_x + 15, center_y + 15],
-                 fill=(28, 20, 10, 255), outline=(70, 45, 10, 255), width=1)
-
-    # 4 Cardinal Power Chevrons
-    for ang in [0, math.pi / 2, math.pi, 3 * math.pi / 2]:
-        px = center_x + math.cos(ang) * 11
-        py = center_y + math.sin(ang) * 11
-        draw.ellipse([px - 1.5, py - 1.5, px + 1.5, py + 1.5], fill=(255, 235, 120, 255))
-
-    # Precision 3D Quantum Diamond Core
-    d_r = 10
+    # Embossed Cargo Diamond Stamp inside brass seal
+    d_sz = 9
     draw.polygon([
-        (center_x, center_y - d_r),
-        (center_x + d_r, center_y),
-        (center_x, center_y + d_r),
-        (center_x - d_r, center_y)
-    ], fill=(255, 195, 45, 255), outline=(255, 240, 160, 255), width=1)
-
-    # Faceted diamond highlights
-    draw.polygon([(center_x, center_y - d_r), (center_x + d_r, center_y), (center_x, center_y)], fill=(255, 240, 150, 255))
-    draw.polygon([(center_x - d_r, center_y), (center_x, center_y - d_r), (center_x, center_y)], fill=(255, 255, 220, 255))
-    draw.polygon([(center_x - d_r, center_y), (center_x, center_y + d_r), (center_x, center_y)], fill=(225, 150, 25, 255))
-    draw.polygon([(center_x + d_r, center_y), (center_x, center_y + d_r), (center_x, center_y)], fill=(190, 110, 15, 255))
-
-    # Center brilliant specular flash
-    draw.ellipse([center_x - 3, center_y - 3, center_x + 3, center_y + 3], fill=(255, 255, 245, 255))
+        (center_x, center_y - d_sz),
+        (center_x + d_sz, center_y),
+        (center_x, center_y + d_sz),
+        (center_x - d_sz, center_y)
+    ], fill=(255, 235, 120, 255), outline=(110, 65, 12, 255), width=1)
+    draw.ellipse([center_x - 3, center_y - 3, center_x + 3, center_y + 3], fill=(255, 255, 240, 255))
 
     img.save(os.path.join(OUTPUT_DIR, "crate_goal.png"))
     print("Saved crate_goal.png")
 
 
 def create_goal_pad():
-    # Ultra-Refined Optical Quantum Aperture (High-End Indie Aesthetic)
+    # Authentic Industrial Cargo Dock / Hydraulic Freight Bay (Matches Pixel Porter Warehouse Theme!)
     # 100% transparent exterior background so stone floor tiles flow seamlessly even when clustered.
     img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
     cx, cy = SIZE // 2, SIZE // 2
 
-    # 1. Subtle, ethereal volumetric floor bloom (warm amber & cyan duality)
-    for r in range(50, 16, -3):
-        alpha = int(24 * (50 - r) / 34.0)
-        draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(255, 180, 50, alpha))
+    # 1. Subtle warm warehouse floor glow (sodium-vapor amber)
+    for r in range(48, 16, -3):
+        alpha = int(22 * (48 - r) / 32.0)
+        draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(245, 175, 40, alpha))
 
-    # 2. Precision circular stone recess carved into slate floor
-    r_well = 46
-    draw.ellipse([cx - r_well, cy - r_well, cx + r_well, cy + r_well],
-                 fill=(16, 20, 26, 230), outline=(8, 10, 14, 255), width=2)
-    # Recess depth drop shadow (top-left inner shadow)
-    draw.arc([cx - r_well + 1, cy - r_well + 1, cx + r_well - 1, cy + r_well - 1],
-             start=180, end=330, fill=(6, 8, 10, 255), width=2)
-    # Recess light catch (bottom-right inner rim)
-    draw.arc([cx - r_well + 1, cy - r_well + 1, cx + r_well - 1, cy + r_well - 1],
-             start=0, end=150, fill=(60, 75, 95, 140), width=1)
+    # 2. Recessed floor cavity carved into stone floor (drop shadow top/left, light catch bottom/right)
+    # Freight pallet bay footprint: 86x86 px (leaves stone floor visible all around)
+    dock_sz = 86
+    x0, y0 = cx - dock_sz // 2, cy - dock_sz // 2
+    x1, y1 = cx + dock_sz // 2, cy + dock_sz // 2
 
-    # 3. Brushed Gunmetal Outer Collar with Precision Optical Chamfer
-    r_collar_out = 43
-    r_collar_in = 32
-    draw.ellipse([cx - r_collar_out, cy - r_collar_out, cx + r_collar_out, cy + r_collar_out],
-                 fill=(38, 44, 56, 255), outline=(18, 22, 28, 255), width=1)
+    # Stone cavity bevel
+    draw.rounded_rectangle([x0 - 2, y0 - 2, x1 + 2, y1 + 2], radius=8,
+                           fill=(18, 22, 28, 240), outline=(8, 10, 14, 255), width=2)
+    # Deep inner shadow top/left
+    draw.line([(x0, y0), (x1, y0)], fill=(6, 8, 10, 255), width=2)
+    draw.line([(x0, y0), (x0, y1)], fill=(6, 8, 10, 255), width=2)
+    # Light catch on stone edge bottom/right
+    draw.line([(x0, y1), (x1, y1)], fill=(70, 85, 110, 160), width=1)
+    draw.line([(x1, y0), (x1, y1)], fill=(70, 85, 110, 160), width=1)
 
-    # Specular bevel key-light top-left
-    draw.arc([cx - r_collar_out, cy - r_collar_out, cx + r_collar_out, cy + r_collar_out],
-             start=195, end=315, fill=(140, 165, 200, 255), width=2)
-    # Deep shadow bottom-right
-    draw.arc([cx - r_collar_out, cy - r_collar_out, cx + r_collar_out, cy + r_collar_out],
-             start=15, end=135, fill=(12, 14, 18, 255), width=2)
+    # 3. Heavy Cast-Steel Freight Deck (Diamond-tread plate)
+    deck_pad = 4
+    dx0, dy0 = x0 + deck_pad, y0 + deck_pad
+    dx1, dy1 = x1 - deck_pad, y1 - deck_pad
+    draw.rounded_rectangle([dx0, dy0, dx1, dy1], radius=6,
+                           fill=(32, 38, 48, 255), outline=(20, 24, 32, 255), width=1)
 
-    # Inner chamfer ridge
-    draw.ellipse([cx - r_collar_in, cy - r_collar_in, cx + r_collar_in, cy + r_collar_in],
-                 outline=(70, 85, 110, 255), width=1)
+    # Deck perimeter bevel
+    draw.line([(dx0 + 2, dy0 + 1), (dx1 - 2, dy0 + 1)], fill=(95, 115, 145, 220), width=1)
+    draw.line([(dx0 + 1, dy0 + 2), (dx0 + 1, dy1 - 2)], fill=(95, 115, 145, 220), width=1)
+    draw.line([(dx0 + 2, dy1 - 1), (dx1 - 2, dy1 - 1)], fill=(14, 16, 22, 255), width=1)
+    draw.line([(dx1 - 1, dy0 + 2), (dx1 - 1, dy1 - 2)], fill=(14, 16, 22, 255), width=1)
 
-    # 16 Calibrated Optical Micrometer Ticks
-    for i in range(16):
-        ang = i * (2 * math.pi / 16)
-        r0 = r_collar_out - 4
-        r1 = r_collar_out - 1
-        x0 = cx + math.cos(ang) * r0
-        y0 = cy + math.sin(ang) * r0
-        x1 = cx + math.cos(ang) * r1
-        y1 = cy + math.sin(ang) * r1
-        # Major ticks (cardinal + ordinal) in gold, minor in steel
-        is_major = (i % 4 == 0)
-        col = (255, 215, 80, 240) if is_major else (100, 120, 150, 180)
-        draw.line([(x0, y0), (x1, y1)], fill=col, width=1)
+    # Subtle Industrial Diamond Tread Cross-hatching
+    for i in range(-50, 60, 10):
+        lx0 = max(dx0 + 4, dx0 + 4 + i)
+        ly0 = dy0 + 4
+        lx1 = min(dx1 - 4, dx0 + 4 + i + (dy1 - dy0 - 8))
+        ly1 = min(dy1 - 4, dy0 + 4 + (lx1 - lx0))
+        if lx0 < dx1 - 4 and lx1 > dx0 + 4:
+            draw.line([(lx0, ly0), (lx1, ly1)], fill=(42, 50, 64, 140), width=1)
 
-    # 4 Cardinal Micro-Jewel Alignment Nodes
-    for ang in [0, math.pi / 2, math.pi, 3 * math.pi / 2]:
-        px = cx + math.cos(ang) * (r_collar_out - 6)
-        py = cy + math.sin(ang) * (r_collar_out - 6)
-        draw.ellipse([px - 2, py - 2, px + 2, py + 2], fill=(15, 20, 28, 255))
-        draw.ellipse([px - 1.5, py - 1.5, px + 1.5, py + 1.5], fill=(255, 205, 60, 255))
-        draw.point((px - 0.5, py - 0.5), fill=(255, 255, 255, 255))
+    # 4. Cast-Iron Corner Alignment Guide Chocks (Heavy warehouse pallet corner stops)
+    chock_len = 18
+    chock_thick = 6
+    for (px, py), sx, sy in [
+        ((dx0 + 1, dy0 + 1), 1, 1),
+        ((dx1 - 1, dy0 + 1), -1, 1),
+        ((dx0 + 1, dy1 - 1), 1, -1),
+        ((dx1 - 1, dy1 - 1), -1, -1),
+    ]:
+        hx0, hx1 = min(px, px + sx * chock_len), max(px, px + sx * chock_len)
+        hy0, hy1 = min(py, py + sy * chock_thick), max(py, py + sy * chock_thick)
+        draw.rectangle([hx0, hy0, hx1, hy1], fill=(55, 65, 82, 255), outline=(22, 26, 34, 255))
 
-    # 4. Precision Mechanical Iris Blades Chamber
-    draw.ellipse([cx - r_collar_in, cy - r_collar_in, cx + r_collar_in, cy + r_collar_in],
-                 fill=(14, 17, 24, 255), outline=(8, 10, 14, 255), width=1)
+        vx0, vx1 = min(px, px + sx * chock_thick), max(px, px + sx * chock_thick)
+        vy0, vy1 = min(py, py + sy * chock_len), max(py, py + sy * chock_len)
+        draw.rectangle([vx0, vy0, vx1, vy1], fill=(55, 65, 82, 255), outline=(22, 26, 34, 255))
 
-    # 8 Overlapping Curved Titanium Iris Blades
-    num_blades = 8
-    for b in range(num_blades):
-        a1 = b * (2 * math.pi / num_blades)
-        a2 = a1 + 0.72
-        # Outer blade anchor
-        ox = cx + math.cos(a1) * (r_collar_in - 1)
-        oy = cy + math.sin(a1) * (r_collar_in - 1)
-        # Inner blade tip
-        ix = cx + math.cos(a2) * 11
-        iy = cy + math.sin(a2) * 11
-        # Next outer anchor
-        nx = cx + math.cos(a1 + 2 * math.pi / num_blades) * (r_collar_in - 1)
-        ny = cy + math.sin(a1 + 2 * math.pi / num_blades) * (r_collar_in - 1)
+        # Precision Hex Bolts on guide chocks
+        bx = px + sx * 4
+        by = py + sy * 4
+        draw.ellipse([bx - 2, by - 2, bx + 2, by + 2], fill=(16, 20, 26, 255))
+        draw.ellipse([bx - 1.5, by - 1.5, bx + 1.5, by + 1.5], fill=(160, 185, 215, 255))
+        draw.point((bx - 0.5, by - 0.5), fill=(255, 255, 255, 255))
 
-        # Blade shading with subtle alternating depth
-        shade = 32 + (b % 2) * 10
-        draw.polygon([(ox, oy), (ix, iy), (nx, ny)], fill=(shade, shade + 6, shade + 14, 255))
-        # Titanium razor edge highlight
-        draw.line([(ox, oy), (ix, iy)], fill=(85, 105, 135, 220), width=1)
-        # Shadow seam
-        draw.line([(ix, iy), (nx, ny)], fill=(10, 12, 16, 255), width=1)
+        # Recessed Sodium-Vapor Indicator LED socket
+        lx = px + sx * 13
+        ly = py + sy * 3
+        draw.ellipse([lx - 2, ly - 2, lx + 2, ly + 2], fill=(20, 24, 30, 255))
+        draw.ellipse([lx - 1.5, ly - 1.5, lx + 1.5, ly + 1.5], fill=(255, 180, 40, 255))
+        draw.point((lx - 0.5, ly - 0.5), fill=(255, 255, 240, 255))
 
-    # 5. Core Quantum Aperture Chamber & Concentric Luminous Focus Ring
-    r_core = 11
-    draw.ellipse([cx - r_core, cy - r_core, cx + r_core, cy + r_core],
-                 fill=(10, 8, 5, 255), outline=(160, 110, 30, 240), width=1)
+    # 5. Center Pneumatic Hydraulic Pressure Valve & Load-Cell Plate
+    r_valve_out = 19
+    r_valve_in = 13
+    draw.ellipse([cx - r_valve_out, cy - r_valve_out, cx + r_valve_out, cy + r_valve_out],
+                 fill=(22, 26, 34, 255), outline=(12, 14, 18, 255), width=1)
+    draw.ellipse([cx - r_valve_in, cy - r_valve_in, cx + r_valve_in, cy + r_valve_in],
+                 fill=(40, 48, 62, 255), outline=(18, 22, 28, 255), width=1)
 
-    # Optical lens core with incandescent amber warmth
-    draw.ellipse([cx - 8, cy - 8, cx + 8, cy + 8], fill=(225, 120, 15, 255))
-    draw.ellipse([cx - 5, cy - 5, cx + 5, cy + 5], fill=(255, 185, 45, 255))
-    draw.ellipse([cx - 2.5, cy - 2.5, cx + 2.5, cy + 2.5], fill=(255, 245, 180, 255))
-    draw.ellipse([cx - 1, cy - 1, cx + 1, cy + 1], fill=(255, 255, 255, 255))
+    # Polished Brass Pressure Ring
+    draw.ellipse([cx - 10, cy - 10, cx + 10, cy + 10],
+                 fill=(180, 135, 40, 255), outline=(100, 75, 20, 255), width=1)
+    draw.ellipse([cx - 8, cy - 8, cx + 8, cy + 8],
+                 fill=(225, 175, 55, 255))
+    draw.ellipse([cx - 6, cy - 6, cx + 6, cy + 6],
+                 fill=(32, 38, 50, 255), outline=(60, 45, 15, 255), width=1)
+
+    # 4 Pneumatic Steam Exhaust Micro-Ports
+    for ang in [math.pi / 4, 3 * math.pi / 4, 5 * math.pi / 4, 7 * math.pi / 4]:
+        vx = cx + math.cos(ang) * 14
+        vy = cy + math.sin(ang) * 14
+        draw.ellipse([vx - 1.5, vy - 1.5, vx + 1.5, vy + 1.5], fill=(10, 12, 16, 255))
+
+    # Center Steam Emitter Valve Core
+    draw.ellipse([cx - 3, cy - 3, cx + 3, cy + 3], fill=(255, 205, 70, 255))
+    draw.ellipse([cx - 1.5, cy - 1.5, cx + 1.5, cy + 1.5], fill=(255, 255, 240, 255))
 
     img.save(os.path.join(OUTPUT_DIR, "goal_pad.png"))
     print("Saved goal_pad.png")
