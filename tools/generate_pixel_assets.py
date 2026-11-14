@@ -204,108 +204,146 @@ def create_crate_goal():
             draw.ellipse([rx - 2, ry - 2, rx + 2, ry + 2], fill=(255, 235, 100, 255))
             draw.point((rx - 1, ry - 1), fill=(255, 255, 255, 255))
 
-    # Gleaming Golden Victory Star Medallion in center!
+    # Precision Quantum Diamond Resonator (High-End Indie Aesthetic - No cartoon stars!)
     center_x, center_y = SIZE // 2, SIZE // 2
-    # Outer star glow
-    draw.ellipse([center_x - 26, center_y - 26, center_x + 26, center_y + 26], fill=(255, 200, 40, 100))
-    draw.ellipse([center_x - 20, center_y - 20, center_x + 20, center_y + 20], fill=(220, 140, 25, 255), outline=(255, 235, 130, 255), width=2)
 
-    # 5-pointed Star
-    points = []
-    outer_r = 16
-    inner_r = 7
-    for step in range(10):
-        angle = -math.pi / 2 + step * (math.pi / 5)
-        r = outer_r if step % 2 == 0 else inner_r
-        points.append((center_x + math.cos(angle) * r, center_y + math.sin(angle) * r))
-    draw.polygon(points, fill=(255, 235, 80, 255), outline=(180, 110, 15, 255))
+    # Outer magnetic containment ring
+    draw.ellipse([center_x - 25, center_y - 25, center_x + 25, center_y + 25],
+                 fill=(40, 25, 8, 240), outline=(255, 215, 80, 255), width=2)
+    # Inner gold engraved bevel
+    draw.ellipse([center_x - 19, center_y - 19, center_x + 19, center_y + 19],
+                 fill=(220, 155, 30, 255), outline=(140, 85, 15, 255), width=1)
+    draw.ellipse([center_x - 15, center_y - 15, center_x + 15, center_y + 15],
+                 fill=(28, 20, 10, 255), outline=(70, 45, 10, 255), width=1)
 
-    # Star center specular sparkle
-    draw.ellipse([center_x - 3, center_y - 3, center_x + 3, center_y + 3], fill=(255, 255, 240, 255))
+    # 4 Cardinal Power Chevrons
+    for ang in [0, math.pi / 2, math.pi, 3 * math.pi / 2]:
+        px = center_x + math.cos(ang) * 11
+        py = center_y + math.sin(ang) * 11
+        draw.ellipse([px - 1.5, py - 1.5, px + 1.5, py + 1.5], fill=(255, 235, 120, 255))
+
+    # Precision 3D Quantum Diamond Core
+    d_r = 10
+    draw.polygon([
+        (center_x, center_y - d_r),
+        (center_x + d_r, center_y),
+        (center_x, center_y + d_r),
+        (center_x - d_r, center_y)
+    ], fill=(255, 195, 45, 255), outline=(255, 240, 160, 255), width=1)
+
+    # Faceted diamond highlights
+    draw.polygon([(center_x, center_y - d_r), (center_x + d_r, center_y), (center_x, center_y)], fill=(255, 240, 150, 255))
+    draw.polygon([(center_x - d_r, center_y), (center_x, center_y - d_r), (center_x, center_y)], fill=(255, 255, 220, 255))
+    draw.polygon([(center_x - d_r, center_y), (center_x, center_y + d_r), (center_x, center_y)], fill=(225, 150, 25, 255))
+    draw.polygon([(center_x + d_r, center_y), (center_x, center_y + d_r), (center_x, center_y)], fill=(190, 110, 15, 255))
+
+    # Center brilliant specular flash
+    draw.ellipse([center_x - 3, center_y - 3, center_x + 3, center_y + 3], fill=(255, 255, 245, 255))
 
     img.save(os.path.join(OUTPUT_DIR, "crate_goal.png"))
     print("Saved crate_goal.png")
 
 
 def create_goal_pad():
-    # Classic Golden Star Inlay: Recessed circular brass bezel with faceted golden victory star.
+    # Ultra-Refined Optical Quantum Aperture (High-End Indie Aesthetic)
     # 100% transparent exterior background so stone floor tiles flow seamlessly even when clustered.
     img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
     cx, cy = SIZE // 2, SIZE // 2
 
-    # 1. Soft radial ambient floor glow (warm golden/amber)
-    r_glow = 48
-    for r in range(r_glow, 22, -3):
-        alpha = int(45 * (r_glow - r) / float(r_glow - 22))
-        draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(255, 185, 45, alpha))
+    # 1. Subtle, ethereal volumetric floor bloom (warm amber & cyan duality)
+    for r in range(50, 16, -3):
+        alpha = int(24 * (50 - r) / 34.0)
+        draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(255, 180, 50, alpha))
 
-    # 2. Recessed outer bevel cut into the stone floor
-    r_outer = 44
-    draw.ellipse([cx - r_outer, cy - r_outer, cx + r_outer, cy + r_outer],
-                 fill=(18, 22, 28, 220), outline=(10, 12, 16, 255), width=2)
+    # 2. Precision circular stone recess carved into slate floor
+    r_well = 46
+    draw.ellipse([cx - r_well, cy - r_well, cx + r_well, cy + r_well],
+                 fill=(16, 20, 26, 230), outline=(8, 10, 14, 255), width=2)
+    # Recess depth drop shadow (top-left inner shadow)
+    draw.arc([cx - r_well + 1, cy - r_well + 1, cx + r_well - 1, cy + r_well - 1],
+             start=180, end=330, fill=(6, 8, 10, 255), width=2)
+    # Recess light catch (bottom-right inner rim)
+    draw.arc([cx - r_well + 1, cy - r_well + 1, cx + r_well - 1, cy + r_well - 1],
+             start=0, end=150, fill=(60, 75, 95, 140), width=1)
 
-    # 3. Heavy Polished Brass Ring (Outer bezel)
-    r_brass_out = 41
-    r_brass_in = 33
-    draw.ellipse([cx - r_brass_out, cy - r_brass_out, cx + r_brass_out, cy + r_brass_out],
-                 fill=(160, 110, 30, 255), outline=(90, 60, 15, 255), width=1)
-    draw.ellipse([cx - (r_brass_out - 2), cy - (r_brass_out - 2), cx + (r_brass_out - 2), cy + (r_brass_out - 2)],
-                 fill=(220, 170, 55, 255))
-    draw.ellipse([cx - (r_brass_out - 5), cy - (r_brass_out - 5), cx + (r_brass_out - 5), cy + (r_brass_out - 5)],
-                 fill=(180, 130, 35, 255))
+    # 3. Brushed Gunmetal Outer Collar with Precision Optical Chamfer
+    r_collar_out = 43
+    r_collar_in = 32
+    draw.ellipse([cx - r_collar_out, cy - r_collar_out, cx + r_collar_out, cy + r_collar_out],
+                 fill=(38, 44, 56, 255), outline=(18, 22, 28, 255), width=1)
 
-    # Top-left brass specular highlight
-    draw.arc([cx - r_brass_out, cy - r_brass_out, cx + r_brass_out, cy + r_brass_out],
-             start=190, end=310, fill=(255, 240, 160, 255), width=2)
+    # Specular bevel key-light top-left
+    draw.arc([cx - r_collar_out, cy - r_collar_out, cx + r_collar_out, cy + r_collar_out],
+             start=195, end=315, fill=(140, 165, 200, 255), width=2)
+    # Deep shadow bottom-right
+    draw.arc([cx - r_collar_out, cy - r_collar_out, cx + r_collar_out, cy + r_collar_out],
+             start=15, end=135, fill=(12, 14, 18, 255), width=2)
 
-    # 4 Brass mounting rivets at cardinal points
+    # Inner chamfer ridge
+    draw.ellipse([cx - r_collar_in, cy - r_collar_in, cx + r_collar_in, cy + r_collar_in],
+                 outline=(70, 85, 110, 255), width=1)
+
+    # 16 Calibrated Optical Micrometer Ticks
+    for i in range(16):
+        ang = i * (2 * math.pi / 16)
+        r0 = r_collar_out - 4
+        r1 = r_collar_out - 1
+        x0 = cx + math.cos(ang) * r0
+        y0 = cy + math.sin(ang) * r0
+        x1 = cx + math.cos(ang) * r1
+        y1 = cy + math.sin(ang) * r1
+        # Major ticks (cardinal + ordinal) in gold, minor in steel
+        is_major = (i % 4 == 0)
+        col = (255, 215, 80, 240) if is_major else (100, 120, 150, 180)
+        draw.line([(x0, y0), (x1, y1)], fill=col, width=1)
+
+    # 4 Cardinal Micro-Jewel Alignment Nodes
     for ang in [0, math.pi / 2, math.pi, 3 * math.pi / 2]:
-        bx = cx + math.cos(ang) * (r_brass_out - 4)
-        by = cy + math.sin(ang) * (r_brass_out - 4)
-        draw.ellipse([bx - 2, by - 2, bx + 2, by + 2], fill=(60, 40, 10, 255))
-        draw.ellipse([bx - 1.5, by - 1.5, bx + 1.5, by + 1.5], fill=(255, 225, 110, 255))
-        draw.point((bx - 0.5, by - 0.5), fill=(255, 255, 230, 255))
+        px = cx + math.cos(ang) * (r_collar_out - 6)
+        py = cy + math.sin(ang) * (r_collar_out - 6)
+        draw.ellipse([px - 2, py - 2, px + 2, py + 2], fill=(15, 20, 28, 255))
+        draw.ellipse([px - 1.5, py - 1.5, px + 1.5, py + 1.5], fill=(255, 205, 60, 255))
+        draw.point((px - 0.5, py - 0.5), fill=(255, 255, 255, 255))
 
-    # 4. Deep Obsidian / Dark Steel Inset Well
-    draw.ellipse([cx - r_brass_in, cy - r_brass_in, cx + r_brass_in, cy + r_brass_in],
-                 fill=(18, 20, 26, 255), outline=(35, 25, 10, 255), width=2)
+    # 4. Precision Mechanical Iris Blades Chamber
+    draw.ellipse([cx - r_collar_in, cy - r_collar_in, cx + r_collar_in, cy + r_collar_in],
+                 fill=(14, 17, 24, 255), outline=(8, 10, 14, 255), width=1)
 
-    # Inner gold engraved ring
-    r_inner_ring = 27
-    draw.ellipse([cx - r_inner_ring, cy - r_inner_ring, cx + r_inner_ring, cy + r_inner_ring],
-                 outline=(190, 140, 40, 180), width=1)
+    # 8 Overlapping Curved Titanium Iris Blades
+    num_blades = 8
+    for b in range(num_blades):
+        a1 = b * (2 * math.pi / num_blades)
+        a2 = a1 + 0.72
+        # Outer blade anchor
+        ox = cx + math.cos(a1) * (r_collar_in - 1)
+        oy = cy + math.sin(a1) * (r_collar_in - 1)
+        # Inner blade tip
+        ix = cx + math.cos(a2) * 11
+        iy = cy + math.sin(a2) * 11
+        # Next outer anchor
+        nx = cx + math.cos(a1 + 2 * math.pi / num_blades) * (r_collar_in - 1)
+        ny = cy + math.sin(a1 + 2 * math.pi / num_blades) * (r_collar_in - 1)
 
-    # 5. Faceted 3D Golden Star (8-point master star)
-    points_outer = 22
-    points_inner = 7
-    points_diag = 14
+        # Blade shading with subtle alternating depth
+        shade = 32 + (b % 2) * 10
+        draw.polygon([(ox, oy), (ix, iy), (nx, ny)], fill=(shade, shade + 6, shade + 14, 255))
+        # Titanium razor edge highlight
+        draw.line([(ox, oy), (ix, iy)], fill=(85, 105, 135, 220), width=1)
+        # Shadow seam
+        draw.line([(ix, iy), (nx, ny)], fill=(10, 12, 16, 255), width=1)
 
-    # Cardinal rays (North, South, West, East) with light/shadow facets
-    # North ray
-    draw.polygon([(cx, cy), (cx, cy - points_outer), (cx - 4, cy - 7)], fill=(255, 235, 120, 255))  # highlight
-    draw.polygon([(cx, cy), (cx, cy - points_outer), (cx + 4, cy - 7)], fill=(200, 145, 30, 255))  # shadow
-    # South ray
-    draw.polygon([(cx, cy), (cx, cy + points_outer), (cx - 4, cy + 7)], fill=(225, 165, 45, 255))
-    draw.polygon([(cx, cy), (cx, cy + points_outer), (cx + 4, cy + 7)], fill=(165, 110, 20, 255))
-    # West ray
-    draw.polygon([(cx, cy), (cx - points_outer, cy), (cx - 7, cy - 4)], fill=(255, 225, 100, 255))
-    draw.polygon([(cx, cy), (cx - points_outer, cy), (cx - 7, cy + 4)], fill=(185, 130, 25, 255))
-    # East ray
-    draw.polygon([(cx, cy), (cx + points_outer, cy), (cx + 7, cy - 4)], fill=(240, 180, 50, 255))
-    draw.polygon([(cx, cy), (cx + points_outer, cy), (cx + 7, cy + 4)], fill=(150, 100, 20, 255))
+    # 5. Core Quantum Aperture Chamber & Concentric Luminous Focus Ring
+    r_core = 11
+    draw.ellipse([cx - r_core, cy - r_core, cx + r_core, cy + r_core],
+                 fill=(10, 8, 5, 255), outline=(160, 110, 30, 240), width=1)
 
-    # Diagonal secondary rays
-    for dx, dy in [(-1, -1), (1, -1), (-1, 1), (1, 1)]:
-        px = cx + dx * points_diag
-        py = cy + dy * points_diag
-        draw.polygon([(cx, cy), (px, py), (cx + dx * 2, cy)], fill=(245, 205, 80, 230))
-        draw.polygon([(cx, cy), (px, py), (cx, cy + dy * 2)], fill=(175, 120, 25, 230))
-
-    # Center brilliant specular gem
-    draw.ellipse([cx - 4, cy - 4, cx + 4, cy + 4], fill=(255, 245, 180, 255))
-    draw.ellipse([cx - 2, cy - 2, cx + 2, cy + 2], fill=(255, 255, 255, 255))
+    # Optical lens core with incandescent amber warmth
+    draw.ellipse([cx - 8, cy - 8, cx + 8, cy + 8], fill=(225, 120, 15, 255))
+    draw.ellipse([cx - 5, cy - 5, cx + 5, cy + 5], fill=(255, 185, 45, 255))
+    draw.ellipse([cx - 2.5, cy - 2.5, cx + 2.5, cy + 2.5], fill=(255, 245, 180, 255))
+    draw.ellipse([cx - 1, cy - 1, cx + 1, cy + 1], fill=(255, 255, 255, 255))
 
     img.save(os.path.join(OUTPUT_DIR, "goal_pad.png"))
     print("Saved goal_pad.png")

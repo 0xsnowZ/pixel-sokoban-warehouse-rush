@@ -2122,11 +2122,11 @@ func _draw() -> void:
 		var has_crate: bool = grid.crates.has(goal_pos)
 
 		if not has_crate:
-			# --- Empty Goal: Golden Victory Star Inlay ---
+			# --- Empty Goal: Optical Quantum Iris Aperture ---
 			draw_texture_rect(tex_goal, rect, false, Color.WHITE)
 			_draw_goal_light_pillar(rect, goal_pos, ch, time_sec)
 		else:
-			# --- Filled Goal: Clean Docking Under-Glow beneath crate ---
+			# --- Filled Goal: Precision Docking Under-Glow beneath crate ---
 			draw_texture_rect(tex_goal, rect, false, Color(1.0, 1.0, 1.0, 0.55))
 			_draw_goal_hazard_brackets(rect, ch)
 
@@ -2458,15 +2458,16 @@ func _draw_goal_hazard_brackets(rect: Rect2, ch: Dictionary) -> void:
 func _draw_goal_light_pillar(rect: Rect2, goal_pos: Vector2i, _ch: Dictionary, time_sec: float) -> void:
 	var center: Vector2 = rect.get_center()
 	var phase_offset: float = float(goal_pos.x * 7 + goal_pos.y * 13) * 0.2
-	var wave: float = sin(time_sec * 3.0 + phase_offset) * 0.08
+	var wave: float = sin(time_sec * 2.5 + phase_offset) * 0.10
 
-	# Elegant golden star gleam and breathing aura aligned with the brass medallion
-	var glow_r: float = tile_size * 0.22
-	var glow_alpha: float = clampf(0.12 + wave, 0.06, 0.20)
-	draw_circle(center, glow_r, Color(1.0, 0.82, 0.25, glow_alpha))
+	# 1. Atmospheric quantum core breathing bloom
+	var glow_r: float = tile_size * 0.18
+	var glow_alpha: float = clampf(0.14 + wave, 0.06, 0.24)
+	draw_circle(center, glow_r, Color(1.0, 0.75, 0.22, glow_alpha))
 
-	# Specular star core sparkle
-	draw_circle(center, 2.0, Color(1.0, 1.0, 0.95, clampf(0.75 + wave * 2.0, 0.50, 1.0)))
+	# 2. Precision optical aperture focal pin (incandescent white-hot core)
+	var r_pin: float = 1.6 + wave * 0.4
+	draw_circle(center, r_pin, Color(1.0, 0.98, 0.90, clampf(0.85 + wave * 1.5, 0.60, 1.0)))
 
 
 func _draw_player_headlamp(effective_origin: Vector2) -> void:
