@@ -74,7 +74,7 @@ def main():
     random.shuffle(compact_variants)
 
     t0 = time.time()
-    time_limit = 40.0  # run for 40 seconds
+    time_limit = 60.0  # run for 60 seconds
 
     for vname, vlines in compact_variants:
         if time.time() - t0 > time_limit:
@@ -82,7 +82,7 @@ def main():
         walls, floor, h, w = get_interior_floor(vlines)
         floor_list = list(floor)
 
-        for attempt in range(20):
+        for attempt in range(25):
             if time.time() - t0 > time_limit:
                 break
             seed_tile = random.choice(floor_list)
@@ -98,7 +98,7 @@ def main():
             gc_c = sum(g[1] for g in goals) / 4.0
 
             candidates = []
-            for step in range(38):
+            for step in range(40):
                 c_set = set(cur_crates)
                 reachable = get_reachable(player, floor, walls, c_set)
                 pulls = []
@@ -127,20 +127,20 @@ def main():
                 cur_crates.append(p_pos)
                 player = p_next
 
-                if step in (10, 14, 18, 22, 26, 30, 34):
+                if step in (12, 16, 20, 24, 28, 32, 36, 40):
                     on_goals = len(set(cur_crates).intersection(goal_set))
                     if on_goals <= 1:
                         candidates.append((step, tuple(goals), player, tuple(cur_crates)))
 
             found_for_variant = False
             for step, g_cand, p_cand, c_cand in reversed(candidates):
-                res = solve_forward(walls, floor, g_cand, p_cand, c_cand, max_states=25000)
-                if res and res["solvable"] and 15 <= res["pushes"] <= 26:
+                res = solve_forward(walls, floor, g_cand, p_cand, c_cand, max_states=30000)
+                if res and res["solvable"] and 14 <= res["pushes"] <= 26:
                     p = res["pushes"]
                     m = res["moves"]
                     d = p / m
                     mw = max_consecutive_walk(res["path"])
-                    if d >= 0.25 and mw <= 5:
+                    if d >= 0.20 and mw <= 6:
                         lines = render_sok(walls, floor, g_cand, c_cand, p_cand, h, w)
                         sig = "\n".join(lines)
                         if sig not in seen_sigs:

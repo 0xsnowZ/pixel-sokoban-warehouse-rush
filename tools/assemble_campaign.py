@@ -162,23 +162,34 @@ def main():
     for i, c in enumerate(clean):
         by_p.setdefault(c["pushes"], []).append(i)
 
-    # Maximum difficulty target counts (64 clean items, 8 endgame)
-    target_counts = {
+    # Pre-fixed expert pinnacle puzzles (1x 16p, 3x 17p, 2x 19p)
+    wanted_expert_sources = [
+        "compact_retro:Stepped Depot_0_4c_16p_att11",
+        "expert:Bayside Nook_270_4c_17p_att21",
+        "expert:Corner Nook_0_4c_17p_att8",
+        "expert:S-Corridor_90_4c_17p_att0",
+        "expert:S-Corridor_270_4c_19p_att0",
+        "gen:Corner Alcove_180_4c_19p_att53"
+    ]
+    source_to_idx = {c["source"]: i for i, c in enumerate(clean)}
+    pre_fixed = [source_to_idx[s] for s in wanted_expert_sources]
+
+    # Remaining target counts for maximum difficulty progression (sum = 58; 58 + 6 expert = 64)
+    rem_target_counts = {
         4: 1, 5: 1,
-        6: 3, 7: 3, 8: 4, 9: 4,
-        10: 6, 11: 8, 12: 6, 13: 8, 14: 7, 15: 10,
-        16: 1, 17: 1, 19: 1
+        6: 2, 7: 3, 8: 4, 9: 4,
+        10: 5, 11: 6, 12: 6, 13: 8, 14: 8, 15: 10
     }
-    assert sum(target_counts.values()) == 64
+    assert sum(rem_target_counts.values()) == 58
 
-    order = sorted(target_counts.keys(), key=lambda p: len(by_p.get(p, [])) / target_counts[p])
+    order = sorted(rem_target_counts.keys(), key=lambda p: len(by_p.get(p, [])) / rem_target_counts[p])
 
-    # Trial 1051 gives max similarity 68.4% and highest move complexity (2,650 total moves, P=4..43)
-    rng = random.Random(1051)
-    chosen_set = set()
-    chosen_list = []
+    # Trial seed 1396 yields max similarity 68.8% (< 70%) and record 2,689 total optimal moves
+    rng = random.Random(1396)
+    chosen_set = set(pre_fixed)
+    chosen_list = list(pre_fixed)
     for p in order:
-        req = target_counts[p]
+        req = rem_target_counts[p]
         avail = [i for i in by_p.get(p, []) if not (conflicts[i] & chosen_set)]
         rng.shuffle(avail)
         picked = []
