@@ -219,70 +219,113 @@ def main():
     for i, c in enumerate(clean):
         by_p.setdefault(c["pushes"], []).append(i)
 
-    # Pre-fixed expert pinnacle puzzles (1x 16p, 3x 17p, 2x 19p)
-    wanted_expert_sources = [
-        "compact_retro:Stepped Depot_0_4c_16p_att11",
-        "expert:Bayside Nook_270_4c_17p_att21",
-        "expert:Corner Nook_0_4c_17p_att8",
-        "expert:S-Corridor_90_4c_17p_att0",
-        "expert:S-Corridor_270_4c_19p_att0",
-        "gen:Corner Alcove_180_4c_19p_att53"
-    ]
-    source_to_idx = {c["source"]: i for i, c in enumerate(clean)}
-    pre_fixed = [source_to_idx[s] for s in wanted_expert_sources]
-
-    # Remaining target counts for maximum difficulty progression (sum = 57; 57 + 6 expert = 63 + 3 fixtures + 9 endgame = 75)
-    rem_target_counts = {
+    # Target counts for maximum difficulty progression (sum = 63 + 3 fixtures + 9 endgame = 75)
+    target_counts = {
         4: 1, 5: 1,
         6: 2, 7: 2, 8: 4, 9: 4,
-        10: 4, 11: 6, 12: 6, 13: 7, 14: 7, 15: 13
+        10: 4, 11: 6, 12: 6, 13: 7, 14: 7, 15: 13,
+        16: 1, 17: 3, 19: 2
     }
-    assert sum(rem_target_counts.values()) == 57
+    assert sum(target_counts.values()) == 63
 
-    order = sorted(rem_target_counts.keys(), key=lambda p: len(by_p.get(p, [])) / rem_target_counts[p])
+    order = sorted(target_counts.keys(), key=lambda p: len(by_p.get(p, [])) / target_counts[p])
 
-    # Initial selection from optimal seed 467 (max sim 68.4%)
-    rng = random.Random(467)
-    chosen_set = set(pre_fixed)
-    chosen_list = list(pre_fixed)
-    for p in order:
-        req = rem_target_counts[p]
-        avail = [i for i in by_p.get(p, []) if not (conflicts[i] & chosen_set)]
-        rng.shuffle(avail)
-        picked = []
-        for i in avail:
-            if not (conflicts[i] & set(picked)):
-                picked.append(i)
-                if len(picked) == req:
-                    break
-        assert len(picked) == req, f"Could not satisfy bucket P={p}"
-        chosen_set.update(picked)
-        chosen_list.extend(picked)
+    for p in by_p:
+        by_p[p].sort(key=lambda i: clean[i]["challenge"], reverse=True)
 
-    # Local Hill-Climbing Challenge Maximizer
-    print("Running Cognitive Challenge local hill-climbing optimization...")
+    # Multi-seed search for best starting configuration
+    print("Searching seeds for highest-challenge valid starting configuration...")
+    best_seed = None
+    best_start_score = 0
+    best_chosen = None
+    for seed in range(1, 1001):
+        rng = random.Random(seed)
+        chosen_set = set()
+        chosen_list = []
+        possible = True
+        for p in order:
+            req = target_counts[p]
+            avail = [i for i in by_p.get(p, []) if not (conflicts[i] & chosen_set)]
+            rng.shuffle(avail)
+            picked = []
+            for i in avail:
+                if not (conflicts[i] & set(picked)):
+                    picked.append(i)
+                    if len(picked) == req:
+                        break
+            if len(picked) < req:
+                possible = False
+                break
+            chosen_set.update(picked)
+            chosen_list.extend(picked)
+        if possible:
+            score = sum(clean[i]["challenge"] for i in chosen_list)
+            if score > best_start_score:
+                best_start_score = score
+                best_seed = seed
+                best_chosen = list(chosen_list)
+
+    print(f"Selected Seed {best_seed} with starting challenge = {best_start_score:.2f}")
+
+    # Simulated Annealing / Multi-Swap Challenge Maximizer (1-swap + 2-swap)
+    print("Running Cognitive Challenge multi-swap optimizer (1-swap + 2-swap)...")
+    curr_chosen = list(best_chosen)
+    curr_score = best_start_score
+    rng = random.Random(best_seed)
     total_improved_steps = 0
-    for step in range(1, 200):
+
+    for step in range(1, 500):
         improved = False
-        indices = list(range(len(pre_fixed), len(chosen_list)))
+        indices = list(range(len(curr_chosen)))
         rng.shuffle(indices)
+
+        # 1-swap
         for idx in indices:
-            curr = chosen_list[idx]
+            curr = curr_chosen[idx]
             curr_p = clean[curr]["pushes"]
             curr_c = clean[curr]["challenge"]
-            other_chosen = set(chosen_list) - {curr}
+            other_chosen = set(curr_chosen) - {curr}
             cands = [i for i in by_p[curr_p] if i not in other_chosen and clean[i]["challenge"] > curr_c and not (conflicts[i] & other_chosen)]
             if cands:
                 cands.sort(key=lambda i: clean[i]["challenge"], reverse=True)
-                chosen_list[idx] = cands[0]
+                curr_chosen[idx] = cands[0]
+                curr_score += clean[cands[0]]["challenge"] - curr_c
                 improved = True
                 total_improved_steps += 1
                 break
-        if not improved:
-            break
-    print(f"Hill-climbing completed with {total_improved_steps} improvements.")
 
-    chosen_cands = [clean[i] for i in chosen_list]
+        # 2-swap
+        if not improved and step % 2 == 0:
+            for idx1 in indices[:20]:
+                c1 = curr_chosen[idx1]
+                p1_val = clean[c1]["pushes"]
+                for idx2 in indices[20:40]:
+                    c2 = curr_chosen[idx2]
+                    p2_val = clean[c2]["pushes"]
+                    other_chosen = set(curr_chosen) - {c1, c2}
+                    r1_cands = [i for i in by_p[p1_val] if i not in other_chosen and not (conflicts[i] & other_chosen)]
+                    for r1 in r1_cands:
+                        gain1 = clean[r1]["challenge"] - clean[c1]["challenge"]
+                        r2_cands = [j for j in by_p[p2_val] if j not in other_chosen and j != r1 and r1 not in conflicts[j] and not (conflicts[j] & other_chosen)]
+                        for r2 in r2_cands:
+                            gain = gain1 + (clean[r2]["challenge"] - clean[c2]["challenge"])
+                            if gain > 0.01:
+                                curr_chosen[idx1] = r1
+                                curr_chosen[idx2] = r2
+                                curr_score += gain
+                                improved = True
+                                total_improved_steps += 1
+                                break
+                        if improved: break
+                    if improved: break
+                if improved: break
+
+        if not improved and step > 100:
+            break
+
+    print(f"Multi-swap optimization completed with {total_improved_steps} improvements! Total Challenge = {curr_score:.2f}")
+
+    chosen_cands = [clean[i] for i in curr_chosen]
 
     c4 = [c for c in chosen_cands if c["pushes"] == 4]
     c5 = [c for c in chosen_cands if c["pushes"] == 5]
