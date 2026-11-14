@@ -2122,17 +2122,8 @@ func _draw() -> void:
 		var has_crate: bool = grid.crates.has(goal_pos)
 
 		if not has_crate:
-			# --- Empty Goal: Precision Cargo Docking Station ---
-			var goal_mod: Color = Color(1.0, 1.0, 1.0, 0.98)
-			if current_chapter_idx == 1:
-				goal_mod = Color(0.88, 0.95, 1.00, 0.98)
-			elif current_chapter_idx == 2:
-				goal_mod = Color(0.90, 1.00, 0.95, 0.98)
-			elif current_chapter_idx == 3:
-				goal_mod = Color(0.96, 0.90, 1.00, 0.98)
-			draw_texture_rect(tex_goal, rect, false, goal_mod)
-
-			# Clean precision docking beacon illumination
+			# --- Empty Goal: Golden Victory Star Inlay ---
+			draw_texture_rect(tex_goal, rect, false, Color.WHITE)
 			_draw_goal_light_pillar(rect, goal_pos, ch, time_sec)
 		else:
 			# --- Filled Goal: Clean Docking Under-Glow beneath crate ---
@@ -2458,49 +2449,10 @@ func _draw_board_vignette(_effective_origin: Vector2, _board_pixel_size: Vector2
 
 
 func _draw_goal_hazard_brackets(rect: Rect2, ch: Dictionary) -> void:
-	var steel_col: Color = Color(0.12, 0.14, 0.18, 0.95)
-	var accent_col: Color = ch.get("badge_color", Color(0.96, 0.80, 0.15, 0.90))
-	var rivet_col: Color = Color(0.90, 0.92, 0.95, 0.95)
-
-	if current_chapter_idx == 1:
-		steel_col = Color(0.08, 0.12, 0.18, 0.95)
-		accent_col = Color(0.35, 0.88, 1.00, 0.90)
-	elif current_chapter_idx == 2:
-		steel_col = Color(0.06, 0.08, 0.12, 0.95)
-		accent_col = Color(0.20, 0.98, 0.60, 0.90)
-	elif current_chapter_idx == 3:
-		steel_col = Color(0.10, 0.06, 0.16, 0.95)
-		accent_col = Color(0.85, 0.40, 1.00, 0.90)
-
-	var pad: Rect2 = rect.grow(-3.0)
-	var arm: float = pad.size.x * 0.22
-
-	# 1. Clean perimeter rim
-	draw_rect(pad, steel_col, false, 1.5)
-
-	# 2. Precision corner L-brackets cleanly inset inside tile (no edge bleeding)
-	# Top-Left
-	draw_line(pad.position, pad.position + Vector2(arm, 0.0), accent_col, 2.0)
-	draw_line(pad.position, pad.position + Vector2(0.0, arm), accent_col, 2.0)
-	draw_circle(pad.position + Vector2(2.5, 2.5), 1.2, rivet_col)
-
-	# Top-Right
-	var tr: Vector2 = Vector2(pad.end.x, pad.position.y)
-	draw_line(tr, tr + Vector2(-arm, 0.0), accent_col, 2.0)
-	draw_line(tr, tr + Vector2(0.0, arm), accent_col, 2.0)
-	draw_circle(tr + Vector2(-2.5, 2.5), 1.2, rivet_col)
-
-	# Bottom-Left
-	var bl: Vector2 = Vector2(pad.position.x, pad.end.y)
-	draw_line(bl, bl + Vector2(arm, 0.0), accent_col, 2.0)
-	draw_line(bl, bl + Vector2(0.0, -arm), accent_col, 2.0)
-	draw_circle(bl + Vector2(2.5, -2.5), 1.2, rivet_col)
-
-	# Bottom-Right
-	var br: Vector2 = pad.end
-	draw_line(br, br + Vector2(-arm, 0.0), accent_col, 2.0)
-	draw_line(br, br + Vector2(0.0, -arm), accent_col, 2.0)
-	draw_circle(br + Vector2(-2.5, -2.5), 1.2, rivet_col)
+	# Subtle, warm golden docking glow beneath the seated crate
+	var center: Vector2 = rect.get_center()
+	var aura_col: Color = ch.get("goal_aura", Color(1.0, 0.82, 0.25, 0.20))
+	draw_circle(center, tile_size * 0.44, aura_col)
 
 
 func _draw_goal_light_pillar(rect: Rect2, goal_pos: Vector2i, _ch: Dictionary, time_sec: float) -> void:
@@ -2508,34 +2460,13 @@ func _draw_goal_light_pillar(rect: Rect2, goal_pos: Vector2i, _ch: Dictionary, t
 	var phase_offset: float = float(goal_pos.x * 7 + goal_pos.y * 13) * 0.2
 	var wave: float = sin(time_sec * 3.0 + phase_offset) * 0.08
 
-	var beam_col: Color = Color(0.20, 0.95, 0.65) # Chapter 0: emerald
-	if current_chapter_idx == 1:
-		beam_col = Color(0.35, 0.88, 1.00) # Chapter 1: cryo cyan
-	elif current_chapter_idx == 2:
-		beam_col = Color(0.25, 0.98, 0.70) # Chapter 2: cyber laser emerald
-	elif current_chapter_idx == 3:
-		beam_col = Color(0.85, 0.50, 1.00) # Chapter 3: quantum violet
-
-	# Elegant self-contained docking beacon illumination
-	# 1. Soft ambient illumination pool beneath beacon
+	# Elegant golden star gleam and breathing aura aligned with the brass medallion
 	var glow_r: float = tile_size * 0.22
-	var glow_alpha: float = clampf(0.12 + wave, 0.08, 0.20)
-	draw_circle(center, glow_r, Color(beam_col.r, beam_col.g, beam_col.b, glow_alpha))
+	var glow_alpha: float = clampf(0.12 + wave, 0.06, 0.20)
+	draw_circle(center, glow_r, Color(1.0, 0.82, 0.25, glow_alpha))
 
-	# 2. Precision holographic diamond beacon pulse
-	var d_sz: float = tile_size * 0.12
-	var d_col: Color = Color(beam_col.r, beam_col.g, beam_col.b, 0.35 + wave * 1.5)
-	var pts: PackedVector2Array = PackedVector2Array([
-		center + Vector2(0, -d_sz),
-		center + Vector2(d_sz, 0),
-		center + Vector2(0, d_sz),
-		center + Vector2(-d_sz, 0),
-		center + Vector2(0, -d_sz)
-	])
-	draw_polyline(pts, d_col, 1.2, true)
-
-	# 3. Bright central emitter diode
-	draw_circle(center, 2.0, Color(1.0, 1.0, 1.0, 0.85 + wave))
+	# Specular star core sparkle
+	draw_circle(center, 2.0, Color(1.0, 1.0, 0.95, clampf(0.75 + wave * 2.0, 0.50, 1.0)))
 
 
 func _draw_player_headlamp(effective_origin: Vector2) -> void:

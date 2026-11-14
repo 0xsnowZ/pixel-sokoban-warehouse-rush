@@ -228,108 +228,84 @@ def create_crate_goal():
 
 
 def create_goal_pad():
+    # Classic Golden Star Inlay: Recessed circular brass bezel with faceted golden victory star.
+    # 100% transparent exterior background so stone floor tiles flow seamlessly even when clustered.
     img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    pad = 6
-    x0, y0 = pad, pad
-    x1, y1 = SIZE - pad, SIZE - pad
-
-    # 1. Dark recessed shadow around the plate
-    draw.rounded_rectangle([x0-1, y0-1, x1+1, y1+1], radius=8, fill=(10, 12, 16, 200))
-    draw.rounded_rectangle([x0+2, y0+2, x1+2, y1+2], radius=8, fill=(5, 6, 8, 120))
-
-    # 2. Heavy industrial cast-steel chassis
-    draw.rounded_rectangle([x0, y0, x1, y1], radius=6, fill=(36, 42, 52, 255), outline=(18, 22, 28, 255), width=2)
-
-    # Beveled edges (brushed titanium highlight top/left, deep shadow bottom/right)
-    draw.line([(x0+4, y0+1), (x1-4, y0+1)], fill=(130, 150, 180, 240), width=2)
-    draw.line([(x0+1, y0+4), (x0+1, y1-4)], fill=(130, 150, 180, 240), width=2)
-    draw.line([(x0+4, y1-1), (x1-4, y1-1)], fill=(12, 15, 20, 255), width=2)
-    draw.line([(x1-1, y0+4), (x1-1, y1-4)], fill=(12, 15, 20, 255), width=2)
-
-    # 3. Inner recessed diamond-tread docking deck
-    in_pad = 12
-    ix0, iy0 = x0 + in_pad, y0 + in_pad
-    ix1, iy1 = x1 - in_pad, y1 - in_pad
-    draw.rounded_rectangle([ix0, iy0, ix1, iy1], radius=4, fill=(22, 27, 36, 255), outline=(14, 18, 24, 255), width=2)
-
-    # Subtle industrial cross-hatch floor tread
-    for i in range(-60, 70, 12):
-        p1_x = max(ix0 + 3, ix0 + 3 + i)
-        p1_y = iy0 + 3
-        p2_x = min(ix1 - 3, ix0 + 3 + i + (iy1 - iy0 - 6))
-        p2_y = min(iy1 - 3, iy0 + 3 + (p2_x - p1_x))
-        if p1_x < ix1 - 3 and p2_x > ix0 + 3:
-            draw.line([(p1_x, p1_y), (p2_x, p2_y)], fill=(32, 39, 52, 160), width=1)
-            draw.line([(p1_x + 1, p1_y), (p2_x + 1, p2_y)], fill=(16, 20, 28, 140), width=1)
-
-    # 4. Heavy Reinforced Precision Corner Alignment Brackets (L-shaped with safety amber hazard stripes)
-    arm = 24
-    thick = 7
-    corner_specs = [
-        ((x0+2, y0+2), 1, 1),
-        ((x1-2, y0+2), -1, 1),
-        ((x0+2, y1-2), 1, -1),
-        ((x1-2, y1-2), -1, -1),
-    ]
-
-    for (cx, cy), dx, dy in corner_specs:
-        hx0, hx1 = min(cx, cx + dx * arm), max(cx, cx + dx * arm)
-        hy0, hy1 = min(cy, cy + dy * thick), max(cy, cy + dy * thick)
-        draw.rectangle([hx0, hy0, hx1, hy1], fill=(225, 155, 25, 255), outline=(140, 85, 10, 255))
-
-        vx0, vx1 = min(cx, cx + dx * thick), max(cx, cx + dx * thick)
-        vy0, vy1 = min(cy, cy + dy * arm), max(cy, cy + dy * arm)
-        draw.rectangle([vx0, vy0, vx1, vy1], fill=(225, 155, 25, 255), outline=(140, 85, 10, 255))
-
-        # Hazard stripe hashes on bracket arms
-        if dx > 0 and dy > 0:
-            draw.polygon([(cx+8, cy+1), (cx+14, cy+1), (cx+8, cy+thick-1), (cx+2, cy+thick-1)], fill=(30, 25, 15, 240))
-            draw.polygon([(cx+1, cy+8), (cx+thick-1, cy+2), (cx+thick-1, cy+8), (cx+1, cy+14)], fill=(30, 25, 15, 240))
-        elif dx < 0 and dy > 0:
-            draw.polygon([(cx-8, cy+1), (cx-14, cy+1), (cx-8, cy+thick-1), (cx-2, cy+thick-1)], fill=(30, 25, 15, 240))
-            draw.polygon([(cx-1, cy+8), (cx-thick+1, cy+2), (cx-thick+1, cy+8), (cx-1, cy+14)], fill=(30, 25, 15, 240))
-        elif dx > 0 and dy < 0:
-            draw.polygon([(cx+8, cy-1), (cx+14, cy-1), (cx+8, cy-thick+1), (cx+2, cy-thick+1)], fill=(30, 25, 15, 240))
-            draw.polygon([(cx+1, cy-8), (cx+thick-1, cy-2), (cx+thick-1, cy-8), (cx+1, cy-14)], fill=(30, 25, 15, 240))
-        elif dx < 0 and dy < 0:
-            draw.polygon([(cx-8, cy-1), (cx-14, cy-1), (cx-8, cy-thick+1), (cx-2, cy-thick+1)], fill=(30, 25, 15, 240))
-            draw.polygon([(cx-1, cy-8), (cx-thick+1, cy-2), (cx-thick+1, cy-8), (cx-1, cy-14)], fill=(30, 25, 15, 240))
-
-        # Precision 3D Hex Bolt on each corner
-        bx, by = cx + dx * 4, cy + dy * 4
-        draw.ellipse([bx-3, by-3, bx+3, by+3], fill=(20, 25, 30, 255))
-        draw.ellipse([bx-2, by-2, bx+2, by+2], fill=(245, 220, 100, 255))
-        draw.point((bx-1, by-1), fill=(255, 255, 240, 255))
-
-    # 5. Center Cargo Docking Station: Precision Holographic Cargo Beacon
     cx, cy = SIZE // 2, SIZE // 2
 
-    # Outer soft cyan/emerald illumination well
-    r_well = 24
-    draw.rounded_rectangle([cx-r_well, cy-r_well, cx+r_well, cy+r_well], radius=6,
-                           fill=(16, 28, 32, 230), outline=(30, 160, 120, 200), width=2)
+    # 1. Soft radial ambient floor glow (warm golden/amber)
+    r_glow = 48
+    for r in range(r_glow, 22, -3):
+        alpha = int(45 * (r_glow - r) / float(r_glow - 22))
+        draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(255, 185, 45, alpha))
 
-    # Inset precision docking diamond
-    d_sz = 16
-    draw.polygon([
-        (cx, cy - d_sz),
-        (cx + d_sz, cy),
-        (cx, cy + d_sz),
-        (cx - d_sz, cy)
-    ], fill=(20, 50, 42, 240), outline=(45, 235, 170, 255), width=2)
+    # 2. Recessed outer bevel cut into the stone floor
+    r_outer = 44
+    draw.ellipse([cx - r_outer, cy - r_outer, cx + r_outer, cy + r_outer],
+                 fill=(18, 22, 28, 220), outline=(10, 12, 16, 255), width=2)
 
-    # Inward directional guidance chevrons
-    c_off = 10
-    draw.polygon([(cx, cy - c_off + 3), (cx - 4, cy - c_off - 3), (cx + 4, cy - c_off - 3)], fill=(60, 255, 190, 255))
-    draw.polygon([(cx, cy + c_off - 3), (cx - 4, cy + c_off + 3), (cx + 4, cy + c_off + 3)], fill=(60, 255, 190, 255))
-    draw.polygon([(cx - c_off + 3, cy), (cx - c_off - 3, cy - 4), (cx - c_off - 3, cy + 4)], fill=(60, 255, 190, 255))
-    draw.polygon([(cx + c_off - 3, cy), (cx + c_off + 3, cy - 4), (cx + c_off + 3, cy + 4)], fill=(60, 255, 190, 255))
+    # 3. Heavy Polished Brass Ring (Outer bezel)
+    r_brass_out = 41
+    r_brass_in = 33
+    draw.ellipse([cx - r_brass_out, cy - r_brass_out, cx + r_brass_out, cy + r_brass_out],
+                 fill=(160, 110, 30, 255), outline=(90, 60, 15, 255), width=1)
+    draw.ellipse([cx - (r_brass_out - 2), cy - (r_brass_out - 2), cx + (r_brass_out - 2), cy + (r_brass_out - 2)],
+                 fill=(220, 170, 55, 255))
+    draw.ellipse([cx - (r_brass_out - 5), cy - (r_brass_out - 5), cx + (r_brass_out - 5), cy + (r_brass_out - 5)],
+                 fill=(180, 130, 35, 255))
 
-    # Radiant center energy core
-    draw.ellipse([cx-4, cy-4, cx+4, cy+4], fill=(160, 255, 220, 255))
-    draw.ellipse([cx-2, cy-2, cx+2, cy+2], fill=(255, 255, 255, 255))
+    # Top-left brass specular highlight
+    draw.arc([cx - r_brass_out, cy - r_brass_out, cx + r_brass_out, cy + r_brass_out],
+             start=190, end=310, fill=(255, 240, 160, 255), width=2)
+
+    # 4 Brass mounting rivets at cardinal points
+    for ang in [0, math.pi / 2, math.pi, 3 * math.pi / 2]:
+        bx = cx + math.cos(ang) * (r_brass_out - 4)
+        by = cy + math.sin(ang) * (r_brass_out - 4)
+        draw.ellipse([bx - 2, by - 2, bx + 2, by + 2], fill=(60, 40, 10, 255))
+        draw.ellipse([bx - 1.5, by - 1.5, bx + 1.5, by + 1.5], fill=(255, 225, 110, 255))
+        draw.point((bx - 0.5, by - 0.5), fill=(255, 255, 230, 255))
+
+    # 4. Deep Obsidian / Dark Steel Inset Well
+    draw.ellipse([cx - r_brass_in, cy - r_brass_in, cx + r_brass_in, cy + r_brass_in],
+                 fill=(18, 20, 26, 255), outline=(35, 25, 10, 255), width=2)
+
+    # Inner gold engraved ring
+    r_inner_ring = 27
+    draw.ellipse([cx - r_inner_ring, cy - r_inner_ring, cx + r_inner_ring, cy + r_inner_ring],
+                 outline=(190, 140, 40, 180), width=1)
+
+    # 5. Faceted 3D Golden Star (8-point master star)
+    points_outer = 22
+    points_inner = 7
+    points_diag = 14
+
+    # Cardinal rays (North, South, West, East) with light/shadow facets
+    # North ray
+    draw.polygon([(cx, cy), (cx, cy - points_outer), (cx - 4, cy - 7)], fill=(255, 235, 120, 255))  # highlight
+    draw.polygon([(cx, cy), (cx, cy - points_outer), (cx + 4, cy - 7)], fill=(200, 145, 30, 255))  # shadow
+    # South ray
+    draw.polygon([(cx, cy), (cx, cy + points_outer), (cx - 4, cy + 7)], fill=(225, 165, 45, 255))
+    draw.polygon([(cx, cy), (cx, cy + points_outer), (cx + 4, cy + 7)], fill=(165, 110, 20, 255))
+    # West ray
+    draw.polygon([(cx, cy), (cx - points_outer, cy), (cx - 7, cy - 4)], fill=(255, 225, 100, 255))
+    draw.polygon([(cx, cy), (cx - points_outer, cy), (cx - 7, cy + 4)], fill=(185, 130, 25, 255))
+    # East ray
+    draw.polygon([(cx, cy), (cx + points_outer, cy), (cx + 7, cy - 4)], fill=(240, 180, 50, 255))
+    draw.polygon([(cx, cy), (cx + points_outer, cy), (cx + 7, cy + 4)], fill=(150, 100, 20, 255))
+
+    # Diagonal secondary rays
+    for dx, dy in [(-1, -1), (1, -1), (-1, 1), (1, 1)]:
+        px = cx + dx * points_diag
+        py = cy + dy * points_diag
+        draw.polygon([(cx, cy), (px, py), (cx + dx * 2, cy)], fill=(245, 205, 80, 230))
+        draw.polygon([(cx, cy), (px, py), (cx, cy + dy * 2)], fill=(175, 120, 25, 230))
+
+    # Center brilliant specular gem
+    draw.ellipse([cx - 4, cy - 4, cx + 4, cy + 4], fill=(255, 245, 180, 255))
+    draw.ellipse([cx - 2, cy - 2, cx + 2, cy + 2], fill=(255, 255, 255, 255))
 
     img.save(os.path.join(OUTPUT_DIR, "goal_pad.png"))
     print("Saved goal_pad.png")
