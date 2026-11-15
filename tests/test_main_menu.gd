@@ -28,6 +28,7 @@ func _init() -> void:
 	run_suite("Porter Locker Modal & Cosmetic Equipping", test_porter_locker_modal)
 	run_suite("Warehouse Achievements Modal", test_achievements_modal)
 	run_suite("Breakout Hit Engine: Daily Shift & Star Vault Modals", test_breakout_hit_menu_features)
+	run_suite("Touch & Hold Drag Scrolling on Buttons", test_touch_scroll_drag_and_hold)
 
 	_cleanup_test_file()
 
@@ -408,4 +409,96 @@ func test_breakout_hit_menu_features() -> void:
 	claim_btn.pressed.emit()
 	assert_false(menu.star_vault_modal.visible, "Star Vault modal hidden after claiming")
 
+	menu.queue_free()
+
+
+func test_touch_scroll_drag_and_hold() -> void:
+	var menu: Control = create_test_menu()
+
+	# 1. Level Select Touch & Hold Scroll
+	menu._show_level_select()
+	assert_true(menu.level_select_view.visible, "Level select view visible")
+
+	var ls_scroll: ScrollContainer = menu.level_select_view.find_child("Scroll", true, false) as ScrollContainer
+	assert_true(ls_scroll != null, "Level select ScrollContainer exists")
+
+	# Find controller
+	var ls_ctrl: Node = null
+	for child in ls_scroll.get_children():
+		if child.has_method("is_drag_scrolling"):
+			ls_ctrl = child
+			break
+	assert_true(ls_ctrl != null, "TouchScrollController attached to Level select ScrollContainer")
+
+	var btn0: Button = menu.level_grid.get_child(0) as Button
+	assert_true(btn0 != null, "Level button 0 exists in grid")
+
+	ls_scroll.scroll_vertical = 0
+	assert_equal(ls_scroll.scroll_vertical, 0, "Initial scroll_vertical is 0")
+
+	# Touch down on scroll rect
+	var s_rect: Rect2 = ls_scroll.get_global_rect()
+	var touch_pos: Vector2 = s_rect.position + Vector2(60, 60)
+
+	var ev_down: InputEventScreenTouch = InputEventScreenTouch.new()
+	ev_down.index = 0
+	ev_down.position = touch_pos
+	ev_down.pressed = true
+	ls_ctrl._input(ev_down)
+
+	assert_true(ls_ctrl.touch_active, "Touch activated on ScrollContainer")
+	assert_false(ls_ctrl.is_scrolling, "Not scrolling yet before threshold")
+
+	# Drag finger up 100px (scroll list down)
+	var ev_drag: InputEventScreenDrag = InputEventScreenDrag.new()
+	ev_drag.index = 0
+	ev_drag.position = touch_pos - Vector2(0, 100)
+	ls_ctrl._input(ev_drag)
+
+	assert_true(ls_ctrl.is_scrolling, "Drag scrolling active after passing threshold")
+	assert_true(ls_scroll.scroll_vertical > 0, "scroll_vertical increased after dragging")
+	assert_true(menu._is_any_scroll_dragging(), "Main menu reports active scroll dragging")
+
+	# Release touch
+	var ev_up: InputEventScreenTouch = InputEventScreenTouch.new()
+	ev_up.index = 0
+	ev_up.position = touch_pos - Vector2(0, 100)
+	ev_up.pressed = false
+	ls_ctrl._input(ev_up)
+
+	assert_true(ls_ctrl.is_drag_scrolling(), "Drag scrolling grace period active right after release")
+
+	# 2. Supply Depot (Locker) Touch Scroll
+	menu._show_main_view()
+	menu._show_locker()
+	assert_true(menu.locker_modal.visible, "Locker modal visible")
+
+	var lk_scroll: ScrollContainer = menu.locker_modal.find_child("Scroll", true, false) as ScrollContainer
+	assert_true(lk_scroll != null, "Locker ScrollContainer exists")
+
+	var lk_ctrl: Node = null
+	for child in lk_scroll.get_children():
+		if child.has_method("is_drag_scrolling"):
+			lk_ctrl = child
+			break
+	assert_true(lk_ctrl != null, "TouchScrollController attached to Locker ScrollContainer")
+
+	var lk_rect: Rect2 = lk_scroll.get_global_rect()
+	var lk_pos: Vector2 = lk_rect.position + Vector2(100, 100)
+
+	var ev_lk_down: InputEventScreenTouch = InputEventScreenTouch.new()
+	ev_lk_down.index = 0
+	ev_lk_down.position = lk_pos
+	ev_lk_down.pressed = true
+	lk_ctrl._input(ev_lk_down)
+
+	var ev_lk_drag: InputEventScreenDrag = InputEventScreenDrag.new()
+	ev_lk_drag.index = 0
+	ev_lk_drag.position = lk_pos - Vector2(0, 80)
+	lk_ctrl._input(ev_lk_drag)
+
+	assert_true(lk_ctrl.is_scrolling, "Locker drag scrolling active")
+	assert_true(menu._is_any_scroll_dragging(), "Menu reports dragging in locker")
+
+	menu._hide_locker()
 	menu.queue_free()

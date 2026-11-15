@@ -91,6 +91,8 @@ var current_locker_tab: String = "outfits"
 var current_level_pulse_tw: Tween = null
 var daily_shift_btn: Button = null
 var star_vault_modal: PanelContainer = null
+var _touch_scroll_controllers: Array = []
+var _active_spring_button: Button = null
 
 # Achievements elements (Phase 4)
 @onready var achievements_btn: Button = _find_button("AchievementsBtn", "MainView/TopBarMargin/HBox/QuickBar/AchievementsBtn")
@@ -327,6 +329,8 @@ func _ready() -> void:
 	for b in [continue_btn, play_btn, level_select_btn, locker_btn, achievements_btn, settings_btn, sound_btn, haptics_btn, language_btn, credits_btn, back_btn, close_credits_btn, close_settings_btn, close_locker_btn, close_achievements_btn, outfits_tab_btn, crates_tab_btn, music_toggle_btn, track_cycle_btn, control_mode_btn, star_progress_btn, quick_lang_btn]:
 		if b != null:
 			_attach_spring_physics(b)
+
+	_setup_touch_scrolling()
 
 	ResourceLoader.load_threaded_request(GAME_SCENE_PATH)
 
@@ -817,10 +821,13 @@ func _refresh_locker_ui() -> void:
 
 func _create_locker_item_card(_item_id: String, icon: String, item_name: String, desc: String, req_stars: int, total_stars: int, is_equipped: bool, equip_callable: Callable, preview_texture: Texture2D = null, preview_tint: Color = Color.WHITE) -> Control:
 	var panel: PanelContainer = PanelContainer.new()
+	panel.theme_type_variation = &"CardPanel"
 	panel.custom_minimum_size = Vector2(0, 68)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.mouse_filter = Control.MOUSE_FILTER_PASS
 
 	var margin: MarginContainer = MarginContainer.new()
+	margin.mouse_filter = Control.MOUSE_FILTER_PASS
 	margin.add_theme_constant_override("margin_left", 12)
 	margin.add_theme_constant_override("margin_top", 8)
 	margin.add_theme_constant_override("margin_right", 12)
@@ -828,6 +835,7 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 	panel.add_child(margin)
 
 	var hbox: HBoxContainer = HBoxContainer.new()
+	hbox.mouse_filter = Control.MOUSE_FILTER_PASS
 	hbox.add_theme_constant_override("separation", 12)
 	margin.add_child(hbox)
 
@@ -835,32 +843,38 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 		var preview_frame: PanelContainer = PanelContainer.new()
 		preview_frame.custom_minimum_size = Vector2(44, 44)
 		preview_frame.theme_type_variation = &"TopBarPanel"
+		preview_frame.mouse_filter = Control.MOUSE_FILTER_PASS
 		var tex_rect: TextureRect = TextureRect.new()
 		tex_rect.custom_minimum_size = Vector2(32, 32)
 		tex_rect.texture = preview_texture
 		tex_rect.modulate = preview_tint
 		tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		tex_rect.mouse_filter = Control.MOUSE_FILTER_PASS
 		preview_frame.add_child(tex_rect)
 		hbox.add_child(preview_frame)
 	else:
 		var icon_lbl: Label = Label.new()
+		icon_lbl.mouse_filter = Control.MOUSE_FILTER_PASS
 		icon_lbl.text = icon
 		icon_lbl.add_theme_font_size_override("font_size", 26)
 		hbox.add_child(icon_lbl)
 
 	var info_vbox: VBoxContainer = VBoxContainer.new()
+	info_vbox.mouse_filter = Control.MOUSE_FILTER_PASS
 	info_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	info_vbox.add_theme_constant_override("separation", 2)
 	hbox.add_child(info_vbox)
 
 	var name_lbl: Label = Label.new()
+	name_lbl.mouse_filter = Control.MOUSE_FILTER_PASS
 	name_lbl.text = item_name
 	name_lbl.add_theme_font_size_override("font_size", 14)
 	name_lbl.add_theme_color_override("font_color", Color(0.98, 0.85, 0.30) if is_equipped else Color(0.90, 0.95, 1.0))
 	info_vbox.add_child(name_lbl)
 
 	var desc_lbl: Label = Label.new()
+	desc_lbl.mouse_filter = Control.MOUSE_FILTER_PASS
 	var is_unlocked: bool = (total_stars >= req_stars)
 	if is_unlocked:
 		desc_lbl.text = desc
@@ -937,7 +951,11 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 		act_btn.button_up.connect(func(): btn_lbl.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0)))
 
 		act_btn.tooltip_text = equip_text
-		act_btn.pressed.connect(equip_callable)
+		act_btn.pressed.connect(func():
+			if _is_any_scroll_dragging():
+				return
+			equip_callable.call()
+		)
 		_attach_spring_physics(act_btn)
 
 	else:
@@ -968,6 +986,8 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 
 		# Tactile feedback when tapping locked item
 		act_btn.pressed.connect(func():
+			if _is_any_scroll_dragging():
+				return
 			var tw: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 			tw.tween_property(desc_lbl, "modulate", Color(1.4, 0.9, 0.3, 1.0), 0.08)
 			tw.tween_property(desc_lbl, "modulate", Color.WHITE, 0.24)
@@ -1041,8 +1061,10 @@ func _create_achievement_item_card(_ach_id: String, _icon: String, title: String
 	var panel: PanelContainer = PanelContainer.new()
 	panel.custom_minimum_size = Vector2(0, 64)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.mouse_filter = Control.MOUSE_FILTER_PASS
 
 	var margin: MarginContainer = MarginContainer.new()
+	margin.mouse_filter = Control.MOUSE_FILTER_PASS
 	margin.add_theme_constant_override("margin_left", 12)
 	margin.add_theme_constant_override("margin_top", 8)
 	margin.add_theme_constant_override("margin_right", 12)
@@ -1050,10 +1072,12 @@ func _create_achievement_item_card(_ach_id: String, _icon: String, title: String
 	panel.add_child(margin)
 
 	var hbox: HBoxContainer = HBoxContainer.new()
+	hbox.mouse_filter = Control.MOUSE_FILTER_PASS
 	hbox.add_theme_constant_override("separation", 12)
 	margin.add_child(hbox)
 
 	var icon_rect: TextureRect = TextureRect.new()
+	icon_rect.mouse_filter = Control.MOUSE_FILTER_PASS
 	icon_rect.custom_minimum_size = Vector2(28, 28)
 	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -1061,17 +1085,20 @@ func _create_achievement_item_card(_ach_id: String, _icon: String, title: String
 	hbox.add_child(icon_rect)
 
 	var info_vbox: VBoxContainer = VBoxContainer.new()
+	info_vbox.mouse_filter = Control.MOUSE_FILTER_PASS
 	info_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	info_vbox.add_theme_constant_override("separation", 2)
 	hbox.add_child(info_vbox)
 
 	var title_lbl: Label = Label.new()
+	title_lbl.mouse_filter = Control.MOUSE_FILTER_PASS
 	title_lbl.text = title
 	title_lbl.add_theme_font_size_override("font_size", 14)
 	title_lbl.add_theme_color_override("font_color", Color(0.98, 0.85, 0.30) if is_unlocked else Color(0.65, 0.70, 0.80))
 	info_vbox.add_child(title_lbl)
 
 	var desc_lbl: Label = Label.new()
+	desc_lbl.mouse_filter = Control.MOUSE_FILTER_PASS
 	desc_lbl.text = desc
 	desc_lbl.add_theme_font_size_override("font_size", 11)
 	desc_lbl.add_theme_color_override("font_color", Color(0.85, 0.90, 0.98) if is_unlocked else Color(0.45, 0.50, 0.60))
@@ -1079,6 +1106,7 @@ func _create_achievement_item_card(_ach_id: String, _icon: String, title: String
 	info_vbox.add_child(desc_lbl)
 
 	var status_rect: TextureRect = TextureRect.new()
+	status_rect.mouse_filter = Control.MOUSE_FILTER_PASS
 	status_rect.custom_minimum_size = Vector2(18, 18)
 	status_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	status_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -1579,6 +1607,8 @@ func _setup_sector_tabs() -> void:
 
 
 func _on_sector_tab_pressed(ch_idx: int) -> void:
+	if _is_any_scroll_dragging():
+		return
 	if audio_mgr:
 		audio_mgr.play_click()
 	if haptic_mgr:
@@ -1800,7 +1830,50 @@ func _do_scroll_to_button(scroll_cnt: ScrollContainer, btn: Button) -> void:
 			tw.tween_property(scroll_cnt, "scroll_vertical", int(target_scroll), 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
+func _is_any_scroll_dragging() -> bool:
+	for ctrl in _touch_scroll_controllers:
+		if ctrl != null and is_instance_valid(ctrl) and ctrl.has_method("is_drag_scrolling"):
+			if ctrl.is_drag_scrolling():
+				return true
+	return false
+
+
+func _reset_active_spring_button() -> void:
+	if _active_spring_button != null and is_instance_valid(_active_spring_button):
+		var btn: Button = _active_spring_button
+		_active_spring_button = null
+		var sz: Vector2 = btn.custom_minimum_size if btn.size == Vector2.ZERO else btn.size
+		btn.pivot_offset = sz / 2.0
+		var tw: Tween = btn.create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.tween_property(btn, "scale", Vector2.ONE, 0.10)
+
+
+func _setup_touch_scrolling() -> void:
+	_touch_scroll_controllers.clear()
+	var scroll_candidates: Array[ScrollContainer] = []
+	if level_select_view != null:
+		var ls_scroll: ScrollContainer = level_select_view.find_child("Scroll", true, false) as ScrollContainer
+		if ls_scroll != null:
+			scroll_candidates.append(ls_scroll)
+	if locker_modal != null:
+		var lk_scroll: ScrollContainer = locker_modal.find_child("Scroll", true, false) as ScrollContainer
+		if lk_scroll != null:
+			scroll_candidates.append(lk_scroll)
+	if achievements_modal != null:
+		var ach_scroll: ScrollContainer = achievements_modal.find_child("Scroll", true, false) as ScrollContainer
+		if ach_scroll != null:
+			scroll_candidates.append(ach_scroll)
+
+	for s in scroll_candidates:
+		if s != null:
+			var ctrl: TouchScrollController = TouchScrollController.new(self, s)
+			s.add_child(ctrl)
+			_touch_scroll_controllers.append(ctrl)
+
+
 func _on_level_button_pressed(level_index: int) -> void:
+	if _is_any_scroll_dragging():
+		return
 	if level_index < AVAILABLE_LEVELS_COUNT:
 		if save_mgr and not save_mgr.is_level_unlocked(level_index):
 			return
@@ -1816,16 +1889,21 @@ func _attach_spring_physics(btn: Button) -> void:
 		btn.pivot_offset = sz / 2.0
 	calc_pivot.call()
 	btn.button_down.connect(func():
+		_active_spring_button = btn
 		calc_pivot.call()
 		var tw: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		tw.tween_property(btn, "scale", Vector2(0.94, 0.94), 0.07)
 	)
 	btn.button_up.connect(func():
+		if _active_spring_button == btn:
+			_active_spring_button = null
 		calc_pivot.call()
 		var tw: Tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		tw.tween_property(btn, "scale", Vector2.ONE, 0.15)
 	)
 	btn.mouse_exited.connect(func():
+		if _active_spring_button == btn:
+			_active_spring_button = null
 		calc_pivot.call()
 		var tw: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		tw.tween_property(btn, "scale", Vector2.ONE, 0.10)
@@ -2005,3 +2083,126 @@ func _create_star_vault_modal() -> PanelContainer:
 
 	add_child(modal)
 	return modal
+
+
+# ==============================================================================
+# Touch & Drag Scroll Controller for Mobile Viewports
+# Allows smooth drag-scrolling even when holding down on interactive buttons
+# ==============================================================================
+
+class TouchScrollController extends Node:
+	var menu: Control = null
+	var scroll_cnt: ScrollContainer = null
+	var touch_active: bool = false
+	var touch_id: int = -1
+	var start_pos: Vector2 = Vector2.ZERO
+	var last_pos: Vector2 = Vector2.ZERO
+	var start_scroll: float = 0.0
+	var is_scrolling: bool = false
+	var last_scroll_msec: int = 0
+	var velocity_y: float = 0.0
+	var last_time: float = 0.0
+	var inertia_tw: Tween = null
+	const THRESHOLD: float = 8.0
+
+	func _init(p_menu: Control, p_scroll: ScrollContainer) -> void:
+		menu = p_menu
+		scroll_cnt = p_scroll
+
+	func _input(event: InputEvent) -> void:
+		if scroll_cnt == null or not is_instance_valid(scroll_cnt) or not scroll_cnt.is_visible():
+			return
+
+		var s_rect: Rect2 = scroll_cnt.get_global_rect()
+		var in_bounds: bool = (s_rect.size == Vector2.ZERO or s_rect.has_point(event.position))
+
+		if event is InputEventScreenTouch:
+			if event.pressed:
+				if not touch_active and in_bounds:
+					if inertia_tw and inertia_tw.is_valid():
+						inertia_tw.kill()
+					touch_active = true
+					touch_id = event.index
+					start_pos = event.position
+					last_pos = event.position
+					start_scroll = float(scroll_cnt.scroll_vertical)
+					is_scrolling = false
+					velocity_y = 0.0
+					last_time = Time.get_ticks_msec() / 1000.0
+			elif event.index == touch_id:
+				_finish_touch()
+
+		elif event is InputEventScreenDrag:
+			if touch_active and event.index == touch_id:
+				_handle_drag(event.position)
+
+		elif event is InputEventMouseButton:
+			if event.button_index == MOUSE_BUTTON_LEFT:
+				if event.pressed:
+					if not touch_active and in_bounds:
+						if inertia_tw and inertia_tw.is_valid():
+							inertia_tw.kill()
+						touch_active = true
+						touch_id = -1
+						start_pos = event.position
+						last_pos = event.position
+						start_scroll = float(scroll_cnt.scroll_vertical)
+						is_scrolling = false
+						velocity_y = 0.0
+						last_time = Time.get_ticks_msec() / 1000.0
+				elif touch_active and touch_id == -1:
+					_finish_touch()
+
+		elif event is InputEventMouseMotion:
+			if touch_active and touch_id == -1 and (event.button_mask & MOUSE_BUTTON_MASK_LEFT) != 0:
+				_handle_drag(event.position)
+
+	func _handle_drag(curr_pos: Vector2) -> void:
+		var delta_y: float = curr_pos.y - start_pos.y
+		if not is_scrolling and abs(delta_y) > THRESHOLD:
+			is_scrolling = true
+			if menu != null and is_instance_valid(menu) and menu.has_method("_reset_active_spring_button"):
+				menu._reset_active_spring_button()
+
+		if is_scrolling:
+			var now: float = Time.get_ticks_msec() / 1000.0
+			var dt: float = maxf(0.001, now - last_time)
+			velocity_y = (curr_pos.y - last_pos.y) / dt
+			last_pos = curr_pos
+			last_time = now
+			last_scroll_msec = Time.get_ticks_msec()
+
+			var v_scroll: VScrollBar = scroll_cnt.get_v_scroll_bar()
+			var max_v: float = maxf(0.0, (v_scroll.max_value - v_scroll.page) if v_scroll else 5000.0)
+			var target: float = clampf(start_scroll - delta_y, 0.0, max_v)
+			scroll_cnt.scroll_vertical = int(target)
+
+	func _finish_touch() -> void:
+		if not touch_active:
+			return
+		touch_active = false
+		if is_scrolling:
+			last_scroll_msec = Time.get_ticks_msec()
+			if abs(velocity_y) > 120.0 and scroll_cnt.is_inside_tree():
+				var v_scroll: VScrollBar = scroll_cnt.get_v_scroll_bar()
+				var max_v: float = maxf(0.0, (v_scroll.max_value - v_scroll.page) if v_scroll else 5000.0)
+				var fling_dist: float = velocity_y * 0.22
+				var final_target: float = clampf(float(scroll_cnt.scroll_vertical) - fling_dist, 0.0, max_v)
+				if inertia_tw and inertia_tw.is_valid():
+					inertia_tw.kill()
+				inertia_tw = scroll_cnt.create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+				inertia_tw.tween_property(scroll_cnt, "scroll_vertical", int(final_target), 0.35)
+
+		if scroll_cnt.is_inside_tree():
+			var tr: SceneTree = scroll_cnt.get_tree()
+			if tr != null:
+				tr.create_timer(0.12).timeout.connect(func():
+					is_scrolling = false
+				)
+			else:
+				is_scrolling = false
+		else:
+			is_scrolling = false
+
+	func is_drag_scrolling() -> bool:
+		return is_scrolling or (Time.get_ticks_msec() - last_scroll_msec < 120)
