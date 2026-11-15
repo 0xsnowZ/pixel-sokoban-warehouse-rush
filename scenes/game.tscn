@@ -1,8 +1,10 @@
-[gd_scene load_steps=5 format=3 uid="uid://bgamepixelporter"]
+[gd_scene load_steps=7 format=3 uid="uid://bgamepixelporter"]
 
 [ext_resource type="Script" path="res://scenes/game.gd" id="1_game"]
 [ext_resource type="Texture2D" path="res://assets/warehouse_bg.jpg" id="2_bg"]
 [ext_resource type="Shader" path="res://shaders/blur_backdrop.gdshader" id="3_blur_shader"]
+[ext_resource type="Script" path="res://scripts/restart_confirm_modal.gd" id="4_restart_modal"]
+[ext_resource type="Texture2D" path="res://assets/icons/icon_restart.png" id="5_restart_icon"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_blur"]
 shader = ExtResource("3_blur_shader")
@@ -304,12 +306,6 @@ grow_vertical = 2
 theme_override_font_sizes/font_size = 22
 text = ""
 
-[node name="RestartConfirmDialog" type="ConfirmationDialog" parent="."]
-title = "Restart Level"
-initial_position = 2
-size = Vector2i(320, 120)
-ok_button_text = "Restart"
-
 [node name="WinBlurOverlay" type="ColorRect" parent="."]
 visible = false
 material = SubResource("ShaderMaterial_blur")
@@ -319,6 +315,106 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="RestartConfirmDialog" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("4_restart_modal")
+
+[node name="Scrim" type="ColorRect" parent="RestartConfirmDialog"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.04, 0.06, 0.1, 0.72)
+
+[node name="Center" type="CenterContainer" parent="RestartConfirmDialog"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Card" type="PanelContainer" parent="RestartConfirmDialog/Center"]
+custom_minimum_size = Vector2(350, 0)
+layout_mode = 2
+theme_type_variation = &"RestartModalPanel"
+
+[node name="Margin" type="MarginContainer" parent="RestartConfirmDialog/Center/Card"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="RestartConfirmDialog/Center/Card/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="HeaderPanel" type="PanelContainer" parent="RestartConfirmDialog/Center/Card/Margin/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_type_variation = &"RestartHeaderPanel"
+
+[node name="HBox" type="HBoxContainer" parent="RestartConfirmDialog/Center/Card/Margin/VBox/HeaderPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="Icon" type="TextureRect" parent="RestartConfirmDialog/Center/Card/Margin/VBox/HeaderPanel/HBox"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+texture = ExtResource("5_restart_icon")
+expand_mode = 1
+stretch_mode = 5
+modulate = Color(1, 0.88, 0.4, 1)
+
+[node name="TitleLabel" type="Label" parent="RestartConfirmDialog/Center/Card/Margin/VBox/HeaderPanel/HBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.75, 1)
+theme_override_font_sizes/font_size = 16
+text = "RESTART LEVEL"
+horizontal_alignment = 1
+
+[node name="MessageLabel" type="Label" parent="RestartConfirmDialog/Center/Card/Margin/VBox"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 15
+text = "You've made 7 moves. Restart this level?"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="Actions" type="HBoxContainer" parent="RestartConfirmDialog/Center/Card/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="CancelButton" type="Button" parent="RestartConfirmDialog/Center/Card/Margin/VBox/Actions"]
+custom_minimum_size = Vector2(120, 46)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "CANCEL"
+
+[node name="RestartButton" type="Button" parent="RestartConfirmDialog/Center/Card/Margin/VBox/Actions"]
+custom_minimum_size = Vector2(136, 46)
+layout_mode = 2
+theme_type_variation = &"GameRestartButton"
+theme_override_constants/icon_max_width = 18
+theme_override_constants/h_separation = 8
+theme_override_font_sizes/font_size = 14
+text = "RESTART"
+icon = ExtResource("5_restart_icon")
+expand_icon = true
 
 [node name="WinModal" type="PanelContainer" parent="."]
 visible = false

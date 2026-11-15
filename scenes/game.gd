@@ -215,7 +215,7 @@ var ad_reward_modal: PanelContainer = null
 @onready var star_1: Label = $WinModal.find_child("Star1", true, false) if has_node("WinModal") else null
 @onready var star_2: Label = $WinModal.find_child("Star2", true, false) if has_node("WinModal") else null
 @onready var star_3: Label = $WinModal.find_child("Star3", true, false) if has_node("WinModal") else null
-@onready var restart_dialog: ConfirmationDialog = $RestartConfirmDialog
+@onready var restart_dialog: Node = $RestartConfirmDialog
 @onready var dim_overlay: ColorRect = $DimOverlay if has_node("DimOverlay") else null
 @onready var moves_card: PanelContainer = $WinModal.find_child("MovesCard", true, false) as PanelContainer if has_node("WinModal") else null
 @onready var time_card: PanelContainer = $WinModal.find_child("TimeCard", true, false) as PanelContainer if has_node("WinModal") else null
@@ -411,6 +411,8 @@ func _ready() -> void:
 
 	if loc_mgr == null and is_inside_tree() and get_tree().root.has_node("LocalizationManager"):
 		loc_mgr = get_tree().root.get_node("LocalizationManager")
+	if loc_mgr and not loc_mgr.language_changed.is_connected(_update_ui):
+		loc_mgr.language_changed.connect(_update_ui)
 
 	if ad_mgr == null and is_inside_tree() and get_tree().root.has_node("AdManager"):
 		ad_mgr = get_tree().root.get_node("AdManager")
@@ -493,8 +495,13 @@ func _ready() -> void:
 		star_3.rotation_degrees = 10.0
 
 	if loc_mgr:
-		restart_dialog.ok_button_text = loc_mgr.tr_text("BTN_RESTART")
-		restart_dialog.cancel_button_text = loc_mgr.tr_text("BTN_CLOSE")
+		if "ok_button_text" in restart_dialog:
+			restart_dialog.ok_button_text = loc_mgr.tr_text("BTN_RESTART")
+		if "cancel_button_text" in restart_dialog:
+			restart_dialog.cancel_button_text = loc_mgr.tr_text("BTN_CLOSE")
+		var title_tr: String = loc_mgr.tr_text("RESTART_TITLE")
+		if title_tr != "RESTART_TITLE" and "title_text" in restart_dialog:
+			restart_dialog.title_text = title_tr
 
 	var initial_level: int = 0
 	if save_mgr and save_mgr.last_played_level >= 0 and save_mgr.last_played_level < level_paths.size():
@@ -553,6 +560,7 @@ func _handle_mobile_back_request() -> void:
 		if get_viewport(): get_viewport().set_input_as_handled()
 	elif restart_dialog != null and restart_dialog.visible:
 		restart_dialog.hide()
+		_on_restart_dialog_canceled()
 		if get_viewport(): get_viewport().set_input_as_handled()
 	else:
 		_on_restart_pressed()
@@ -701,7 +709,7 @@ func load_level(index: int) -> void:
 	queue_redraw()
 
 
-func _update_ui() -> void:
+func _update_ui(_new_lang: String = "") -> void:
 	var best_str: String = ""
 	if save_mgr and save_mgr.is_level_completed(current_level_index):
 		var rec: Dictionary = save_mgr.get_level_record(current_level_index)
@@ -804,6 +812,14 @@ func _update_ui() -> void:
 			next_level_button.text = loc_mgr.tr_text("WIN_NEXT_BTN")
 		if win_retry_button != null:
 			win_retry_button.text = loc_mgr.tr_text("WIN_RETRY_BTN")
+		if restart_dialog != null:
+			if "ok_button_text" in restart_dialog:
+				restart_dialog.ok_button_text = loc_mgr.tr_text("BTN_RESTART")
+			if "cancel_button_text" in restart_dialog:
+				restart_dialog.cancel_button_text = loc_mgr.tr_text("BTN_CLOSE")
+			var title_tr: String = loc_mgr.tr_text("RESTART_TITLE")
+			if title_tr != "RESTART_TITLE" and "title_text" in restart_dialog:
+				restart_dialog.title_text = title_tr
 	else:
 		if is_daily_challenge:
 			var daily_info: Dictionary = save_mgr.get_daily_challenge_info() if save_mgr else {}
@@ -1392,10 +1408,18 @@ func _on_restart_pressed() -> void:
 	if current_moves >= 5:
 		if loc_mgr:
 			restart_dialog.dialog_text = loc_mgr.tr_text("RESTART_CONFIRM", [current_moves])
+			var title_tr: String = loc_mgr.tr_text("RESTART_TITLE")
+			if title_tr != "RESTART_TITLE" and "title_text" in restart_dialog:
+				restart_dialog.title_text = title_tr
 		else:
 			restart_dialog.dialog_text = "You've made %d moves. Restart this level?" % current_moves
 		if audio_mgr and audio_mgr.has_method("duck_music"):
 			audio_mgr.duck_music(-10.0, 0.2)
+		if win_blur_overlay:
+			win_blur_overlay.modulate.a = 0.0
+			win_blur_overlay.show()
+			var tw_blur: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			tw_blur.tween_property(win_blur_overlay, "modulate:a", 0.85, 0.2)
 		if restart_dialog.is_inside_tree():
 			restart_dialog.popup_centered()
 	else:
@@ -1403,6 +1427,8 @@ func _on_restart_pressed() -> void:
 
 
 func _do_restart() -> void:
+	if win_blur_overlay and not (win_modal and win_modal.visible):
+		win_blur_overlay.hide()
 	if audio_mgr:
 		audio_mgr.play_restart()
 		if audio_mgr.has_method("unduck_music"):
@@ -1414,6 +1440,8 @@ func _do_restart() -> void:
 
 
 func _on_restart_dialog_canceled() -> void:
+	if win_blur_overlay and not (win_modal and win_modal.visible):
+		win_blur_overlay.hide()
 	if audio_mgr and audio_mgr.has_method("unduck_music"):
 		audio_mgr.unduck_music(0.5)
 

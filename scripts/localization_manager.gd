@@ -472,6 +472,11 @@ const TRANSLATIONS: Dictionary = {
 		"fr": "Menu",
 		"ar": "القائمة"
 	},
+	"RESTART_TITLE": {
+		"en": "RESTART LEVEL",
+		"fr": "RECOMMENCER LE NIVEAU",
+		"ar": "إعادة تشغيل المستوى"
+	},
 	"RESTART_CONFIRM": {
 		"en": "You've made %d moves. Restart this level?",
 		"fr": "Vous avez fait %d mouvements. Recommencer ce niveau ?",
