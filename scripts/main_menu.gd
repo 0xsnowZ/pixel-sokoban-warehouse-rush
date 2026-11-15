@@ -386,6 +386,32 @@ func _on_safe_area_changed(_insets: Dictionary) -> void:
 	_apply_safe_area()
 
 
+func _sanitize_main_view_top_bar() -> void:
+	if main_view == null:
+		return
+	var top_bar_margin: MarginContainer = main_view.get_node_or_null("TopBarMargin") as MarginContainer
+	if top_bar_margin != null:
+		var hbox: HBoxContainer = top_bar_margin.get_node_or_null("HBox") as HBoxContainer
+		if hbox != null:
+			for child in hbox.get_children():
+				if child != star_progress_btn and child != quick_lang_btn.get_parent() and child.name != "Spacer":
+					child.queue_free()
+	if level_select_view != null:
+		level_select_view.hide()
+	if credits_modal != null:
+		credits_modal.hide()
+	if settings_modal != null:
+		settings_modal.hide()
+	if locker_modal != null:
+		locker_modal.hide()
+	if achievements_modal != null:
+		achievements_modal.hide()
+	if star_vault_modal != null:
+		star_vault_modal.hide()
+	if modal_blur_overlay != null:
+		modal_blur_overlay.hide()
+
+
 func _show_main_view() -> void:
 	if audio_mgr:
 		audio_mgr.play_click()
@@ -393,16 +419,7 @@ func _show_main_view() -> void:
 		current_level_pulse_tw.kill()
 		current_level_pulse_tw = null
 	main_view.show()
-	level_select_view.hide()
-	credits_modal.hide()
-	if settings_modal:
-		settings_modal.hide()
-	if locker_modal:
-		locker_modal.hide()
-	if achievements_modal:
-		achievements_modal.hide()
-	if modal_blur_overlay:
-		modal_blur_overlay.hide()
+	_sanitize_main_view_top_bar()
 	_update_menu_state()
 	_check_star_vault_milestones()
 

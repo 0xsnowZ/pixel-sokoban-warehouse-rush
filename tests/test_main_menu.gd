@@ -95,6 +95,15 @@ func test_menu_initialization() -> void:
 	assert_true(menu.main_view.visible, "Main view is visible by default")
 	assert_false(menu.level_select_view.visible, "Level select view is hidden by default")
 	assert_false(menu.credits_modal.visible, "Credits modal is hidden by default")
+	assert_false(menu.locker_modal.visible, "Locker modal is hidden by default")
+
+	# Top bar verification: strictly star progress pill, spacer, and quickbar
+	var top_hbox = menu.main_view.get_node("TopBarMargin/HBox")
+	assert_true(top_hbox != null, "Top bar HBox exists")
+	assert_equal(top_hbox.get_child_count(), 3, "Top bar HBox contains exactly 3 children (StarProgress, Spacer, QuickBar)")
+	assert_equal(top_hbox.get_child(0).name, "StarProgressBtn", "Child 0 of TopBar is StarProgressBtn")
+	assert_equal(top_hbox.get_child(1).name, "Spacer", "Child 1 of TopBar is Spacer")
+	assert_equal(top_hbox.get_child(2).name, "QuickBar", "Child 2 of TopBar is QuickBar")
 
 	# View switching
 	menu._show_level_select()
@@ -104,6 +113,7 @@ func test_menu_initialization() -> void:
 	menu._show_main_view()
 	assert_true(menu.main_view.visible, "Main view restored on back")
 	assert_false(menu.level_select_view.visible, "Level select hidden on back")
+	assert_false(menu.locker_modal.visible, "Locker modal remains hidden in main view")
 
 	menu.queue_free()
 
