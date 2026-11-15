@@ -208,23 +208,27 @@ def make_control_gamepad():
     im = new_canvas()
     d = ImageDraw.Draw(im)
 
-    # Gamepad Console Body
-    d.rounded_rectangle([30, 78, 226, 178], radius=38, fill=(16, 185, 129, 255), outline=(6, 95, 70, 255), width=6)
-    # Grip accents
-    d.rounded_rectangle([38, 86, 218, 170], radius=32, fill=(20, 150, 110, 255))
-    # Bevel highlight
-    d.arc([36, 82, 220, 172], start=180, end=360, fill=(110, 235, 185, 255), width=6)
+    # Soft Drop Shadow
+    d.rounded_rectangle([34, 84, 230, 184], radius=38, fill=(0, 0, 0, 90))
+
+    # Gamepad Console Body - Signature Hazard Gold / Yellow Theme
+    d.rounded_rectangle([30, 78, 226, 178], radius=38, fill=(245, 180, 30, 255), outline=(160, 100, 10, 255), width=6)
+    # Inner grip / faceplate accent
+    d.rounded_rectangle([38, 86, 218, 170], radius=32, fill=(220, 150, 15, 255))
+    # Bevel highlight along top edge
+    d.arc([36, 82, 220, 172], start=180, end=360, fill=(255, 238, 150, 255), width=6)
 
     # Mini D-pad on Left
-    d.rounded_rectangle([60, 118, 98, 138], radius=4, fill=(15, 23, 42, 255))
-    d.rounded_rectangle([70, 108, 88, 148], radius=4, fill=(15, 23, 42, 255))
+    d.rounded_rectangle([58, 116, 100, 140], radius=4, fill=(20, 26, 38, 255), outline=(10, 14, 22, 255), width=2)
+    d.rounded_rectangle([69, 105, 89, 151], radius=4, fill=(20, 26, 38, 255), outline=(10, 14, 22, 255), width=2)
+    d.rectangle([69, 116, 89, 140], fill=(20, 26, 38, 255))
 
-    # Action Buttons on Right
-    d.ellipse([160, 126, 180, 146], fill=(245, 158, 11, 255), outline=(255, 220, 130, 255), width=3)
-    d.ellipse([182, 106, 202, 126], fill=(239, 68, 68, 255), outline=(255, 180, 180, 255), width=3)
+    # Action Buttons on Right (Arcade style: Cyan and Crimson Red)
+    d.ellipse([158, 124, 182, 148], fill=(56, 189, 248, 255), outline=(14, 116, 144, 255), width=3)
+    d.ellipse([180, 104, 204, 128], fill=(239, 68, 68, 255), outline=(185, 28, 28, 255), width=3)
 
-    # Screen / center LED
-    d.ellipse([122, 122, 134, 134], fill=(56, 189, 248, 255))
+    # Center LED / Status display
+    d.ellipse([121, 121, 135, 135], fill=(255, 255, 255, 255), outline=(160, 100, 10, 255), width=2)
     save_icon(im, "icon_control_gamepad.png")
 
 # ==========================================

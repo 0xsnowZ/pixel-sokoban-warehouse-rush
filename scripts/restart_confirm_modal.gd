@@ -151,3 +151,4 @@ func _attach_spring_physics(btn: Button) -> void:
 		tw.tween_property(btn, "scale", Vector2.ONE, 0.25)
 	btn.button_up.connect(restore)
 	btn.mouse_exited.connect(restore)
+

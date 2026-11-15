@@ -540,6 +540,8 @@ func _ready() -> void:
 		top_bar.draw.connect(_on_top_bar_draw)
 	if bottom_bar != null and not bottom_bar.draw.is_connected(_on_bottom_bar_draw):
 		bottom_bar.draw.connect(_on_bottom_bar_draw)
+	if bottom_bar != null and not bottom_bar.resized.is_connected(_update_dpad_position):
+		bottom_bar.resized.connect(_update_dpad_position)
 
 
 func _notification(what: int) -> void:
@@ -599,6 +601,7 @@ func _apply_safe_area() -> void:
 			safe_area_mgr.apply_safe_area_margins(top_bar_margin, 16, 10, 16, 10, true, false)
 		if bottom_bar_margin != null:
 			safe_area_mgr.apply_safe_area_margins(bottom_bar_margin, 16, 10, 16, 10, false, true)
+	_update_dpad_position()
 	calculate_layout()
 	queue_redraw()
 
@@ -1492,12 +1495,55 @@ func _on_control_button_pressed() -> void:
 	queue_redraw()
 
 
+func _get_actual_bottom_bar_height() -> float:
+	var h: float = 72.0
+	if bottom_bar_margin != null:
+		var top_m: float = float(bottom_bar_margin.get_theme_constant("margin_top"))
+		var bot_m: float = float(bottom_bar_margin.get_theme_constant("margin_bottom"))
+		# 3.0 (top border) + margins + 48.0 (button height)
+		var inner_h: float = 3.0 + top_m + 48.0 + bot_m
+		h = maxf(h, inner_h)
+	if bottom_bar != null:
+		if bottom_bar.size.y > 0.0:
+			h = maxf(h, bottom_bar.size.y)
+		if is_inside_tree() and bottom_bar.position.y > 0.0:
+			var vp_h: float = get_viewport_rect().size.y
+			if vp_h > bottom_bar.position.y:
+				h = maxf(h, vp_h - bottom_bar.position.y)
+	if safe_area_mgr != null:
+		var insets: Dictionary = safe_area_mgr.get_safe_insets(self)
+		var safe_bottom: float = insets.get("bottom", 0.0)
+		h = maxf(h, 72.0 + safe_bottom)
+	return h
+
+
+func _update_dpad_position() -> void:
+	if dpad_overlay == null:
+		return
+
+	var bot_bar_h: float = _get_actual_bottom_bar_height()
+	var clearance: float = 16.0
+	var dpad_h: float = 164.0
+	if dpad_overlay.size.y > 0.0:
+		dpad_h = maxf(dpad_h, dpad_overlay.size.y)
+
+	var half_w: float = 95.0
+	if dpad_overlay.size.x > 0.0:
+		half_w = dpad_overlay.size.x / 2.0
+
+	dpad_overlay.offset_left = -half_w
+	dpad_overlay.offset_right = half_w
+	dpad_overlay.offset_bottom = -(bot_bar_h + clearance)
+	dpad_overlay.offset_top = -(bot_bar_h + clearance + dpad_h)
+
+
 func _update_control_scheme_ui() -> void:
 	var scheme: int = save_mgr.control_scheme if save_mgr and "control_scheme" in save_mgr else 0
 	# 0 = Swipe, 1 = D-Pad, 2 = Dual
 	var show_dpad: bool = (scheme == 1 or scheme == 2)
 	if dpad_overlay:
 		dpad_overlay.visible = show_dpad
+	_update_dpad_position()
 	if control_button:
 		control_button.modulate = Color.WHITE
 		control_button.expand_icon = true
@@ -2066,10 +2112,12 @@ func calculate_layout(custom_viewport_size: Vector2 = Vector2.ZERO) -> void:
 		top_bar_h = maxf(top_bar_h, top_bar.size.y)
 	var top_offset: float = top_bar_h + 10.0
 
-	var dpad_allowance: float = 160.0 if (dpad_overlay and dpad_overlay.visible) else 0.0
-	var bot_bar_h: float = 70.0 + safe_bottom
-	if bottom_bar != null and bottom_bar.size.y > 0.0:
-		bot_bar_h = maxf(bot_bar_h, bottom_bar.size.y)
+	var bot_bar_h: float = _get_actual_bottom_bar_height()
+
+	var dpad_allowance: float = 0.0
+	if dpad_overlay and dpad_overlay.visible:
+		_update_dpad_position()
+		dpad_allowance = 190.0
 	var bottom_offset: float = bot_bar_h + 10.0 + dpad_allowance
 
 	var playable_height: float = viewport_size.y - (top_offset + bottom_offset)
