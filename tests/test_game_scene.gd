@@ -36,6 +36,7 @@ func _init() -> void:
 	test_porter_locker_cosmetics_in_game()
 	test_rewarded_ad_hint_economy_in_game()
 	test_touch_swipe_mechanics()
+	test_locomotion_juice_and_corridor_auto_repeat()
 
 	print("\n" + "=".repeat(54))
 	print("Game Scene Results: %d passed, %d failed" % [passes, fails])
@@ -754,6 +755,90 @@ func test_touch_swipe_mechanics() -> void:
 	mouse_up.position = Vector2(215, 500)
 	game._input(mouse_up)
 	assert_false(game.is_touching, "Mouse touch ended on release")
+
+	game.queue_free()
+	loc.queue_free()
+	save_mgr.queue_free()
+
+
+func test_locomotion_juice_and_corridor_auto_repeat() -> void:
+	print("--- Running Suite: Locomotion Juice & Corridor Auto-Repeat ---")
+	var loc: Node = LocalizationManagerScript.new()
+	var save_mgr: Node = SaveManagerScript.new()
+	var game: Control = create_test_game(loc, save_mgr)
+
+	# 1. Initial State
+	assert_eq(game.stride_arc_y, 0.0, "Stride arc Y starts at 0.0")
+	assert_eq(game.player_scale, Vector2.ONE, "Player scale starts at Vector2.ONE")
+	assert_eq(game.held_move_dir, Vector2i.ZERO, "Held move dir starts at Vector2i.ZERO")
+	assert_eq(game.held_move_time, 0.0, "Held move time starts at 0.0")
+	assert_eq(game.held_move_step_timer, 0.0, "Held move step timer starts at 0.0")
+
+	# 2. Stride Arc and Landing Squash Trigger
+	game._animate_player(Vector2i(2, 3), Vector2i(2, 4))
+	assert_true(game.is_animating, "Player is animating during stride")
+	assert_true(game.player_scale != Vector2.ZERO, "Player scale is non-zero")
+
+	# Reset restores clean state
+	game._on_level_reset()
+	assert_eq(game.stride_arc_y, 0.0, "Reset restores stride arc Y to 0.0")
+	assert_eq(game.player_scale, Vector2.ONE, "Reset restores player scale to Vector2.ONE")
+	assert_eq(game.held_move_dir, Vector2i.ZERO, "Reset zeroes held move dir")
+
+	# 3. Push Friction Dust on Crate Push
+	game.dust_particles.clear()
+	# In Level 1, player at (2, 3) moving UP pushes crate at (2, 2)
+	game.try_move(Vector2i.UP)
+	assert_true(game.dust_particles.size() > 0, "Push friction dust puffs spawned between boots and crate")
+
+	# Reset back to level 1 start via grid.reset()
+	game.grid.reset()
+	game.is_animating = false
+
+	# 4. Keyboard Corridor Auto-Repeat
+	# Player is at (2, 3). In Level 1, moving RIGHT has open space at (3, 3), (4, 3), (5, 3).
+	var key_press: InputEventKey = InputEventKey.new()
+	key_press.keycode = KEY_RIGHT
+	key_press.pressed = true
+	key_press.echo = false
+	game._input(key_press)
+
+	assert_eq(game.held_move_dir, Vector2i.RIGHT, "Key press sets held_move_dir to RIGHT")
+	assert_eq(game.grid.get_player_pos(), Vector2i(3, 3), "Initial key press moves player to (3, 3) immediately")
+
+	# Before initial hold delay (220ms): no second step
+	game.is_animating = false
+	game._process(0.12)
+	assert_eq(game.grid.get_player_pos(), Vector2i(3, 3), "No repeat step before 220ms hold threshold")
+
+	# Cross the 220ms hold delay + 125ms repeat step timer
+	game._process(0.11) # cumulative held_move_time = 0.23s >= 0.22s
+	game.is_animating = false
+	game._process(0.13) # step timer >= 0.125s -> triggers repeat step!
+	assert_eq(game.grid.get_player_pos(), Vector2i(4, 3), "Auto-repeat moved player to (4, 3)")
+
+	# Another 125ms step in open corridor
+	game.is_animating = false
+	game._process(0.13)
+	assert_eq(game.grid.get_player_pos(), Vector2i(5, 3), "Second auto-repeat moved player to (5, 3)")
+
+	# Release key
+	var key_release: InputEventKey = InputEventKey.new()
+	key_release.keycode = KEY_RIGHT
+	key_release.pressed = false
+	game._input(key_release)
+	assert_eq(game.held_move_dir, Vector2i.ZERO, "Key release resets held_move_dir to ZERO")
+
+	# 5. D-Pad Down / Up Hold Simulation
+	game._on_dpad_left_down()
+	assert_eq(game.held_move_dir, Vector2i.LEFT, "D-Pad button down sets held_move_dir to LEFT")
+	game._on_dpad_left_up()
+	assert_eq(game.held_move_dir, Vector2i.ZERO, "D-Pad button up clears held_move_dir")
+
+	# 6. Idle Nuance & Thinking
+	game.player_idle_time = 6.0
+	game.queue_redraw()
+	assert_true(game.player_idle_time >= 5.5 and game.player_idle_time <= 7.0, "Worker idle nuance interval active")
 
 	game.queue_free()
 	loc.queue_free()

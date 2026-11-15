@@ -161,6 +161,15 @@ var visual_crates: Dictionary = {} # Vector2i (current logical) -> Vector2 (inte
 var walk_step_count: int = 0
 var current_walk_frame: int = 0 # 0: idle stance, 1: walk frame 1, 2: walk frame 2
 
+# Locomotion Juice & Character State (Option A)
+var stride_arc_y: float = 0.0
+var player_scale: Vector2 = Vector2.ONE
+var landing_squash_tween: Tween = null
+var held_move_dir: Vector2i = Vector2i.ZERO
+var held_move_time: float = 0.0
+var held_move_step_timer: float = 0.0
+var _dpad_moved_on_down: bool = false
+
 # Hint state (P3: Hint via Solver)
 var active_hint_dir: Vector2i = Vector2i.ZERO
 var hint_player_target: Vector2i = Vector2i.ZERO
@@ -473,14 +482,34 @@ func _ready() -> void:
 		music_button.pressed.connect(_on_music_btn_pressed)
 	if control_button != null and not control_button.pressed.is_connected(_on_control_button_pressed):
 		control_button.pressed.connect(_on_control_button_pressed)
-	if dpad_up != null and not dpad_up.pressed.is_connected(_on_dpad_up_pressed):
-		dpad_up.pressed.connect(_on_dpad_up_pressed)
-	if dpad_down != null and not dpad_down.pressed.is_connected(_on_dpad_down_pressed):
-		dpad_down.pressed.connect(_on_dpad_down_pressed)
-	if dpad_left != null and not dpad_left.pressed.is_connected(_on_dpad_left_pressed):
-		dpad_left.pressed.connect(_on_dpad_left_pressed)
-	if dpad_right != null and not dpad_right.pressed.is_connected(_on_dpad_right_pressed):
-		dpad_right.pressed.connect(_on_dpad_right_pressed)
+	if dpad_up != null:
+		if not dpad_up.pressed.is_connected(_on_dpad_up_pressed):
+			dpad_up.pressed.connect(_on_dpad_up_pressed)
+		if not dpad_up.button_down.is_connected(_on_dpad_up_down):
+			dpad_up.button_down.connect(_on_dpad_up_down)
+		if not dpad_up.button_up.is_connected(_on_dpad_up_up):
+			dpad_up.button_up.connect(_on_dpad_up_up)
+	if dpad_down != null:
+		if not dpad_down.pressed.is_connected(_on_dpad_down_pressed):
+			dpad_down.pressed.connect(_on_dpad_down_pressed)
+		if not dpad_down.button_down.is_connected(_on_dpad_down_down):
+			dpad_down.button_down.connect(_on_dpad_down_down)
+		if not dpad_down.button_up.is_connected(_on_dpad_down_up):
+			dpad_down.button_up.connect(_on_dpad_down_up)
+	if dpad_left != null:
+		if not dpad_left.pressed.is_connected(_on_dpad_left_pressed):
+			dpad_left.pressed.connect(_on_dpad_left_pressed)
+		if not dpad_left.button_down.is_connected(_on_dpad_left_down):
+			dpad_left.button_down.connect(_on_dpad_left_down)
+		if not dpad_left.button_up.is_connected(_on_dpad_left_up):
+			dpad_left.button_up.connect(_on_dpad_left_up)
+	if dpad_right != null:
+		if not dpad_right.pressed.is_connected(_on_dpad_right_pressed):
+			dpad_right.pressed.connect(_on_dpad_right_pressed)
+		if not dpad_right.button_down.is_connected(_on_dpad_right_down):
+			dpad_right.button_down.connect(_on_dpad_right_down)
+		if not dpad_right.button_up.is_connected(_on_dpad_right_up):
+			dpad_right.button_up.connect(_on_dpad_right_up)
 	_update_music_button_ui()
 	_update_control_scheme_ui()
 
@@ -573,6 +602,8 @@ func _on_application_paused() -> void:
 	is_undo_held = false
 	undo_hold_time = 0.0
 	undo_step_timer = 0.0
+	_stop_held_move()
+	_dpad_moved_on_down = false
 	is_touching = false
 	active_touch_index = -1
 	swipe_triggered_in_gesture = false
@@ -672,6 +703,12 @@ func load_level(index: int) -> void:
 	_layout_dirty = true
 	is_animating = false
 	queued_move_dir = Vector2i.ZERO
+	_stop_held_move()
+	_dpad_moved_on_down = false
+	stride_arc_y = 0.0
+	player_scale = Vector2.ONE
+	if landing_squash_tween and landing_squash_tween.is_valid():
+		landing_squash_tween.kill()
 	current_walk_frame = 0
 	walk_step_count = 0
 	clear_hint()
@@ -923,6 +960,12 @@ func _on_crate_pushed(from_pos: Vector2i, to_pos: Vector2i) -> void:
 
 func _on_level_won() -> void:
 	is_level_won = true
+	_stop_held_move()
+	_dpad_moved_on_down = false
+	stride_arc_y = 0.0
+	player_scale = Vector2.ONE
+	if landing_squash_tween and landing_squash_tween.is_valid():
+		landing_squash_tween.kill()
 
 	# 1. Authentic Hit-Stop Freeze-Frame (Micro-pause right as final crate snaps into goal)
 	if is_inside_tree():
@@ -1078,8 +1121,16 @@ func _animate_stars_sequence(stars: Array, earned: int, gold_color: Color) -> vo
 
 
 func _on_level_reset() -> void:
+	is_animating = false
+	queued_move_dir = Vector2i.ZERO
 	current_walk_frame = 0
 	walk_step_count = 0
+	_stop_held_move()
+	_dpad_moved_on_down = false
+	stride_arc_y = 0.0
+	player_scale = Vector2.ONE
+	if landing_squash_tween and landing_squash_tween.is_valid():
+		landing_squash_tween.kill()
 	clear_hint()
 	is_level_won = false
 	player_celebration_hop = 0.0
@@ -1101,6 +1152,8 @@ func _animate_player(from_pos: Vector2i, to_pos: Vector2i) -> void:
 	current_walk_frame = step_base
 
 	var was_push: bool = (grid != null and grid.last_move_pushed_crate)
+	var move_dir: Vector2i = to_pos - from_pos
+
 	# Heavy pushing uses deliberate cubic ease-out curve; walking uses swift quad ease-out
 	var trans_mode: Tween.TransitionType = Tween.TRANS_CUBIC if was_push else Tween.TRANS_QUAD
 	var anim_duration: float = 0.135 if was_push else 0.11
@@ -1108,12 +1161,30 @@ func _animate_player(from_pos: Vector2i, to_pos: Vector2i) -> void:
 	# Footstep floor dust puff when walking on empty floor (every 2 steps)
 	if not was_push and (walk_step_count % 2 == 0):
 		_spawn_footstep_dust(from_pos, to_pos)
+	elif was_push:
+		_spawn_push_friction_dust(from_pos, to_pos)
+
+	if landing_squash_tween and landing_squash_tween.is_valid():
+		landing_squash_tween.kill()
+
+	var arc_h: float = -1.8 if was_push else -2.8
+	var stretch_peak: float = 0.04 if was_push else 0.06
 
 	var tween: Tween = create_tween().set_trans(trans_mode).set_ease(Tween.EASE_OUT)
 	visual_player_pos = Vector2(from_pos)
 	tween.tween_method(func(pos: Vector2):
 		visual_player_pos = pos
 		var dist: float = pos.distance_to(Vector2(from_pos))
+		var progress: float = clampf(dist, 0.0, 1.0)
+		stride_arc_y = sin(progress * PI) * arc_h
+
+		# Mid-stride directional stretch along movement axis
+		var stretch: float = sin(progress * PI) * stretch_peak
+		if move_dir.x != 0:
+			player_scale = Vector2(1.0 + stretch, 1.0 - stretch * 0.7)
+		else:
+			player_scale = Vector2(1.0 - stretch * 0.7, 1.0 + stretch)
+
 		if dist > 0.5:
 			current_walk_frame = 2 if step_base == 1 else 1
 		else:
@@ -1124,6 +1195,16 @@ func _animate_player(from_pos: Vector2i, to_pos: Vector2i) -> void:
 		is_animating = false
 		current_walk_frame = 0
 		visual_player_pos = Vector2(to_pos)
+		stride_arc_y = 0.0
+
+		# Snappy landing squash anchored at boots on floor
+		var squash_x: float = 1.08 if not was_push else 1.05
+		var squash_y: float = 0.92 if not was_push else 0.95
+		player_scale = Vector2(squash_x, squash_y)
+		landing_squash_tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		landing_squash_tween.tween_property(self, "player_scale", Vector2.ONE, 0.09)
+		landing_squash_tween.tween_callback(queue_redraw)
+
 		queue_redraw()
 		# Process queued move if one was buffered during animation (PRD Section 5)
 		if queued_move_dir != Vector2i.ZERO:
@@ -1131,6 +1212,31 @@ func _animate_player(from_pos: Vector2i, to_pos: Vector2i) -> void:
 			queued_move_dir = Vector2i.ZERO
 			try_move(dir_to_run)
 	)
+
+
+func _spawn_push_friction_dust(from_pos: Vector2i, to_pos: Vector2i) -> void:
+	var dir: Vector2i = to_pos - from_pos
+	var crate_origin: Vector2 = grid_origin + Vector2(to_pos) * tile_size
+	var perp: Vector2 = Vector2(-dir.y, dir.x)
+	var contact_pt: Vector2 = crate_origin + Vector2(tile_size * 0.5, tile_size * 0.5) - Vector2(dir) * (tile_size * 0.46)
+	if dir.y == 0:
+		contact_pt.y = crate_origin.y + tile_size * 0.84
+	elif dir.y > 0:
+		contact_pt.y = crate_origin.y + tile_size * 0.10
+	else:
+		contact_pt.y = crate_origin.y + tile_size * 0.90
+
+	var rng: RandomNumberGenerator = _rng
+	for i in range(4):
+		var lateral: Vector2 = perp * rng.randf_range(-16.0, 16.0) - Vector2(dir) * rng.randf_range(6.0, 18.0)
+		dust_particles.append({
+			"pos": contact_pt + perp * rng.randf_range(-5.0, 5.0) + Vector2(rng.randf_range(-2.0, 2.0), rng.randf_range(-2.0, 2.0)),
+			"vel": lateral + Vector2(0.0, rng.randf_range(-6.0, 2.0)),
+			"size": rng.randf_range(2.0, 3.4),
+			"color": Color(0.78, 0.72, 0.62, 0.55),
+			"life": rng.randf_range(0.18, 0.28),
+			"max_life": 0.28
+		})
 
 
 func _spawn_footstep_dust(from_pos: Vector2i, _to_pos: Vector2i) -> void:
@@ -1288,6 +1394,19 @@ func _gui_input(event: InputEvent) -> void:
 	_process_game_input(event)
 
 
+func _start_held_move(dir: Vector2i) -> void:
+	held_move_dir = dir
+	held_move_time = 0.0
+	held_move_step_timer = 0.0
+
+
+func _stop_held_move(dir: Vector2i = Vector2i.ZERO) -> void:
+	if dir == Vector2i.ZERO or held_move_dir == dir:
+		held_move_dir = Vector2i.ZERO
+		held_move_time = 0.0
+		held_move_step_timer = 0.0
+
+
 func _process_game_input(event: InputEvent) -> void:
 	if win_modal != null and win_modal.visible:
 		return
@@ -1296,7 +1415,7 @@ func _process_game_input(event: InputEvent) -> void:
 	if ad_reward_modal != null and ad_reward_modal.visible:
 		return
 
-	# Keyboard navigation (Desktop / Testing) with Rapid Rewind on Hold
+	# Keyboard navigation (Desktop / Testing) with Rapid Rewind on Hold & Corridor Auto-Repeat
 	if event is InputEventKey:
 		if event.keycode in [KEY_Z, KEY_U, KEY_BACKSPACE]:
 			if event.is_pressed() and not event.is_echo():
@@ -1311,15 +1430,29 @@ func _process_game_input(event: InputEvent) -> void:
 		elif event.is_pressed() and not event.is_echo():
 			match event.keycode:
 				KEY_UP, KEY_W:
+					_start_held_move(Vector2i.UP)
 					try_move(Vector2i.UP)
 				KEY_DOWN, KEY_S:
+					_start_held_move(Vector2i.DOWN)
 					try_move(Vector2i.DOWN)
 				KEY_LEFT, KEY_A:
+					_start_held_move(Vector2i.LEFT)
 					try_move(Vector2i.LEFT)
 				KEY_RIGHT, KEY_D:
+					_start_held_move(Vector2i.RIGHT)
 					try_move(Vector2i.RIGHT)
 				KEY_R:
 					_on_restart_pressed()
+		elif not event.is_pressed():
+			match event.keycode:
+				KEY_UP, KEY_W:
+					_stop_held_move(Vector2i.UP)
+				KEY_DOWN, KEY_S:
+					_stop_held_move(Vector2i.DOWN)
+				KEY_LEFT, KEY_A:
+					_stop_held_move(Vector2i.LEFT)
+				KEY_RIGHT, KEY_D:
+					_stop_held_move(Vector2i.RIGHT)
 
 	# 1. Native Mobile Screen Touch (Primary on Android & iOS devices)
 	if event is InputEventScreenTouch:
@@ -1560,20 +1693,68 @@ func _update_control_scheme_ui() -> void:
 				control_button.icon = icon_control_gamepad
 
 
-func _on_dpad_up_pressed() -> void:
+func _on_dpad_up_down() -> void:
+	_dpad_moved_on_down = true
+	_start_held_move(Vector2i.UP)
 	try_move(Vector2i.UP)
 
 
-func _on_dpad_down_pressed() -> void:
+func _on_dpad_up_up() -> void:
+	_stop_held_move(Vector2i.UP)
+
+
+func _on_dpad_up_pressed() -> void:
+	if not _dpad_moved_on_down:
+		try_move(Vector2i.UP)
+	_dpad_moved_on_down = false
+
+
+func _on_dpad_down_down() -> void:
+	_dpad_moved_on_down = true
+	_start_held_move(Vector2i.DOWN)
 	try_move(Vector2i.DOWN)
 
 
-func _on_dpad_left_pressed() -> void:
+func _on_dpad_down_up() -> void:
+	_stop_held_move(Vector2i.DOWN)
+
+
+func _on_dpad_down_pressed() -> void:
+	if not _dpad_moved_on_down:
+		try_move(Vector2i.DOWN)
+	_dpad_moved_on_down = false
+
+
+func _on_dpad_left_down() -> void:
+	_dpad_moved_on_down = true
+	_start_held_move(Vector2i.LEFT)
 	try_move(Vector2i.LEFT)
 
 
-func _on_dpad_right_pressed() -> void:
+func _on_dpad_left_up() -> void:
+	_stop_held_move(Vector2i.LEFT)
+
+
+func _on_dpad_left_pressed() -> void:
+	if not _dpad_moved_on_down:
+		try_move(Vector2i.LEFT)
+	_dpad_moved_on_down = false
+
+
+func _on_dpad_right_down() -> void:
+	_dpad_moved_on_down = true
+	_start_held_move(Vector2i.RIGHT)
 	try_move(Vector2i.RIGHT)
+
+
+func _on_dpad_right_up() -> void:
+	_stop_held_move(Vector2i.RIGHT)
+
+
+func _on_dpad_right_pressed() -> void:
+	if not _dpad_moved_on_down:
+		try_move(Vector2i.RIGHT)
+	_dpad_moved_on_down = false
 
 
 func _on_undo_button_down() -> void:
@@ -1608,6 +1789,12 @@ func _on_undo_pressed() -> void:
 func _on_move_undone(p_pos: Vector2i, _had_crate: bool, _crate_from: Vector2i, _crate_to: Vector2i) -> void:
 	is_animating = false
 	queued_move_dir = Vector2i.ZERO
+	_stop_held_move()
+	_dpad_moved_on_down = false
+	stride_arc_y = 0.0
+	player_scale = Vector2.ONE
+	if landing_squash_tween and landing_squash_tween.is_valid():
+		landing_squash_tween.kill()
 	current_walk_frame = 0
 	clear_hint()
 	visual_player_pos = Vector2(p_pos)
@@ -1923,6 +2110,15 @@ func _spawn_star_burst(center_pt: Vector2) -> void:
 
 func _process(delta: float) -> void:
 	var needs_redraw: bool = is_animating
+
+	# Option A: Continuous corridor walking when direction key or D-Pad is held
+	if held_move_dir != Vector2i.ZERO and (win_modal == null or not win_modal.visible) and (restart_dialog == null or not restart_dialog.visible) and (ad_reward_modal == null or not ad_reward_modal.visible):
+		held_move_time += delta
+		if held_move_time >= 0.22: # 220ms initial hold threshold
+			held_move_step_timer += delta
+			if held_move_step_timer >= 0.125 and not is_animating: # 125ms repeat step
+				held_move_step_timer = 0.0
+				try_move(held_move_dir)
 
 	# Option A: Continuous Rapid Rewind when Undo is held down
 	if is_undo_held and (win_modal == null or not win_modal.visible):
@@ -2583,7 +2779,7 @@ func _draw_goal_light_pillar(rect: Rect2, goal_pos: Vector2i, ch: Dictionary, ti
 
 func _draw_player_headlamp(effective_origin: Vector2) -> void:
 	# Subtle, soft ambient contact warmth under player (no harsh discs or projecting beams)
-	var p_center: Vector2 = effective_origin + visual_player_pos * tile_size + Vector2(tile_size * 0.5, tile_size * 0.5) + bump_offset + Vector2(0.0, player_celebration_hop)
+	var p_center: Vector2 = effective_origin + visual_player_pos * tile_size + Vector2(tile_size * 0.5, tile_size * 0.5) + bump_offset + Vector2(0.0, player_celebration_hop + stride_arc_y)
 	draw_circle(p_center, tile_size * 0.35, Color(1.0, 0.96, 0.82, 0.025))
 
 
@@ -2737,15 +2933,39 @@ func _draw_player(rect: Rect2) -> void:
 	if not is_animating and not is_level_won and player_idle_time > 2.0:
 		idle_breath_y = sin((player_idle_time - 2.0) * 3.5) * 1.2
 
-	# Heavy crate push stance lean: worker visibly leans into the crate during push strides
+	# Subtle worker idle nuance (boot tap / cap adjust) around ~6s of idle
+	var idle_nuance_y: float = 0.0
+	var idle_nuance_x: float = 0.0
+	if not is_animating and not is_level_won and player_idle_time >= 5.5 and player_idle_time <= 7.0:
+		var n_t: float = (player_idle_time - 5.5) / 1.5
+		idle_nuance_y = -sin(n_t * PI * 2.0) * 1.5
+		idle_nuance_x = sin(n_t * PI * 4.0) * 0.8
+
+	# Heavy crate push stance lean & strain tremor: worker visibly strains and leans into crate
 	var push_lean: Vector2 = Vector2.ZERO
+	var push_tremor: Vector2 = Vector2.ZERO
 	if is_animating and grid != null and grid.last_move_pushed_crate:
 		push_lean = Vector2(player_facing_dir) * (rect.size.x * 0.07)
+		var perp: Vector2 = Vector2(-player_facing_dir.y, player_facing_dir.x)
+		push_tremor = perp * (sin(float(Time.get_ticks_msec()) * 0.055) * 0.9)
 
-	var hopped_rect: Rect2 = Rect2(
-		rect.position + bump_offset + push_lean + Vector2(0.0, player_celebration_hop + idle_breath_y),
-		rect.size
-	)
+	var total_hop_y: float = player_celebration_hop + stride_arc_y + idle_breath_y + idle_nuance_y
+	var total_offset: Vector2 = bump_offset + push_lean + push_tremor + Vector2(idle_nuance_x, total_hop_y)
+	var hopped_rect: Rect2 = Rect2(rect.position + total_offset, rect.size)
+
+	# Foot-anchored squash & stretch deformation
+	if player_scale != Vector2.ONE:
+		var foot_y: float = hopped_rect.position.y + hopped_rect.size.y
+		var center_x: float = hopped_rect.position.x + hopped_rect.size.x * 0.5
+		var scaled_w: float = hopped_rect.size.x * player_scale.x
+		var scaled_h: float = hopped_rect.size.y * player_scale.y
+		hopped_rect = Rect2(
+			center_x - scaled_w * 0.5,
+			foot_y - scaled_h,
+			scaled_w,
+			scaled_h
+		)
+
 	var center: Vector2 = hopped_rect.get_center()
 	var radius: float = hopped_rect.size.x / 2.0
 
@@ -2757,8 +2977,8 @@ func _draw_player(rect: Rect2) -> void:
 		x_offset = radius * 0.04
 	var shadow_center: Vector2 = Vector2(rect.get_center().x + x_offset, rect.position.y + rect.size.y * 0.94)
 
-	# As player hops up, ground shadow shrinks slightly for 2.5D jump depth
-	var hop_factor: float = clampf(1.0 + player_celebration_hop / 35.0, 0.45, 1.0)
+	# As player hops up during stride or celebration, ground shadow shrinks slightly for 2.5D jump depth
+	var hop_factor: float = clampf(1.0 + (player_celebration_hop + stride_arc_y) / 35.0, 0.45, 1.0)
 
 	# 1. Outer soft ambient shadow
 	var pts_outer: PackedVector2Array = []
