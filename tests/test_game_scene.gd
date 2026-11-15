@@ -459,7 +459,7 @@ func test_warehouse_chapter_themes_and_progression() -> void:
 	print("--- Running Suite: Warehouse Chapter Themes & Visual Progression (Phase 2) ---")
 	var loc: Node = LocalizationManagerScript.new()
 	var save_mgr: Node = SaveManagerScript.new()
-	save_mgr.unlocked_level = 49 # Unlock all levels for chapter transition testing
+	save_mgr.unlocked_level = 74 # Unlock all levels for chapter transition testing
 
 	var game: Control = create_test_game(loc, save_mgr)
 
@@ -470,6 +470,7 @@ func test_warehouse_chapter_themes_and_progression() -> void:
 	assert_eq(game.current_chapter_idx, 0, "Initial chapter index is 0")
 	assert_eq(game.chapter_badge.text, "CH. 1", "Chapter 0 badge displays 'CH. 1'")
 	var ch0: Dictionary = game.get_current_chapter_theme()
+	assert_eq(game.chapter_badge.get_theme_color("font_color"), ch0["badge_color"], "Chapter 0 badge color is Cargo Bay gold")
 	assert_eq(ch0["name"], "Cargo Bay", "Chapter 0 theme name is Cargo Bay")
 	assert_eq(ch0["frame_rim"], Color(0.78, 0.60, 0.22), "Chapter 0 polished brass bevel rim")
 	assert_eq(ch0["floor_tint"], Color(1.0, 1.0, 1.0), "Chapter 0 natural concrete floor tint")
@@ -479,6 +480,7 @@ func test_warehouse_chapter_themes_and_progression() -> void:
 	assert_eq(game.current_chapter_idx, 1, "Level 15 transitions to chapter index 1")
 	assert_eq(game.chapter_badge.text, "CH. 2", "Chapter 1 badge displays 'CH. 2'")
 	var ch1: Dictionary = game.get_current_chapter_theme()
+	assert_eq(game.chapter_badge.get_theme_color("font_color"), ch1["badge_color"], "Chapter 1 badge color is Cold Storage cyan")
 	assert_eq(ch1["name"], "Cold Storage", "Chapter 1 theme name is Cold Storage")
 	assert_eq(ch1["frame_rim"], Color(0.35, 0.82, 1.00), "Chapter 1 cryogenic cyan bevel rim")
 	assert_eq(ch1["floor_tint"], Color(0.82, 0.92, 1.00), "Chapter 1 frost-sheen floor tint")
@@ -488,9 +490,18 @@ func test_warehouse_chapter_themes_and_progression() -> void:
 	assert_eq(game.current_chapter_idx, 2, "Level 35 transitions to chapter index 2")
 	assert_eq(game.chapter_badge.text, "CH. 3", "Chapter 2 badge displays 'CH. 3'")
 	var ch2: Dictionary = game.get_current_chapter_theme()
+	assert_eq(game.chapter_badge.get_theme_color("font_color"), ch2["badge_color"], "Chapter 2 badge color is Cyber Depot amber")
 	assert_eq(ch2["name"], "Cyber Depot", "Chapter 2 theme name is Cyber Depot")
 	assert_eq(ch2["frame_rim"], Color(1.00, 0.65, 0.18), "Chapter 2 hazard amber bevel rim")
 	assert_eq(ch2["goal_aura"], Color(0.20, 1.00, 0.55), "Chapter 2 laser emerald goal aura")
+
+	# 5. Chapter 3 (Quantum Vault) at Level 50 (Level 51 in UI)
+	game.load_level(50)
+	assert_eq(game.current_chapter_idx, 3, "Level 50 transitions to chapter index 3")
+	assert_eq(game.chapter_badge.text, "CH. 4", "Chapter 3 badge displays 'CH. 4'")
+	var ch3: Dictionary = game.get_current_chapter_theme()
+	assert_eq(game.chapter_badge.get_theme_color("font_color"), ch3["badge_color"], "Chapter 3 badge color is Quantum Vault violet")
+	assert_eq(ch3["name"], "Quantum Vault", "Chapter 3 theme name is Quantum Vault")
 
 	# 5. Localization of Chapter titles
 	assert_eq(loc.tr_text("CHAPTER_0_TITLE"), "Cargo Bay", "EN Chapter 0 title is 'Cargo Bay'")

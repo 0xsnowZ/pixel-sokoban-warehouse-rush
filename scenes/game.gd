@@ -722,7 +722,9 @@ func _update_ui(_new_lang: String = "") -> void:
 	if chapter_badge != null:
 		var ch_info: Dictionary = get_current_chapter_theme()
 		chapter_badge.text = "CH. %d" % [current_chapter_idx + 1]
-		chapter_badge.modulate = ch_info["badge_color"]
+		var badge_col: Color = ch_info.get("badge_color", Color(0.98, 0.82, 0.25))
+		chapter_badge.modulate = Color.WHITE
+		chapter_badge.add_theme_color_override("font_color", badge_col)
 
 	# Option C: Real-Time Live 3-Star Rating & Target Tracking
 	var live_stars: int = 3
