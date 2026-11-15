@@ -281,6 +281,7 @@ func _ready() -> void:
 	if locker_btn:
 		locker_btn.icon = null
 		locker_btn.text = ""
+		locker_btn.tooltip_text = ""
 		if locker_btn_icon != null:
 			locker_btn_icon.texture = icon_locker
 		if locker_btn_label != null:
@@ -387,8 +388,20 @@ func _on_safe_area_changed(_insets: Dictionary) -> void:
 
 
 func _sanitize_main_view_top_bar() -> void:
+	if locker_btn != null:
+		locker_btn.tooltip_text = ""
+		for child in locker_btn.get_children():
+			if child is Popup or child is PopupPanel or child.name.begins_with("@Popup"):
+				child.queue_free()
+	if settings_btn != null:
+		settings_btn.tooltip_text = ""
+	if achievements_btn != null:
+		achievements_btn.tooltip_text = ""
 	if main_view == null:
 		return
+	for child in main_view.get_children():
+		if child.name != "TopBarMargin" and child.name != "CenterStage" and child.name != "BottomMargin":
+			child.queue_free()
 	var top_bar_margin: MarginContainer = main_view.get_node_or_null("TopBarMargin") as MarginContainer
 	if top_bar_margin != null:
 		var hbox: HBoxContainer = top_bar_margin.get_node_or_null("HBox") as HBoxContainer
@@ -396,6 +409,9 @@ func _sanitize_main_view_top_bar() -> void:
 			for child in hbox.get_children():
 				if child != star_progress_btn and child != quick_lang_btn.get_parent() and child.name != "Spacer":
 					child.queue_free()
+	for child in get_children():
+		if child is Popup or child is PopupPanel or child.name.begins_with("@Popup"):
+			child.queue_free()
 	if level_select_view != null:
 		level_select_view.hide()
 	if credits_modal != null:
@@ -951,7 +967,7 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 		btn_lbl.add_theme_color_override("font_color", Color(0.95, 1.0, 0.96, 1.0))
 		btn_center.add_child(btn_lbl)
 
-		act_btn.tooltip_text = eq_text
+		act_btn.tooltip_text = ""
 		act_btn.mouse_filter = Control.MOUSE_FILTER_PASS
 
 	elif is_unlocked:
@@ -967,7 +983,7 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 		act_btn.button_down.connect(func(): btn_lbl.add_theme_color_override("font_color", Color(0.98, 0.82, 0.25, 1.0)))
 		act_btn.button_up.connect(func(): btn_lbl.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0)))
 
-		act_btn.tooltip_text = equip_text
+		act_btn.tooltip_text = ""
 		act_btn.pressed.connect(func():
 			if _is_any_scroll_dragging():
 				return
@@ -999,7 +1015,7 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 		btn_lbl.add_theme_color_override("font_color", Color(0.78, 0.84, 0.92, 1.0))
 		btn_center.add_child(btn_lbl)
 
-		act_btn.tooltip_text = lock_text
+		act_btn.tooltip_text = ""
 
 		# Tactile feedback when tapping locked item
 		act_btn.pressed.connect(func():
@@ -1270,17 +1286,17 @@ func _update_menu_state() -> void:
 
 		if settings_btn:
 			settings_btn.text = ""
-			settings_btn.tooltip_text = loc_mgr.tr_text("MENU_SETTINGS")
+			settings_btn.tooltip_text = ""
 		if locker_btn:
 			locker_btn.text = ""
-			locker_btn.tooltip_text = loc_mgr.tr_text("MENU_LOCKER")
+			locker_btn.tooltip_text = ""
 			if locker_btn_label != null:
 				locker_btn_label.text = loc_mgr.tr_text("MENU_LOCKER")
 			else:
 				locker_btn.text = loc_mgr.tr_text("MENU_LOCKER")
 		if achievements_btn:
 			achievements_btn.text = ""
-			achievements_btn.tooltip_text = loc_mgr.tr_text("MENU_ACHIEVEMENTS")
+			achievements_btn.tooltip_text = ""
 		if language_btn != null:
 			language_btn.text = loc_mgr.tr_text("MENU_LANGUAGE", [loc_mgr.get_language_display_name()])
 		if level_select_btn != null:
@@ -1315,17 +1331,17 @@ func _update_menu_state() -> void:
 				play_btn.theme_type_variation = &"PrimaryButton"
 		if settings_btn:
 			settings_btn.text = ""
-			settings_btn.tooltip_text = "Settings"
+			settings_btn.tooltip_text = ""
 		if locker_btn:
 			locker_btn.text = ""
-			locker_btn.tooltip_text = "SUPPLY DEPOT"
+			locker_btn.tooltip_text = ""
 			if locker_btn_label != null:
 				locker_btn_label.text = "SUPPLY DEPOT"
 			else:
 				locker_btn.text = "SUPPLY DEPOT"
 		if achievements_btn:
 			achievements_btn.text = ""
-			achievements_btn.tooltip_text = "Achievements"
+			achievements_btn.tooltip_text = ""
 		if sound_btn:
 			sound_btn.text = "SOUND: %s" % ("ON" if is_sound_on else "OFF")
 		if haptics_btn:
@@ -1759,13 +1775,20 @@ func _refresh_level_grid_buttons() -> void:
 		var ch_title_str: String = ch_info.get("name", "Cargo Bay")
 		if loc_mgr and loc_mgr.has_method("tr_text"):
 			ch_title_str = loc_mgr.tr_text("CHAPTER_%d_TITLE" % ch_idx)
-		child.tooltip_text = "Level %d • %s\nOptimal Par: ≤ %d moves" % [lvl_idx + 1, ch_title_str, opt_moves]
+		var is_mobile_or_touch: bool = OS.has_feature("mobile") or DisplayServer.is_touchscreen_available()
+		if not is_mobile_or_touch:
+			child.tooltip_text = "Level %d • %s\nOptimal Par: ≤ %d moves" % [lvl_idx + 1, ch_title_str, opt_moves]
+		else:
+			child.tooltip_text = ""
 
 		if is_completed:
 			var record: Dictionary = save_mgr.get_level_record(lvl_idx)
 			var stars: int = record.get("stars", 1)
 			var best_moves: int = record.get("moves", 0)
-			child.tooltip_text = "Level %d • %s\nBest: %d moves (Par: ≤ %d)" % [lvl_idx + 1, ch_title_str, best_moves, opt_moves]
+			if not is_mobile_or_touch:
+				child.tooltip_text = "Level %d • %s\nBest: %d moves (Par: ≤ %d)" % [lvl_idx + 1, ch_title_str, best_moves, opt_moves]
+			else:
+				child.tooltip_text = ""
 			var star_str: String = ""
 			match stars:
 				3: star_str = "★★★"
@@ -1803,7 +1826,10 @@ func _refresh_level_grid_buttons() -> void:
 				child.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 				child.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
 				child.add_theme_color_override("icon_disabled_color", Color(1.0, 1.0, 1.0, 0.75))
-				child.tooltip_text = "Level %d • %s (Locked)" % [lvl_idx + 1, ch_title_str]
+				if not is_mobile_or_touch:
+					child.tooltip_text = "Level %d • %s (Locked)" % [lvl_idx + 1, ch_title_str]
+				else:
+					child.tooltip_text = ""
 			else:
 				child.icon = null
 			child.disabled = true
