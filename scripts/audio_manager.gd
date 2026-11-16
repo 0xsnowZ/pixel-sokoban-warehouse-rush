@@ -37,15 +37,13 @@ var sfx_star2: AudioStreamWAV
 var sfx_star3: AudioStreamWAV
 var sfx_hint: AudioStreamWAV
 var sfx_deadlock: AudioStreamWAV
-var sfx_harmonic_resonance: AudioStreamWAV
 var sfx_goal_lock_final: AudioStreamWAV
 
-# Dynamic Harmonic Goal Docking (Dynamic Music Layering)
+# Goal Docking Progress Tracking
 var harmonic_player: AudioStreamPlayer = null
 var current_dock_progress: float = 0.0 # 0.0 (empty) to 1.0 (all goals docked)
 var current_docked_count: int = 0
 var current_total_goals: int = 1
-var _harmonic_fade_tween: Tween = null
 
 # Dynamic Anti-Fatigue Footstep & Voice Management
 var _footstep_toggle: bool = false
@@ -110,11 +108,7 @@ func _create_music_player() -> void:
 		music_player = AudioStreamPlayer.new()
 		music_player.bus = "Master"
 		add_child(music_player)
-	if harmonic_player == null:
-		harmonic_player = AudioStreamPlayer.new()
-		harmonic_player.bus = "Master"
-		harmonic_player.volume_db = -80.0
-		add_child(harmonic_player)
+	harmonic_player = null
 
 
 func _load_bgm_streams() -> void:
@@ -195,14 +189,6 @@ func play_music(track_index: int = -1) -> void:
 		if music_player.is_inside_tree() and DisplayServer.get_name() != "headless":
 			music_player.play()
 
-	if harmonic_player != null:
-		if harmonic_player.stream == null and sfx_harmonic_resonance != null:
-			harmonic_player.stream = sfx_harmonic_resonance
-		harmonic_player.volume_db = _get_target_harmonic_volume_db()
-		if harmonic_player.stream != null and not harmonic_player.playing and is_music_enabled():
-			if harmonic_player.is_inside_tree() and DisplayServer.get_name() != "headless":
-				harmonic_player.play()
-
 
 func _exit_tree() -> void:
 	cleanup()
@@ -221,8 +207,6 @@ func pause_all_audio() -> void:
 	if music_player != null and is_instance_valid(music_player) and music_player.playing:
 		_was_music_paused_by_os = true
 		music_player.stream_paused = true
-	if harmonic_player != null and is_instance_valid(harmonic_player) and harmonic_player.playing:
-		harmonic_player.stream_paused = true
 	for p in _players:
 		if is_instance_valid(p) and p.playing:
 			p.stream_paused = true
@@ -232,8 +216,6 @@ func resume_all_audio() -> void:
 	if _was_music_paused_by_os and is_music_enabled():
 		if music_player != null and is_instance_valid(music_player):
 			music_player.stream_paused = false
-		if harmonic_player != null and is_instance_valid(harmonic_player):
-			harmonic_player.stream_paused = false
 		_was_music_paused_by_os = false
 	for p in _players:
 		if is_instance_valid(p) and p.stream_paused:
@@ -245,9 +227,6 @@ func cleanup() -> void:
 	if music_player != null and is_instance_valid(music_player):
 		music_player.stop()
 		music_player.stream = null
-	if harmonic_player != null and is_instance_valid(harmonic_player):
-		harmonic_player.stop()
-		harmonic_player.stream = null
 	for p in _players:
 		if is_instance_valid(p):
 			p.stop()
@@ -258,14 +237,8 @@ func cleanup() -> void:
 func stop_music() -> void:
 	if _music_fade_tween != null and _music_fade_tween.is_valid():
 		_music_fade_tween.kill()
-	if _harmonic_fade_tween != null and _harmonic_fade_tween.is_valid():
-		_harmonic_fade_tween.kill()
 	if music_player != null and music_player.playing:
 		music_player.stop()
-	if harmonic_player != null:
-		if harmonic_player.playing:
-			harmonic_player.stop()
-		harmonic_player.volume_db = -80.0
 
 
 func fade_out_music(duration: float = 0.8) -> void:
@@ -274,18 +247,11 @@ func fade_out_music(duration: float = 0.8) -> void:
 		return
 	if _music_fade_tween != null and _music_fade_tween.is_valid():
 		_music_fade_tween.kill()
-	if _harmonic_fade_tween != null and _harmonic_fade_tween.is_valid():
-		_harmonic_fade_tween.kill()
 	_music_fade_tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	_music_fade_tween.tween_property(music_player, "volume_db", -80.0, maxf(duration, 0.05))
-	if harmonic_player != null and harmonic_player.playing:
-		_harmonic_fade_tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		_harmonic_fade_tween.tween_property(harmonic_player, "volume_db", -80.0, maxf(duration, 0.05))
 	_music_fade_tween.tween_callback(func():
 		if music_player != null:
 			music_player.stop()
-		if harmonic_player != null:
-			harmonic_player.stop()
 	)
 
 
@@ -300,13 +266,11 @@ func fade_in_music(track_index: int = -1, duration: float = 0.8) -> void:
 func duck_music(amount_db: float = -16.0, duration: float = 0.35) -> void:
 	_duck_offset_db = amount_db
 	_smooth_volume_to(get_effective_music_volume_db(), duration)
-	_update_harmonic_layer_volume()
 
 
 func unduck_music(duration: float = 0.7) -> void:
 	_duck_offset_db = 0.0
 	_smooth_volume_to(get_effective_music_volume_db(), duration)
-	_update_harmonic_layer_volume()
 
 
 func _smooth_volume_to(target_db: float, duration: float) -> void:
@@ -330,7 +294,6 @@ func set_music_volume(linear_vol: float) -> void:
 			save_mgr.save_data()
 	if music_player != null:
 		music_player.volume_db = get_effective_music_volume_db()
-	_update_harmonic_layer_volume()
 
 
 func set_sfx_volume(linear_vol: float) -> void:
@@ -349,66 +312,16 @@ func set_music_enabled(enabled: bool) -> void:
 		play_music(current_bgm_track if current_bgm_track >= 0 else TRACK_LOFI)
 	else:
 		stop_music()
-	_update_harmonic_layer_volume(true)
 
 
-## Updates the docking progress ratio (0.0 to 1.0) for dynamic harmonic layering.
-## Controls the volume swelling of the procedural Cmaj9 ambient pad.
-func set_dock_progress(docked_count: int, total_goals: int, immediate: bool = false) -> void:
+## Updates the docking progress ratio (0.0 to 1.0) for crate goal tracking.
+func set_dock_progress(docked_count: int, total_goals: int, _immediate: bool = false) -> void:
 	current_docked_count = clampi(docked_count, 0, maxi(total_goals, 1))
 	current_total_goals = maxi(total_goals, 1)
 	if current_total_goals > 0:
 		current_dock_progress = clampf(float(current_docked_count) / float(current_total_goals), 0.0, 1.0)
 	else:
 		current_dock_progress = 0.0
-	_update_harmonic_layer_volume(immediate)
-
-
-## Calculates the target dB volume for the ambient harmonic resonance stem.
-## Progress curve: 0% -> -80dB (silent), 25% -> -16dB, 50% -> -10dB, 75% -> -5dB, 100% -> 0dB relative to BGM.
-func _get_target_harmonic_volume_db() -> float:
-	if not is_music_enabled() or current_dock_progress <= 0.001:
-		return -80.0
-	var eff_music_db: float = get_effective_music_volume_db()
-	if eff_music_db <= -75.0:
-		return -80.0
-
-	var p: float = current_dock_progress
-	var rel_db: float = -80.0
-	if p <= 0.25:
-		rel_db = lerpf(-22.0, -16.0, p / 0.25)
-	elif p <= 0.50:
-		rel_db = lerpf(-16.0, -10.0, (p - 0.25) / 0.25)
-	elif p <= 0.75:
-		rel_db = lerpf(-10.0, -5.0, (p - 0.50) / 0.25)
-	else:
-		rel_db = lerpf(-5.0, 0.0, (p - 0.75) / 0.25)
-
-	return clampf(eff_music_db + rel_db, -80.0, 6.0)
-
-
-## Smoothly fades or updates the harmonic resonance layer volume to match current dock progress.
-func _update_harmonic_layer_volume(immediate: bool = false) -> void:
-	if harmonic_player == null:
-		return
-
-	var target_db: float = _get_target_harmonic_volume_db()
-
-	if harmonic_player.stream == null and sfx_harmonic_resonance != null:
-		harmonic_player.stream = sfx_harmonic_resonance
-
-	if is_music_enabled() and harmonic_player.stream != null and not harmonic_player.playing:
-		if harmonic_player.is_inside_tree() and DisplayServer.get_name() != "headless":
-			harmonic_player.play()
-
-	if _harmonic_fade_tween != null and _harmonic_fade_tween.is_valid():
-		_harmonic_fade_tween.kill()
-
-	if immediate or DisplayServer.get_name() == "headless" or not is_inside_tree():
-		harmonic_player.volume_db = target_db
-	else:
-		_harmonic_fade_tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		_harmonic_fade_tween.tween_property(harmonic_player, "volume_db", target_db, 0.5)
 
 
 func set_sound_enabled(enabled: bool) -> void:
@@ -607,7 +520,6 @@ func _generate_all_sfx() -> void:
 	sfx_star3 = _synth_star_chime(880.00, 3)
 	sfx_hint = _synth_hint()
 	sfx_deadlock = _synth_deadlock()
-	sfx_harmonic_resonance = _synth_harmonic_resonance()
 
 
 func _create_wav(data_bytes: PackedByteArray) -> AudioStreamWAV:
@@ -1265,44 +1177,6 @@ func _synth_deadlock() -> AudioStreamWAV:
 		bytes.encode_s16(i * 2, sample_val)
 
 	return _create_wav(bytes)
-
-
-## Synthesizes a warm, lush, seamless looping ambient harmonic pad (C-E-G-B-D Neo-Soul chord)
-## with dual detuned chorus oscillators and smooth tape saturation.
-## All frequencies are mathematically aligned to the 4.0s period to ensure 0 boundary pops.
-func _synth_harmonic_resonance() -> AudioStreamWAV:
-	var duration: float = 4.0
-	var total_samples: int = int(duration * MIX_RATE)
-	var bytes: PackedByteArray = PackedByteArray()
-	bytes.resize(total_samples * 2)
-
-	# Frequencies of lush Cmaj9 chord (C3, G3, B3, D4, E4) rounded to multiples of 0.25 Hz
-	var freqs: Array[float] = [130.75, 196.00, 247.00, 293.75, 329.75]
-	var weights: Array[float] = [0.28, 0.22, 0.20, 0.18, 0.16]
-
-	for i in range(total_samples):
-		var t_sec: float = float(i) / float(MIX_RATE)
-		var sample_acc: float = 0.0
-		var lfo: float = 0.85 + 0.15 * sin(0.25 * TAU * t_sec)
-		var chorus_mod: float = 0.06 * sin(1.0 * TAU * t_sec)
-
-		for f_idx in range(freqs.size()):
-			var f: float = freqs[f_idx]
-			var phase: float = f * TAU * t_sec
-			var phase_detune: float = phase + chorus_mod
-			var w1: float = sin(phase) + 0.18 * sin(phase * 2.0)
-			var w2: float = sin(phase_detune)
-			sample_acc += (w1 * 0.65 + w2 * 0.35) * weights[f_idx]
-
-		sample_acc *= lfo
-		var sample_val: int = int(clampi(int(sample_acc * 16500.0), -32767, 32767))
-		bytes.encode_s16(i * 2, sample_val)
-
-	var wav: AudioStreamWAV = _create_wav(bytes)
-	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
-	wav.loop_begin = 0
-	wav.loop_end = total_samples
-	return wav
 
 
 ## Synthesizes a celebratory grand golden chord chime burst for the final goal lock:

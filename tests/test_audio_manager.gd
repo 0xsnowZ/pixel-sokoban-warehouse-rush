@@ -124,10 +124,6 @@ func test_sfx_synthesis() -> void:
 	assert_true(audio_mgr.sfx_deadlock != null, "sfx_deadlock stream generated")
 	assert_true(audio_mgr.sfx_deadlock.data.size() > 0, "sfx_deadlock has audio sample data")
 
-	assert_true(audio_mgr.sfx_harmonic_resonance != null, "sfx_harmonic_resonance stream generated")
-	assert_true(audio_mgr.sfx_harmonic_resonance.data.size() > 0, "sfx_harmonic_resonance has audio sample data")
-	assert_equal(audio_mgr.sfx_harmonic_resonance.loop_mode, AudioStreamWAV.LOOP_FORWARD, "sfx_harmonic_resonance has LOOP_FORWARD enabled")
-
 	assert_true(audio_mgr.sfx_goal_lock_final != null, "sfx_goal_lock_final stream generated")
 	assert_true(audio_mgr.sfx_goal_lock_final.data.size() > 0, "sfx_goal_lock_final has audio sample data")
 
@@ -275,58 +271,30 @@ func test_harmonic_goal_docking() -> void:
 	mock_save.music_enabled = true
 	audio_mgr.play_music(0)
 
-	# 1. Harmonic Player Instance
-	assert_true(audio_mgr.harmonic_player != null, "Harmonic layer AudioStreamPlayer initialized")
-	assert_equal(audio_mgr.harmonic_player.bus, "Master", "Harmonic layer player is routed to Master bus")
+	# 1. Single background music channel guarantee
+	assert_true(audio_mgr.music_player != null, "Music player AudioStreamPlayer initialized")
+	assert_true(audio_mgr.harmonic_player == null or not audio_mgr.harmonic_player.playing, "No secondary harmonic music player is running in background")
 
-	# 2. Initial state (0% docked): Pad should be silent (-80.0 dB)
-	audio_mgr.set_dock_progress(0, 4, true)
+	# 2. Dock progress tracking
+	audio_mgr.set_dock_progress(0, 4)
 	assert_equal(audio_mgr.current_dock_progress, 0.0, "Dock progress is 0.0")
-	assert_equal(audio_mgr.harmonic_player.volume_db, -80.0, "Harmonic layer is silent (-80 dB) at 0% docked")
+	audio_mgr.set_dock_progress(1, 4)
+	assert_equal(audio_mgr.current_dock_progress, 0.25, "Dock progress is 0.25")
+	audio_mgr.set_dock_progress(2, 4)
+	assert_equal(audio_mgr.current_dock_progress, 0.50, "Dock progress is 0.50")
+	audio_mgr.set_dock_progress(3, 4)
+	assert_equal(audio_mgr.current_dock_progress, 0.75, "Dock progress is 0.75")
+	audio_mgr.set_dock_progress(4, 4)
+	assert_equal(audio_mgr.current_dock_progress, 1.0, "Dock progress is 1.0")
 
-	# 3. Dynamic swell progression (25%, 50%, 75%, 100%)
-	audio_mgr.set_dock_progress(1, 4, true)
-	var vol_25: float = audio_mgr.harmonic_player.volume_db
-	assert_equal(audio_mgr.current_dock_progress, 0.25, "Dock progress is 0.25 (1/4)")
-	assert_true(vol_25 > -80.0, "Harmonic layer audible at 25% docked")
-
-	audio_mgr.set_dock_progress(2, 4, true)
-	var vol_50: float = audio_mgr.harmonic_player.volume_db
-	assert_equal(audio_mgr.current_dock_progress, 0.50, "Dock progress is 0.50 (2/4)")
-	assert_true(vol_50 > vol_25, "Harmonic volume increases monotonically from 25% to 50%")
-
-	audio_mgr.set_dock_progress(3, 4, true)
-	var vol_75: float = audio_mgr.harmonic_player.volume_db
-	assert_equal(audio_mgr.current_dock_progress, 0.75, "Dock progress is 0.75 (3/4)")
-	assert_true(vol_75 > vol_50, "Harmonic volume increases monotonically from 50% to 75%")
-
-	audio_mgr.set_dock_progress(4, 4, true)
-	var vol_100: float = audio_mgr.harmonic_player.volume_db
-	assert_equal(audio_mgr.current_dock_progress, 1.0, "Dock progress is 1.0 (4/4)")
-	assert_true(vol_100 > vol_75, "Harmonic volume increases monotonically from 75% to 100%")
-	assert_true(is_equal_approx(vol_100, audio_mgr.get_effective_music_volume_db()), "100% docked harmonic volume matches effective BGM volume (0 dB relative parity)")
-
-	# 4. Goal disengage / unlock decay
-	audio_mgr.play_goal_unlock(2)
-	assert_equal(audio_mgr.current_dock_progress, 0.50, "Unlocking to 2 goals remaining updates progress to 0.50")
-	assert_equal(audio_mgr.harmonic_player.volume_db, vol_50, "Unlocking smooths volume back to 50% level")
-
-	# 5. Goal lock progression via play_goal_lock()
-	audio_mgr.play_goal_lock(3, 4)
-	assert_equal(audio_mgr.current_dock_progress, 0.75, "play_goal_lock(3, 4) sets progress to 0.75")
-	assert_equal(audio_mgr.harmonic_player.volume_db, vol_75, "Harmonic volume restored to 75% level")
-
-	# Final lock (4 of 4)
+	# 3. Discrete SFX execution (does not start background players)
+	audio_mgr.play_goal_lock(1, 4)
+	assert_equal(audio_mgr.current_dock_progress, 0.25, "play_goal_lock(1, 4) updates progress to 0.25")
 	audio_mgr.play_goal_lock(4, 4)
-	assert_equal(audio_mgr.current_dock_progress, 1.0, "play_goal_lock(4, 4) sets progress to 1.0 (100%)")
-	assert_equal(audio_mgr.harmonic_player.volume_db, vol_100, "Harmonic volume restored to 100% level")
-
-	# 6. Music mute toggle muting harmonic layer
-	audio_mgr.set_music_enabled(false)
-	assert_equal(audio_mgr.harmonic_player.volume_db, -80.0, "Harmonic player muted (-80 dB) when music is disabled")
-
-	audio_mgr.set_music_enabled(true)
-	assert_equal(audio_mgr.harmonic_player.volume_db, vol_100, "Harmonic player volume restored when music is re-enabled")
+	assert_equal(audio_mgr.current_dock_progress, 1.0, "play_goal_lock(4, 4) updates progress to 1.0")
+	audio_mgr.play_goal_unlock(2)
+	assert_equal(audio_mgr.current_dock_progress, 0.50, "play_goal_unlock(2) updates progress to 0.50")
+	assert_true(audio_mgr.harmonic_player == null or not audio_mgr.harmonic_player.playing, "Goal lock SFX does not start background music")
 
 	audio_mgr.stop_music()
 	audio_mgr.queue_free()
