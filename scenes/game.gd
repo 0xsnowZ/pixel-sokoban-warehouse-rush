@@ -745,6 +745,14 @@ func load_level(index: int) -> void:
 	sweat_drop_timer = 0.0
 	_prev_live_stars = 3
 
+	# Initialize harmonic goal docking progress
+	if audio_mgr and audio_mgr.has_method("set_dock_progress") and grid != null:
+		var init_docked: int = 0
+		for c_pos in grid.crates.keys():
+			if grid.goals.has(c_pos):
+				init_docked += 1
+		audio_mgr.set_dock_progress(init_docked, grid.goals.size(), true)
+
 	_update_ui()
 	queue_redraw()
 
@@ -960,6 +968,8 @@ func _on_crate_pushed(from_pos: Vector2i, to_pos: Vector2i) -> void:
 
 func _on_level_won() -> void:
 	is_level_won = true
+	if audio_mgr and audio_mgr.has_method("set_dock_progress") and grid != null:
+		audio_mgr.set_dock_progress(grid.goals.size(), grid.goals.size(), false)
 	_stop_held_move()
 	_dpad_moved_on_down = false
 	stride_arc_y = 0.0
@@ -1141,6 +1151,12 @@ func _on_level_reset() -> void:
 	visual_crates.clear()
 	for crate_pos in grid.crates.keys():
 		visual_crates[crate_pos] = Vector2(crate_pos)
+	if audio_mgr and audio_mgr.has_method("set_dock_progress") and grid != null:
+		var reset_docked: int = 0
+		for c_pos in grid.crates.keys():
+			if grid.goals.has(c_pos):
+				reset_docked += 1
+		audio_mgr.set_dock_progress(reset_docked, grid.goals.size(), false)
 	_update_ui()
 	queue_redraw()
 
@@ -1801,6 +1817,12 @@ func _on_move_undone(p_pos: Vector2i, _had_crate: bool, _crate_from: Vector2i, _
 	visual_crates.clear()
 	for crate_pos in grid.crates.keys():
 		visual_crates[crate_pos] = Vector2(crate_pos)
+	if audio_mgr and audio_mgr.has_method("set_dock_progress") and grid != null:
+		var reset_docked: int = 0
+		for c_pos in grid.crates.keys():
+			if grid.goals.has(c_pos):
+				reset_docked += 1
+		audio_mgr.set_dock_progress(reset_docked, grid.goals.size(), false)
 	_update_ui()
 	queue_redraw()
 
@@ -1982,6 +2004,8 @@ func _on_menu_pressed() -> void:
 		audio_mgr.play_click()
 		if audio_mgr.has_method("unduck_music"):
 			audio_mgr.unduck_music(0.5)
+		if audio_mgr.has_method("set_dock_progress"):
+			audio_mgr.set_dock_progress(0, 1, false)
 	if haptic_mgr:
 		haptic_mgr.vibrate_click()
 	_transition_to_scene(MAIN_MENU_SCENE_PATH)
