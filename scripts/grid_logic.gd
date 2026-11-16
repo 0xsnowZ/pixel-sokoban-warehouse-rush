@@ -485,20 +485,24 @@ func to_text() -> String:
 	return "\n".join(result_lines)
 
 
-## Returns true if any crate is trapped in an unresolvable corner deadlock or 2x2 block.
-func has_deadlock() -> bool:
+## Returns an array of coordinates for all crates currently trapped in provable deadlocks (corners, 2x2 solid clusters).
+func get_deadlocked_crates() -> Array[Vector2i]:
+	var deadlocked: Array[Vector2i] = []
 	for c in crates.keys():
 		if is_goal(c):
 			continue
-		# Corner check
+
+		# 1. Corner Deadlock Check (perpendicular impassable boundaries)
 		var wall_u: bool = not is_in_bounds(c + Vector2i.UP) or is_wall(c + Vector2i.UP) or is_exterior_void(c + Vector2i.UP)
 		var wall_d: bool = not is_in_bounds(c + Vector2i.DOWN) or is_wall(c + Vector2i.DOWN) or is_exterior_void(c + Vector2i.DOWN)
 		var wall_l: bool = not is_in_bounds(c + Vector2i.LEFT) or is_wall(c + Vector2i.LEFT) or is_exterior_void(c + Vector2i.LEFT)
 		var wall_r: bool = not is_in_bounds(c + Vector2i.RIGHT) or is_wall(c + Vector2i.RIGHT) or is_exterior_void(c + Vector2i.RIGHT)
 		if (wall_u and wall_l) or (wall_u and wall_r) or (wall_d and wall_l) or (wall_d and wall_r):
-			return true
+			if not deadlocked.has(c):
+				deadlocked.append(c)
+			continue
 
-		# 2x2 block check
+		# 2. 2x2 Solid Block Deadlock Check
 		var offsets: Array[Vector2i] = [
 			Vector2i(0, 0), Vector2i(-1, 0), Vector2i(0, -1), Vector2i(-1, -1)
 		]
@@ -518,8 +522,16 @@ func has_deadlock() -> bool:
 					all_solid = false
 					break
 			if all_solid and has_non_goal:
-				return true
-	return false
+				if not deadlocked.has(c):
+					deadlocked.append(c)
+				break
+
+	return deadlocked
+
+
+## Returns true if any crate is trapped in an unresolvable corner deadlock or 2x2 block.
+func has_deadlock() -> bool:
+	return not get_deadlocked_crates().is_empty()
 
 
 ## Creates an independent clone of the current GridLogic instance.

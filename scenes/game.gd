@@ -67,6 +67,10 @@ var cctv_alert_timer: float = 0.0
 var cctv_sweep_phase: float = 0.0
 var cctv_idle_pan_timer: float = 0.0
 
+# Proactive Deadlock Radar (Ghost Warning Glyph)
+var active_deadlocked_crates: Array[Vector2i] = []
+var deadlock_pulse_timer: float = 0.0
+
 # Live HUD 3-Star Tracker & Worker Micro-Interactions (Option C)
 var player_idle_time: float = 0.0
 var consecutive_wall_bumps: int = 0
@@ -765,6 +769,7 @@ func load_level(index: int) -> void:
 				init_docked += 1
 		audio_mgr.set_dock_progress(init_docked, grid.goals.size(), true)
 
+	_refresh_deadlock_radar(false)
 	_update_ui()
 	queue_redraw()
 
@@ -976,6 +981,24 @@ func _on_crate_pushed(from_pos: Vector2i, to_pos: Vector2i) -> void:
 	if save_mgr:
 		save_mgr.record_crate_push()
 	_check_achievements()
+	_refresh_deadlock_radar(true)
+
+
+func _refresh_deadlock_radar(is_push: bool = false) -> void:
+	var prev_empty: bool = active_deadlocked_crates.is_empty()
+	active_deadlocked_crates = grid.get_deadlocked_crates() if grid != null else []
+	if not active_deadlocked_crates.is_empty():
+		if is_push and prev_empty:
+			if audio_mgr and audio_mgr.has_method("play_deadlock"):
+				audio_mgr.play_deadlock()
+			if haptic_mgr and haptic_mgr.has_method("vibrate_bump"):
+				haptic_mgr.vibrate_bump()
+			cctv_alert_timer = 0.85
+			add_trauma(0.08)
+	else:
+		deadlock_pulse_timer = 0.0
+		if is_instance_valid(undo_button) and undo_button.modulate != Color.WHITE:
+			undo_button.modulate = Color.WHITE
 
 
 func _on_level_won() -> void:
@@ -1169,6 +1192,7 @@ func _on_level_reset() -> void:
 			if grid.goals.has(c_pos):
 				reset_docked += 1
 		audio_mgr.set_dock_progress(reset_docked, grid.goals.size(), false)
+	_refresh_deadlock_radar(false)
 	_update_ui()
 	queue_redraw()
 
@@ -1839,6 +1863,7 @@ func _on_move_undone(p_pos: Vector2i, _had_crate: bool, _crate_from: Vector2i, _
 			if grid.goals.has(c_pos):
 				reset_docked += 1
 		audio_mgr.set_dock_progress(reset_docked, grid.goals.size(), false)
+	_refresh_deadlock_radar(false)
 	_update_ui()
 	queue_redraw()
 
@@ -2248,6 +2273,17 @@ func _process(delta: float) -> void:
 		if _update_security_camera(delta):
 			needs_redraw = true
 
+	# Proactive Deadlock Radar: animate pulse and soft Undo button shimmer
+	if not active_deadlocked_crates.is_empty():
+		deadlock_pulse_timer += delta * 4.5
+		needs_redraw = true
+		if is_instance_valid(undo_button) and not undo_button.disabled:
+			var u_pulse: float = 0.5 + 0.5 * sin(deadlock_pulse_timer)
+			undo_button.modulate = Color.WHITE.lerp(Color(1.0, 0.45, 0.40), u_pulse)
+	else:
+		if is_instance_valid(undo_button) and undo_button.modulate != Color.WHITE:
+			undo_button.modulate = Color.WHITE
+
 	# Option C: Worker Idle Nuance & Thinking Sweat Drop
 	if not is_animating and not is_level_won and (win_modal == null or not win_modal.visible):
 		player_idle_time += delta
@@ -2501,6 +2537,9 @@ func _draw() -> void:
 			Vector2(tile_size - crate_padding * 2.0, tile_size - crate_padding * 2.0)
 		)
 		_draw_crate(rect, is_on_goal, logical_pos)
+
+	# 6.5. Proactive Deadlock Radar (Ghost Warning Glyph & Hazard Halo)
+	_draw_deadlock_radar(effective_origin, ch)
 
 	# 7. Draw Directional Porter Worker
 	var player_padding: float = tile_size * 0.04
@@ -2924,7 +2963,12 @@ func _update_security_camera(delta: float) -> bool:
 	var cam_anchor: Vector2 = effective_origin + Vector2(float(cctv_camera_tile.x) + 0.5, float(cctv_camera_tile.y) + 0.85) * tile_size
 	var p_center: Vector2 = effective_origin + visual_player_pos * tile_size + Vector2(tile_size * 0.5, tile_size * 0.5) + bump_offset + Vector2(0.0, player_celebration_hop + stride_arc_y)
 
-	var dir: Vector2 = p_center - cam_anchor
+	var target_pt: Vector2 = p_center
+	if cctv_alert_timer > 0.0 and not active_deadlocked_crates.is_empty():
+		var trapped_tile: Vector2i = active_deadlocked_crates[0]
+		target_pt = effective_origin + Vector2(float(trapped_tile.x) + 0.5, float(trapped_tile.y) + 0.5) * tile_size
+
+	var dir: Vector2 = target_pt - cam_anchor
 	var base_target_angle: float = dir.angle()
 
 	# Idle servo micro-pan when player is still for a few seconds
@@ -2951,7 +2995,7 @@ func _update_security_camera(delta: float) -> bool:
 	if cctv_alert_timer > 0.0:
 		cctv_alert_timer = maxf(0.0, cctv_alert_timer - delta)
 
-	return absf(angle_diff) > 0.003 or cctv_motion_timer > 0.0 or cctv_alert_timer > 0.0 or is_animating
+	return absf(angle_diff) > 0.003 or cctv_motion_timer > 0.0 or cctv_alert_timer > 0.0 or is_animating or not active_deadlocked_crates.is_empty()
 
 
 func _draw_cctv_cone(effective_origin: Vector2, _ch: Dictionary) -> void:
@@ -3491,6 +3535,70 @@ func _draw_hint_ghost(effective_origin: Vector2) -> void:
 		var c_p2: Vector2 = c_arrow_end - arrow_norm * head_len + arrow_perp * head_width
 		var c_p3: Vector2 = c_arrow_end - arrow_norm * head_len - arrow_perp * head_width
 		draw_colored_polygon(PackedVector2Array([c_p1, c_p2, c_p3]), Color(1.0, 0.85, 0.35, 0.90 * base_alpha))
+
+
+func _draw_deadlock_radar(effective_origin: Vector2, _ch: Dictionary) -> void:
+	if active_deadlocked_crates.is_empty() or grid == null:
+		return
+
+	var pulse_t: float = 0.5 + 0.5 * sin(deadlock_pulse_timer)
+	var aura_alpha: float = lerp(0.40, 0.85, pulse_t)
+	var halo_alpha: float = lerp(0.12, 0.35, pulse_t)
+	var halo_color: Color = Color(1.0, 0.20, 0.15, halo_alpha)
+	var aura_color: Color = Color(1.0, 0.25, 0.20, aura_alpha)
+	var bracket_color: Color = Color(1.0, 0.82, 0.20, clampf(aura_alpha + 0.15, 0.0, 1.0))
+	var bob_y: float = sin(deadlock_pulse_timer * 1.25) * 3.0
+
+	for c_pos in active_deadlocked_crates:
+		var draw_tile_pos: Vector2 = visual_crates.get(c_pos, Vector2(c_pos))
+		var crate_padding: float = tile_size * 0.04
+		var rect: Rect2 = Rect2(
+			effective_origin + draw_tile_pos * tile_size + Vector2(crate_padding, crate_padding),
+			Vector2(tile_size - crate_padding * 2.0, tile_size - crate_padding * 2.0)
+		)
+
+		# 1. Pulsing Soft Neon Hazard Halo & Perimeter
+		var grow_px: float = 3.5 * pulse_t + 1.0
+		draw_rect(rect.grow(grow_px), halo_color, false, 2.5)
+		draw_rect(rect, aura_color, false, 1.8)
+
+		# 2. Industrial Corner Demarcation Brackets
+		var b_len: float = tile_size * 0.20
+		# Top-Left Bracket
+		draw_line(Vector2(rect.position.x, rect.position.y), Vector2(rect.position.x + b_len, rect.position.y), bracket_color, 2.4)
+		draw_line(Vector2(rect.position.x, rect.position.y), Vector2(rect.position.x, rect.position.y + b_len), bracket_color, 2.4)
+		# Top-Right Bracket
+		draw_line(Vector2(rect.end.x, rect.position.y), Vector2(rect.end.x - b_len, rect.position.y), bracket_color, 2.4)
+		draw_line(Vector2(rect.end.x, rect.position.y), Vector2(rect.end.x, rect.position.y + b_len), bracket_color, 2.4)
+		# Bottom-Left Bracket
+		draw_line(Vector2(rect.position.x, rect.end.y), Vector2(rect.position.x + b_len, rect.end.y), bracket_color, 2.4)
+		draw_line(Vector2(rect.position.x, rect.end.y), Vector2(rect.position.x, rect.end.y - b_len), bracket_color, 2.4)
+		# Bottom-Right Bracket
+		draw_line(Vector2(rect.end.x, rect.end.y), Vector2(rect.end.x - b_len, rect.end.y), bracket_color, 2.4)
+		draw_line(Vector2(rect.end.x, rect.end.y), Vector2(rect.end.x, rect.end.y - b_len), bracket_color, 2.4)
+
+		# 3. Floating Diegetic Ghost Warning Glyph (Diamond Backing + Exclamation Mark)
+		var glyph_center: Vector2 = Vector2(rect.end.x - tile_size * 0.16, rect.position.y + tile_size * 0.14) + Vector2(0.0, bob_y)
+		var d_rad: float = tile_size * 0.17
+		var diamond_pts: PackedVector2Array = [
+			glyph_center + Vector2(0.0, -d_rad),
+			glyph_center + Vector2(d_rad, 0.0),
+			glyph_center + Vector2(0.0, d_rad),
+			glyph_center + Vector2(-d_rad, 0.0)
+		]
+		# Dark gunmetal diamond plate
+		draw_colored_polygon(diamond_pts, Color(0.10, 0.08, 0.12, 0.92))
+		# Neon rim on diamond
+		var rim_col: Color = Color(1.0, 0.30, 0.22, 0.95)
+		draw_line(diamond_pts[0], diamond_pts[1], rim_col, 1.6)
+		draw_line(diamond_pts[1], diamond_pts[2], rim_col, 1.6)
+		draw_line(diamond_pts[2], diamond_pts[3], rim_col, 1.6)
+		draw_line(diamond_pts[3], diamond_pts[0], rim_col, 1.6)
+
+		# Crisp Warning Exclamation Stem & Dot
+		var mark_col: Color = Color(1.0, 0.92, 0.25, 0.98)
+		draw_line(glyph_center + Vector2(0.0, -d_rad * 0.48), glyph_center + Vector2(0.0, d_rad * 0.12), mark_col, 2.2)
+		draw_circle(glyph_center + Vector2(0.0, d_rad * 0.46), 1.35, mark_col)
 
 
 func add_trauma(amount: float) -> void:
