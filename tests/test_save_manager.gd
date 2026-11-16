@@ -150,10 +150,24 @@ func test_star_rating_system() -> void:
 	mgr.record_level_completion(0, 20, 8, TEST_SAVE_PATH)
 	assert_equal(mgr.get_level_stars(0), 1, "Level 0 stars is 1")
 	assert_equal(mgr.get_total_stars(), 1, "Total stars is 1")
+	assert_true(not mgr.is_level_crowned(0), "Level 0 not crowned with 20 moves")
 
 	mgr.record_level_completion(0, 9, 4, TEST_SAVE_PATH)
 	assert_equal(mgr.get_level_stars(0), 3, "Level 0 stars improved to 3")
 	assert_equal(mgr.get_total_stars(), 3, "Total stars is 3")
+	assert_true(mgr.is_level_crowned(0), "Level 0 crowned with optimal 9 moves")
+	assert_equal(mgr.get_total_crowns(), 1, "Total crowns is 1")
+	assert_equal(mgr.get_chapter_crowns(0), 1, "Chapter 0 crowns is 1")
+
+	# Test chapter adaptive par tightening
+	# Level 75 (idx 74, Quantum Vault): optimal = 170
+	var opt_74: int = mgr.get_optimal_moves(74)
+	assert_equal(opt_74, 170, "Level 75 optimal moves is 170")
+	var targets_74: Dictionary = mgr.get_star_targets(74)
+	# 3% of 170 = 5.1 -> ceili = 6 -> three_star is 176
+	assert_equal(targets_74["three_star"], 176, "Level 75 has razor-sharp 3-star par of 176 (got %d)" % targets_74["three_star"])
+	assert_equal(mgr.calculate_stars(74, 176), 3, "176 moves earns 3 stars on Level 75")
+	assert_equal(mgr.calculate_stars(74, 177), 2, "177 moves drops to 2 stars on Level 75")
 	mgr.free()
 
 

@@ -1349,6 +1349,7 @@ func _update_menu_state() -> void:
 		language_btn.text = "LANGUAGE: English"
 
 	var total_stars: int = save_mgr.get_total_stars() if (save_mgr and save_mgr.has_method("get_total_stars")) else 0
+	var total_crowns: int = save_mgr.get_total_crowns() if (save_mgr and save_mgr.has_method("get_total_crowns")) else 0
 	var sector_idx: int = save_mgr.get_chapter_index(last_lvl) if (save_mgr and save_mgr.has_method("get_chapter_index")) else (0 if last_lvl < 15 else (1 if last_lvl < 35 else (2 if last_lvl < 50 else 3)))
 	if star_progress_btn:
 		var ch_title: String = "Cargo Bay"
@@ -1356,7 +1357,8 @@ func _update_menu_state() -> void:
 			ch_title = loc_mgr.tr_text("CHAPTER_%d_TITLE" % sector_idx)
 		elif save_mgr and save_mgr.has_method("get_chapter_info"):
 			ch_title = save_mgr.get_chapter_info(sector_idx).get("name", "Cargo Bay")
-		star_progress_btn.text = "%d / 225 Stars • Sector %d: %s" % [total_stars, sector_idx + 1, ch_title]
+		var crown_str: String = " • %d 👑" % total_crowns if total_crowns > 0 else ""
+		star_progress_btn.text = "%d / 225 Stars%s • Sector %d: %s" % [total_stars, crown_str, sector_idx + 1, ch_title]
 	if quick_lang_btn:
 		var lang_code: String = loc_mgr.current_language.to_upper() if loc_mgr else "EN"
 		quick_lang_btn.text = lang_code
@@ -1688,9 +1690,14 @@ func _refresh_level_grid_buttons() -> void:
 	var unlocked_lvl: int = save_mgr.unlocked_level if save_mgr else 0
 	var total_stars: int = save_mgr.get_total_stars() if save_mgr != null else 0
 
+	var total_crowns: int = save_mgr.get_total_crowns() if (save_mgr != null and save_mgr.has_method("get_total_crowns")) else 0
+
 	if has_node("LevelSelectView/TopBar/Margin/HBox/TotalStarsLabel") and save_mgr != null:
 		var stars_lbl: Label = get_node("LevelSelectView/TopBar/Margin/HBox/TotalStarsLabel") as Label
-		stars_lbl.text = "%d / 225 ★" % total_stars
+		if total_crowns > 0:
+			stars_lbl.text = "%d / 225 ★  •  %d 👑" % [total_stars, total_crowns]
+		else:
+			stars_lbl.text = "%d / 225 ★" % total_stars
 
 	# Update Campaign Banner card if present
 	var pb: ProgressBar = find_child("ProgressBar", true, false) as ProgressBar
@@ -1744,22 +1751,26 @@ func _refresh_level_grid_buttons() -> void:
 	var s2_stars: int = save_mgr.get_chapter_stars(1) if save_mgr else 0
 	var s3_stars: int = save_mgr.get_chapter_stars(2) if save_mgr else 0
 	var s4_stars: int = save_mgr.get_chapter_stars(3) if save_mgr else 0
+	var s1_crowns: int = save_mgr.get_chapter_crowns(0) if (save_mgr and save_mgr.has_method("get_chapter_crowns")) else 0
+	var s2_crowns: int = save_mgr.get_chapter_crowns(1) if (save_mgr and save_mgr.has_method("get_chapter_crowns")) else 0
+	var s3_crowns: int = save_mgr.get_chapter_crowns(2) if (save_mgr and save_mgr.has_method("get_chapter_crowns")) else 0
+	var s4_crowns: int = save_mgr.get_chapter_crowns(3) if (save_mgr and save_mgr.has_method("get_chapter_crowns")) else 0
 
 	var s1_badge: Label = find_child("Sector1Badge", true, false) as Label
 	if s1_badge != null:
-		s1_badge.text = "%d/45 ★" % s1_stars
+		s1_badge.text = ("%d/45 ★ • %d 👑" % [s1_stars, s1_crowns]) if s1_crowns > 0 else ("%d/45 ★" % s1_stars)
 
 	var s2_badge: Label = find_child("Sector2Badge", true, false) as Label
 	if s2_badge != null:
-		s2_badge.text = "%d/60 ★" % s2_stars
+		s2_badge.text = ("%d/60 ★ • %d 👑" % [s2_stars, s2_crowns]) if s2_crowns > 0 else ("%d/60 ★" % s2_stars)
 
 	var s3_badge: Label = find_child("Sector3Badge", true, false) as Label
 	if s3_badge != null:
-		s3_badge.text = "%d/45 ★" % s3_stars
+		s3_badge.text = ("%d/45 ★ • %d 👑" % [s3_stars, s3_crowns]) if s3_crowns > 0 else ("%d/45 ★" % s3_stars)
 
 	var s4_badge: Label = find_child("Sector4Badge", true, false) as Label
 	if s4_badge != null:
-		s4_badge.text = "%d/75 ★" % s4_stars
+		s4_badge.text = ("%d/75 ★ • %d 👑" % [s4_stars, s4_crowns]) if s4_crowns > 0 else ("%d/75 ★" % s4_stars)
 
 	for child in level_grid.get_children():
 		if not child is Button:
@@ -1784,17 +1795,22 @@ func _refresh_level_grid_buttons() -> void:
 		if is_completed:
 			var record: Dictionary = save_mgr.get_level_record(lvl_idx)
 			var stars: int = record.get("stars", 1)
-			var best_moves: int = record.get("moves", 0)
+			var best_moves: int = record.get("best_moves", record.get("moves", 0))
+			var is_crowned: bool = save_mgr.is_level_crowned(lvl_idx) if save_mgr.has_method("is_level_crowned") else false
 			if not is_mobile_or_touch:
-				child.tooltip_text = "Level %d • %s\nBest: %d moves (Par: ≤ %d)" % [lvl_idx + 1, ch_title_str, best_moves, opt_moves]
+				var crown_tag: String = " 👑" if is_crowned else ""
+				child.tooltip_text = "Level %d • %s%s\nBest: %d moves (Par: ≤ %d)" % [lvl_idx + 1, ch_title_str, crown_tag, best_moves, opt_moves]
 			else:
 				child.tooltip_text = ""
 			var star_str: String = ""
-			match stars:
-				3: star_str = "★★★"
-				2: star_str = "★★☆"
-				1: star_str = "★☆☆"
-				_: star_str = "★"
+			if is_crowned:
+				star_str = "👑 ★★★"
+			else:
+				match stars:
+					3: star_str = "★★★"
+					2: star_str = "★★☆"
+					1: star_str = "★☆☆"
+					_: star_str = "★"
 			child.text = "%d\n%s" % [lvl_idx + 1, star_str]
 			child.icon = null
 			child.disabled = false

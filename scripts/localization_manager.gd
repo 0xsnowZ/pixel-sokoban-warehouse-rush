@@ -427,6 +427,11 @@ const TRANSLATIONS: Dictionary = {
 		"fr": "NIVEAU TERMINÉ !",
 		"ar": "اكتمل المستوى!"
 	},
+	"WIN_BANNER_MASTER": {
+		"en": "👑 MASTER PAR ACHIEVED!",
+		"fr": "👑 PAR PARFAIT ATTEINT !",
+		"ar": "👑 إتقان قياسي مثالي!"
+	},
 	"STAT_MOVES_TITLE": {
 		"en": "MOVES",
 		"fr": "MOUV.",
@@ -451,6 +456,11 @@ const TRANSLATIONS: Dictionary = {
 		"en": "Target: ≤ %d moves",
 		"fr": "Objectif : ≤ %d mouv.",
 		"ar": "الهدف: ≤ %d حركة"
+	},
+	"WIN_TARGET_MASTER": {
+		"en": "👑 PERFECT PAR: %d MOVES",
+		"fr": "👑 PAR PARFAIT : %d MOUV.",
+		"ar": "👑 إنجاز مثالي: %d حركة"
 	},
 	"WIN_TITLE": {
 		"en": "LEVEL %d COMPLETED!",

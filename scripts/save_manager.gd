@@ -95,16 +95,28 @@ func get_optimal_moves(level_index: int) -> int:
 	return 15
 
 
+## Returns chapter-adaptive star tolerance parameters:
+## - Chapter 0 (Cargo Bay): +15% (forgiving onboarding par, min +2 moves)
+## - Chapter 1 (Cold Storage): +10% (intermediate par, min +2 moves)
+## - Chapter 2 (Cyber Depot): +6% (advanced tight par, min +2 moves)
+## - Chapter 3 (Quantum Vault): +3% (master precision par, min +1 move)
+func get_chapter_star_tolerances(level_index: int) -> Dictionary:
+	var ch: int = get_chapter_index(level_index)
+	match ch:
+		0: return {"pct_3": 0.15, "min_3": 2, "pct_2": 0.40, "min_2": 5}
+		1: return {"pct_3": 0.10, "min_3": 2, "pct_2": 0.30, "min_2": 4}
+		2: return {"pct_3": 0.06, "min_3": 2, "pct_2": 0.25, "min_2": 4}
+		3: return {"pct_3": 0.03, "min_3": 1, "pct_2": 0.20, "min_2": 3}
+		_: return {"pct_3": 0.15, "min_3": 2, "pct_2": 0.40, "min_2": 5}
+
+
 ## Calculates earned stars (1 to 3) based on moves taken vs level optimal par.
-## Uses adaptive tolerance: 3★ scales at 15% (min +2 moves) to be fair on long levels,
-## while 2★ scales at 40% (min +5 moves) to maintain a rewarding middle tier.
+## Uses chapter-adaptive par scaling so late-game logistics sectors demand true precision.
 func calculate_stars(level_index: int, moves: int) -> int:
-	var optimal: int = get_optimal_moves(level_index)
-	var tolerance_3: int = maxi(2, ceili(optimal * 0.15))
-	var tolerance_2: int = maxi(5, ceili(optimal * 0.40))
-	if moves <= optimal + tolerance_3:
+	var targets: Dictionary = get_star_targets(level_index)
+	if moves <= targets["three_star"]:
 		return 3
-	elif moves <= optimal + tolerance_2:
+	elif moves <= targets["two_star"]:
 		return 2
 	return 1
 
@@ -113,13 +125,19 @@ func calculate_stars(level_index: int, moves: int) -> int:
 ## { "optimal": int, "three_star": int, "two_star": int }
 func get_star_targets(level_index: int) -> Dictionary:
 	var optimal: int = get_optimal_moves(level_index)
-	var tolerance_3: int = maxi(2, ceili(optimal * 0.15))
-	var tolerance_2: int = maxi(5, ceili(optimal * 0.40))
+	var tol: Dictionary = get_chapter_star_tolerances(level_index)
+	var tolerance_3: int = maxi(tol["min_3"], ceili(optimal * tol["pct_3"]))
+	var tolerance_2: int = maxi(tol["min_2"], ceili(optimal * tol["pct_2"]))
 	return {
 		"optimal": optimal,
 		"three_star": optimal + tolerance_3,
 		"two_star": optimal + tolerance_2
 	}
+
+
+## Returns true if the move count matches or beats the exact optimal par (0 wasted moves).
+func is_optimal_clear(level_index: int, moves: int) -> bool:
+	return moves <= get_optimal_moves(level_index)
 
 
 ## Returns the best earned stars (0 to 3) for a given level.
@@ -381,13 +399,18 @@ func record_level_completion(level_index: int, moves: int, pushes: int, file_pat
 		best_moves = mini(prev_record.get("best_moves", moves), moves)
 		best_pushes = mini(prev_record.get("best_pushes", pushes), pushes)
 
+	var optimal: int = get_optimal_moves(level_index)
+	var prev_crowned: bool = prev_record.get("has_crown", false)
+	var is_crowned: bool = prev_crowned or (best_moves <= optimal)
+
 	completed_levels[key] = {
 		"best_moves": best_moves,
 		"best_pushes": best_pushes,
 		"last_moves": moves,
 		"last_pushes": pushes,
 		"stars": best_stars,
-		"last_stars": stars
+		"last_stars": stars,
+		"has_crown": is_crowned
 	}
 
 	unlock_level(level_index + 1)
@@ -403,6 +426,36 @@ func get_level_record(level_index: int) -> Dictionary:
 ## Checks if a level has been completed at least once.
 func is_level_completed(level_index: int) -> bool:
 	return completed_levels.has(str(level_index))
+
+
+## Checks if a level was completed with exact optimal par (earning the Master Crown).
+func is_level_crowned(level_index: int) -> bool:
+	var rec: Dictionary = get_level_record(level_index)
+	if rec.has("has_crown"):
+		return rec["has_crown"]
+	if rec.has("best_moves"):
+		return rec["best_moves"] <= get_optimal_moves(level_index)
+	return false
+
+
+## Returns the total crowns collected across all completed levels (out of 75).
+func get_total_crowns() -> int:
+	var total: int = 0
+	for key in completed_levels.keys():
+		var lvl: int = int(key)
+		if is_level_crowned(lvl):
+			total += 1
+	return total
+
+
+## Returns the total crowns collected within a specific chapter sector (0 to 3).
+func get_chapter_crowns(chapter_index: int) -> int:
+	var info: Dictionary = get_chapter_info(chapter_index)
+	var c: int = 0
+	for lvl in range(info["start_level"], info["end_level"] + 1):
+		if is_level_crowned(lvl):
+			c += 1
+	return c
 
 
 ## Serializes all progression and settings into a Dictionary.

@@ -1093,11 +1093,13 @@ func _on_level_won() -> void:
 		var ch_title_text: String = loc_mgr.tr_text("CHAPTER_%d_TITLE" % current_chapter_idx) if loc_mgr else ch_info.get("name", "Cargo Bay")
 		level_placard_label.text = "LEVEL %d  •  %s" % [current_level_index + 1, ch_title_text.to_upper()]
 
+	var is_master: bool = (grid.moves_count <= optimal_moves)
 	if loc_mgr:
 		if moves_title_lbl: moves_title_lbl.text = loc_mgr.tr_text("STAT_MOVES_TITLE")
 		if time_title_lbl: time_title_lbl.text = loc_mgr.tr_text("STAT_TIME_TITLE")
 		if pushes_title_lbl: pushes_title_lbl.text = loc_mgr.tr_text("STAT_PUSHES_TITLE")
-		if win_title: win_title.text = loc_mgr.tr_text("WIN_BANNER")
+		if win_title:
+			win_title.text = loc_mgr.tr_text("WIN_BANNER_MASTER") if is_master else loc_mgr.tr_text("WIN_BANNER")
 		if win_menu_button: win_menu_button.text = loc_mgr.tr_text("WIN_MENU_BTN")
 		if win_retry_button: win_retry_button.text = loc_mgr.tr_text("WIN_RETRY_BTN")
 		if next_level_button:
@@ -1105,9 +1107,14 @@ func _on_level_won() -> void:
 				next_level_button.text = loc_mgr.tr_text("BTN_CAMPAIGN_COMPLETE")
 			else:
 				next_level_button.text = loc_mgr.tr_text("WIN_NEXT_BTN")
-		if win_stats: win_stats.text = loc_mgr.tr_text("WIN_TARGET_HINT", [three_star_target])
+		if win_stats:
+			if is_master:
+				win_stats.text = loc_mgr.tr_text("WIN_TARGET_MASTER", [grid.moves_count])
+			else:
+				win_stats.text = loc_mgr.tr_text("WIN_TARGET_HINT", [three_star_target])
 	else:
-		if win_title: win_title.text = "LEVEL COMPLETED!"
+		if win_title:
+			win_title.text = "👑 MASTER PAR ACHIEVED!" if is_master else "LEVEL COMPLETED!"
 		if win_menu_button: win_menu_button.text = "MENU"
 		if win_retry_button: win_retry_button.text = "RETRY"
 		if next_level_button:
@@ -1115,7 +1122,11 @@ func _on_level_won() -> void:
 				next_level_button.text = "Finish Campaign"
 			else:
 				next_level_button.text = "NEXT"
-		if win_stats: win_stats.text = "Target: ≤ %d moves" % three_star_target
+		if win_stats:
+			if is_master:
+				win_stats.text = "👑 PERFECT PAR: %d MOVES" % grid.moves_count
+			else:
+				win_stats.text = "Target: ≤ %d moves" % three_star_target
 
 	# Prepare stars in unlit state
 	var stars: Array = [star_1, star_2, star_3]
@@ -1143,6 +1154,9 @@ func _on_level_won() -> void:
 
 
 func _animate_stars_sequence(stars: Array, earned: int, gold_color: Color) -> void:
+	var optimal_par: int = save_mgr.get_optimal_moves(current_level_index) if save_mgr else 10
+	var is_master: bool = (grid != null and grid.moves_count <= optimal_par)
+
 	for i in range(mini(earned, stars.size())):
 		var s: Label = stars[i] as Label
 		if s == null:
@@ -1163,6 +1177,24 @@ func _animate_stars_sequence(stars: Array, earned: int, gold_color: Color) -> vo
 			_spawn_star_burst(s.get_global_rect().get_center())
 		)
 		tw.tween_property(s, "scale", Vector2.ONE, 0.24)
+
+	# Extra triumphant fanfare burst for Master Crown
+	if is_master and earned >= 3:
+		var crown_delay: float = 0.22 + 3.0 * 0.28 + 0.15
+		var tw_crown: Tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw_crown.tween_interval(crown_delay)
+		tw_crown.tween_callback(func():
+			if audio_mgr and audio_mgr.has_method("play_win"):
+				audio_mgr.play_win()
+			if haptic_mgr and haptic_mgr.has_method("vibrate_target"):
+				haptic_mgr.vibrate_target()
+			if win_modal != null:
+				_spawn_star_burst(win_modal.get_global_rect().get_center())
+				if win_title != null:
+					var tw_t: Tween = create_tween().set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+					tw_t.tween_property(win_title, "scale", Vector2(1.15, 1.15), 0.18)
+					tw_t.tween_property(win_title, "scale", Vector2.ONE, 0.20)
+		)
 
 
 func _on_level_reset() -> void:

@@ -384,6 +384,21 @@ func test_win_modal_three_star_system() -> void:
 	assert_eq(save_mgr.calculate_stars(0, 14), 2, "Moderate moves achieves 2 stars")
 	assert_eq(save_mgr.calculate_stars(0, 20), 1, "Completed with high moves achieves 1 star")
 
+	# Test Master Crown optimal par verification and localized banner
+	var targets_ch0: Dictionary = save_mgr.get_star_targets(0)
+	assert_eq(targets_ch0["optimal"], 9, "Level 0 optimal target is 9")
+	assert_eq(targets_ch0["three_star"], 11, "Level 0 3-star par is 11 (Ch 0 +15%, min +2)")
+	assert_true(save_mgr.is_optimal_clear(0, 9), "Level 0 at 9 moves achieves Master Crown")
+	assert_false(save_mgr.is_optimal_clear(0, 10), "Level 0 at 10 moves does not achieve Master Crown")
+	assert_true("MASTER" in loc.tr_text("WIN_BANNER_MASTER"), "EN Master Crown banner contains MASTER")
+	assert_true("PERFECT" in loc.tr_text("WIN_TARGET_MASTER", [9]), "EN Master Crown target text contains PERFECT")
+
+	loc.set_language("fr")
+	assert_true("PARFAIT" in loc.tr_text("WIN_BANNER_MASTER"), "FR Master Crown banner contains PARFAIT")
+	loc.set_language("ar")
+	assert_true("مثالي" in loc.tr_text("WIN_BANNER_MASTER"), "AR Master Crown banner contains Arabic text")
+	loc.set_language("en")
+
 	game.free()
 	save_mgr.free()
 	loc.free()
