@@ -56,6 +56,17 @@ var bump_offset: Vector2 = Vector2.ZERO
 # Visual Atmosphere & Polish (Option B)
 var ambient_motes: Array[Dictionary] = []
 
+# Diegetic Living Warehouse: Tracking Security Camera (CCTV)
+var cctv_camera_tile: Vector2i = Vector2i(-1, -1)
+var cctv_current_angle: float = PI * 0.5
+var cctv_target_angle: float = PI * 0.5
+var cctv_active: bool = false
+var cctv_tally_timer: float = 0.0
+var cctv_motion_timer: float = 0.0
+var cctv_alert_timer: float = 0.0
+var cctv_sweep_phase: float = 0.0
+var cctv_idle_pan_timer: float = 0.0
+
 # Live HUD 3-Star Tracker & Worker Micro-Interactions (Option C)
 var player_idle_time: float = 0.0
 var consecutive_wall_bumps: int = 0
@@ -740,6 +751,7 @@ func load_level(index: int) -> void:
 	goal_effects.clear()
 	crate_squash.clear()
 	_init_ambient_motes()
+	_init_security_camera()
 	player_idle_time = 0.0
 	consecutive_wall_bumps = 0
 	sweat_drop_timer = 0.0
@@ -1170,6 +1182,9 @@ func _animate_player(from_pos: Vector2i, to_pos: Vector2i) -> void:
 	var was_push: bool = (grid != null and grid.last_move_pushed_crate)
 	var move_dir: Vector2i = to_pos - from_pos
 
+	cctv_motion_timer = 0.55
+	cctv_idle_pan_timer = 0.0
+
 	# Heavy pushing uses deliberate cubic ease-out curve; walking uses swift quad ease-out
 	var trans_mode: Tween.TransitionType = Tween.TRANS_CUBIC if was_push else Tween.TRANS_QUAD
 	var anim_duration: float = 0.135 if was_push else 0.11
@@ -1320,6 +1335,7 @@ func _trigger_bump_recoil(dir: Vector2i) -> void:
 		return
 	add_trauma(0.14)
 	consecutive_wall_bumps += 1
+	cctv_alert_timer = 0.65
 	if consecutive_wall_bumps >= 3:
 		trigger_sweat_drop()
 
@@ -2225,6 +2241,11 @@ func _process(delta: float) -> void:
 			elif mote["pos_norm"].y > 1.05:
 				mote["pos_norm"].y = -0.05
 
+	# Update Living Warehouse: Tracking Security Camera (CCTV)
+	if cctv_active:
+		if _update_security_camera(delta):
+			needs_redraw = true
+
 	# Option C: Worker Idle Nuance & Thinking Sweat Drop
 	if not is_animating and not is_level_won and (win_modal == null or not win_modal.visible):
 		player_idle_time += delta
@@ -2408,6 +2429,12 @@ func _draw() -> void:
 	# 2.2. Architectural Edge Depth (snug drop shadows on non-square shapes, no harsh borders)
 	if is_non_square:
 		_draw_slim_level_border(effective_origin, ch)
+
+	# 2.3. Living Warehouse: Tracking Security Camera Wall Mount & Hardware
+	_draw_security_camera(effective_origin, ch)
+
+	# 2.4. Living Warehouse: Volumetric Floor Surveillance Cone (projected onto floor beneath crates & player)
+	_draw_cctv_cone(effective_origin, ch)
 
 	# 3. Draw Goals with Clean, Contained Precision Docking (no vertical bleeding)
 	var time_sec: float = float(Time.get_ticks_msec()) / 1000.0
@@ -2824,6 +2851,289 @@ func _init_ambient_motes() -> void:
 			"base_alpha": rng.randf_range(0.22, 0.55),
 			"speed_mult": rng.randf_range(0.8, 1.3)
 		})
+
+
+# ==============================================================================
+# Living Warehouse: Tracking Security Camera (CCTV)
+# ==============================================================================
+
+func _find_security_camera_mount() -> Vector2i:
+	if grid == null or grid.width == 0 or grid.height == 0:
+		return Vector2i(-1, -1)
+
+	var candidates: Array[Vector2i] = []
+	var min_y: int = 99999
+
+	# Priority 1: Top-facing interior walls (wall with interior floor directly below it)
+	for y in range(grid.height):
+		for x in range(grid.width):
+			var p: Vector2i = Vector2i(x, y)
+			if grid.is_wall(p):
+				var down_p: Vector2i = p + Vector2i.DOWN
+				var is_floor_down: bool = grid.is_in_bounds(down_p) and not grid.is_wall(down_p) and not grid.is_exterior_void(down_p) and (grid.interior_floor.is_empty() or grid.is_interior_floor(down_p))
+				if is_floor_down:
+					if y < min_y:
+						min_y = y
+					candidates.append(p)
+
+	if not candidates.is_empty():
+		# Filter to the uppermost tier of candidate walls (closest to the top of the room)
+		var top_candidates: Array[Vector2i] = []
+		for p in candidates:
+			if p.y == min_y:
+				top_candidates.append(p)
+		# Pick the one closest to horizontal center of the grid for optimal line-of-sight
+		var center_x: float = float(grid.width) * 0.5
+		top_candidates.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+			return absf(float(a.x) - center_x) < absf(float(b.x) - center_x)
+		)
+		return top_candidates[0]
+
+	# Priority 2 Fallback: Any wall adjacent to an interior floor tile
+	for y in range(grid.height):
+		for x in range(grid.width):
+			var p: Vector2i = Vector2i(x, y)
+			if grid.is_wall(p):
+				for d in [Vector2i.DOWN, Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP]:
+					var adj_p: Vector2i = p + d
+					if grid.is_in_bounds(adj_p) and not grid.is_wall(adj_p) and not grid.is_exterior_void(adj_p) and (grid.interior_floor.is_empty() or grid.is_interior_floor(adj_p)):
+						return p
+
+	return Vector2i(-1, -1)
+
+
+func _init_security_camera() -> void:
+	cctv_camera_tile = _find_security_camera_mount()
+	cctv_active = (cctv_camera_tile != Vector2i(-1, -1))
+	cctv_current_angle = PI * 0.5
+	cctv_target_angle = PI * 0.5
+	cctv_tally_timer = 0.0
+	cctv_motion_timer = 0.0
+	cctv_alert_timer = 0.0
+	cctv_sweep_phase = 0.0
+	cctv_idle_pan_timer = 0.0
+
+
+func _update_security_camera(delta: float) -> bool:
+	if not cctv_active or cctv_camera_tile == Vector2i(-1, -1) or grid == null:
+		return false
+
+	var effective_origin: Vector2 = grid_origin + board_shake_offset
+	var cam_anchor: Vector2 = effective_origin + Vector2(float(cctv_camera_tile.x) + 0.5, float(cctv_camera_tile.y) + 0.85) * tile_size
+	var p_center: Vector2 = effective_origin + visual_player_pos * tile_size + Vector2(tile_size * 0.5, tile_size * 0.5) + bump_offset + Vector2(0.0, player_celebration_hop + stride_arc_y)
+
+	var dir: Vector2 = p_center - cam_anchor
+	var base_target_angle: float = dir.angle()
+
+	# Idle servo micro-pan when player is still for a few seconds
+	var pan_offset: float = 0.0
+	if not is_animating and not is_level_won and player_idle_time > 2.0:
+		cctv_idle_pan_timer += delta
+		pan_offset = sin(cctv_idle_pan_timer * 1.5) * 0.045
+	else:
+		cctv_idle_pan_timer = 0.0
+
+	cctv_target_angle = base_target_angle + pan_offset
+
+	# Responsive, smooth robotic servo tracking
+	var angle_diff: float = wrapf(cctv_target_angle - cctv_current_angle, -PI, PI)
+	var servo_speed: float = 8.5
+	var step: float = angle_diff * clampf(delta * servo_speed, 0.0, 1.0)
+	cctv_current_angle += step
+
+	# Advance timers
+	cctv_sweep_phase += delta * 2.5
+	cctv_tally_timer += delta
+	if cctv_motion_timer > 0.0:
+		cctv_motion_timer = maxf(0.0, cctv_motion_timer - delta)
+	if cctv_alert_timer > 0.0:
+		cctv_alert_timer = maxf(0.0, cctv_alert_timer - delta)
+
+	return absf(angle_diff) > 0.003 or cctv_motion_timer > 0.0 or cctv_alert_timer > 0.0 or is_animating
+
+
+func _draw_cctv_cone(effective_origin: Vector2, _ch: Dictionary) -> void:
+	if not cctv_active or cctv_camera_tile == Vector2i(-1, -1) or grid == null:
+		return
+
+	var cam_anchor: Vector2 = effective_origin + Vector2(float(cctv_camera_tile.x) + 0.5, float(cctv_camera_tile.y) + 0.85) * tile_size
+	var p_center: Vector2 = effective_origin + visual_player_pos * tile_size + Vector2(tile_size * 0.5, tile_size * 0.5) + bump_offset + Vector2(0.0, player_celebration_hop + stride_arc_y)
+
+	var to_player: Vector2 = p_center - cam_anchor
+	var dist: float = to_player.length()
+	var cone_len: float = maxf(dist + tile_size * 0.70, tile_size * 2.5)
+	var half_fov: float = deg_to_rad(13.0)
+	var a_left: float = cctv_current_angle - half_fov
+	var a_right: float = cctv_current_angle + half_fov
+
+	var p_origin: Vector2 = cam_anchor + Vector2(cos(cctv_current_angle), sin(cctv_current_angle)) * (tile_size * 0.15)
+
+	# Curved cone polygon
+	var cone_pts: PackedVector2Array = [p_origin]
+	var segments: int = 8
+	for s in range(segments + 1):
+		var t: float = float(s) / float(segments)
+		var ang: float = lerpf(a_left, a_right, t)
+		cone_pts.append(cam_anchor + Vector2(cos(ang), sin(ang)) * cone_len)
+
+	# Dynamic volumetric color based on chapter and surveillance alert state
+	var cone_col: Color
+	if is_level_won:
+		cone_col = Color(0.25, 0.95, 0.50, 0.075)
+	elif cctv_alert_timer > 0.0:
+		cone_col = Color(1.0, 0.35, 0.12, 0.080)
+	else:
+		match current_chapter_idx:
+			1:
+				cone_col = Color(0.45, 0.88, 1.0, 0.045)
+			2:
+				cone_col = Color(0.12, 1.0, 0.80, 0.050)
+			3:
+				cone_col = Color(0.85, 0.48, 1.0, 0.050)
+			_:
+				cone_col = Color(1.0, 0.85, 0.42, 0.040)
+		if cctv_motion_timer > 0.0:
+			cone_col.a *= 1.45
+
+	# 1. Soft Volumetric Floor Polygon
+	draw_colored_polygon(cone_pts, cone_col)
+
+	# 2. Subtle Edge Beams
+	var edge_col: Color = Color(cone_col.r, cone_col.g, cone_col.b, cone_col.a * 1.9)
+	draw_line(p_origin, cone_pts[1], edge_col, 1.0)
+	draw_line(p_origin, cone_pts[cone_pts.size() - 1], edge_col, 1.0)
+
+	# 3. Dynamic Optical Wave Ripple sliding along the beam
+	var wave_t: float = fmod(cctv_sweep_phase, 1.0)
+	var wave_dist: float = cone_len * wave_t
+	var wave_pts: PackedVector2Array = []
+	for s in range(segments + 1):
+		var t: float = float(s) / float(segments)
+		var ang: float = lerpf(a_left, a_right, t)
+		wave_pts.append(cam_anchor + Vector2(cos(ang), sin(ang)) * wave_dist)
+	var wave_alpha: float = sin(wave_t * PI) * cone_col.a * 2.4
+	draw_polyline(wave_pts, Color(cone_col.r, cone_col.g, cone_col.b, wave_alpha), 1.2)
+
+	# 4. Diegetic Target Tracking Reticle around player's feet
+	var reticle_r: float = tile_size * 0.36
+	var bracket_len: float = tile_size * 0.12
+	var ret_alpha: float = clampf(cone_col.a * 3.8, 0.08, 0.25)
+	var ret_col: Color = Color(cone_col.r, cone_col.g, cone_col.b, ret_alpha)
+	draw_line(p_center + Vector2(-reticle_r, -reticle_r + bracket_len), p_center + Vector2(-reticle_r, -reticle_r), ret_col, 1.5)
+	draw_line(p_center + Vector2(-reticle_r, -reticle_r), p_center + Vector2(-reticle_r + bracket_len, -reticle_r), ret_col, 1.5)
+	draw_line(p_center + Vector2(reticle_r - bracket_len, -reticle_r), p_center + Vector2(reticle_r, -reticle_r), ret_col, 1.5)
+	draw_line(p_center + Vector2(reticle_r, -reticle_r), p_center + Vector2(reticle_r, -reticle_r + bracket_len), ret_col, 1.5)
+	draw_line(p_center + Vector2(-reticle_r, reticle_r - bracket_len), p_center + Vector2(-reticle_r, reticle_r), ret_col, 1.5)
+	draw_line(p_center + Vector2(-reticle_r, reticle_r), p_center + Vector2(-reticle_r + bracket_len, reticle_r), ret_col, 1.5)
+	draw_line(p_center + Vector2(reticle_r - bracket_len, reticle_r), p_center + Vector2(reticle_r, reticle_r), ret_col, 1.5)
+	draw_line(p_center + Vector2(reticle_r, reticle_r), p_center + Vector2(reticle_r, reticle_r - bracket_len), ret_col, 1.5)
+	draw_circle(p_center, 1.2, Color(ret_col.r, ret_col.g, ret_col.b, ret_alpha * 0.75))
+
+
+func _draw_security_camera(effective_origin: Vector2, _ch: Dictionary) -> void:
+	if not cctv_active or cctv_camera_tile == Vector2i(-1, -1) or grid == null:
+		return
+
+	var cam_anchor: Vector2 = effective_origin + Vector2(float(cctv_camera_tile.x) + 0.5, float(cctv_camera_tile.y) + 0.85) * tile_size
+
+	# Chapter-specific industrial hardware styling
+	var casing_col: Color
+	var bracket_col: Color
+	var rim_col: Color
+	match current_chapter_idx:
+		1:
+			casing_col = Color(0.68, 0.82, 0.92)
+			bracket_col = Color(0.10, 0.16, 0.24)
+			rim_col = Color(0.85, 0.96, 1.0, 0.50)
+		2:
+			casing_col = Color(0.16, 0.18, 0.24)
+			bracket_col = Color(0.08, 0.10, 0.14)
+			rim_col = Color(0.20, 1.0, 0.75, 0.50)
+		3:
+			casing_col = Color(0.24, 0.16, 0.32)
+			bracket_col = Color(0.10, 0.06, 0.14)
+			rim_col = Color(0.90, 0.60, 1.0, 0.55)
+		_:
+			casing_col = Color(0.82, 0.80, 0.76)
+			bracket_col = Color(0.18, 0.20, 0.25)
+			rim_col = Color(0.95, 0.95, 0.95, 0.40)
+
+	# 1. Wall Conduit Pipe
+	var wall_top_y: float = effective_origin.y + float(cctv_camera_tile.y) * tile_size
+	draw_line(Vector2(cam_anchor.x, wall_top_y), Vector2(cam_anchor.x, cam_anchor.y - 7.0), Color(0.10, 0.12, 0.16), 2.2)
+	draw_line(Vector2(cam_anchor.x - 0.5, wall_top_y), Vector2(cam_anchor.x - 0.5, cam_anchor.y - 7.0), Color(0.35, 0.40, 0.48, 0.50), 1.0)
+
+	# 2. Wall Mounting Base Plate
+	var plate_w: float = clampf(tile_size * 0.24, 11.0, 16.0)
+	var plate_h: float = clampf(tile_size * 0.12, 6.0, 9.0)
+	var plate_rect: Rect2 = Rect2(cam_anchor.x - plate_w * 0.5, cam_anchor.y - plate_h - 3.0, plate_w, plate_h)
+	draw_rect(Rect2(plate_rect.position + Vector2(1, 2), plate_rect.size), Color(0.0, 0.0, 0.0, 0.50))
+	draw_rect(plate_rect, bracket_col)
+	draw_line(plate_rect.position, plate_rect.position + Vector2(plate_rect.size.x, 0), Color(1.0, 1.0, 1.0, 0.30), 1.0)
+	draw_circle(plate_rect.position + Vector2(2.0, 2.0), 1.0, Color(0.05, 0.06, 0.08))
+	draw_circle(plate_rect.position + Vector2(plate_rect.size.x - 2.0, 2.0), 1.0, Color(0.05, 0.06, 0.08))
+
+	# 3. Swivel Hinge Joint
+	draw_circle(cam_anchor + Vector2(0.0, -2.5), 3.2, bracket_col.darkened(0.15))
+	draw_circle(cam_anchor + Vector2(-0.8, -3.2), 1.2, Color(1.0, 1.0, 1.0, 0.35))
+
+	# 4. Swiveling Camera Body & Lens
+	var fwd: Vector2 = Vector2(cos(cctv_current_angle), sin(cctv_current_angle))
+	var perp: Vector2 = Vector2(-fwd.y, fwd.x)
+	var cam_len: float = clampf(tile_size * 0.28, 12.0, 18.0)
+	var cam_w: float = clampf(tile_size * 0.16, 7.0, 11.0)
+
+	# Drop shadow under camera housing
+	var s_back_l: Vector2 = cam_anchor - fwd * (cam_len * 0.25) - perp * (cam_w * 0.5) + Vector2(2.0, 3.0)
+	var s_back_r: Vector2 = cam_anchor - fwd * (cam_len * 0.25) + perp * (cam_w * 0.5) + Vector2(2.0, 3.0)
+	var s_front_r: Vector2 = cam_anchor + fwd * (cam_len * 0.75) + perp * (cam_w * 0.42) + Vector2(2.0, 3.0)
+	var s_front_l: Vector2 = cam_anchor + fwd * (cam_len * 0.75) - perp * (cam_w * 0.42) + Vector2(2.0, 3.0)
+	draw_colored_polygon(PackedVector2Array([s_back_l, s_back_r, s_front_r, s_front_l]), Color(0.0, 0.0, 0.0, 0.38))
+
+	# Main Camera Casing
+	var back_l: Vector2 = cam_anchor - fwd * (cam_len * 0.25) - perp * (cam_w * 0.5)
+	var back_r: Vector2 = cam_anchor - fwd * (cam_len * 0.25) + perp * (cam_w * 0.5)
+	var front_r: Vector2 = cam_anchor + fwd * (cam_len * 0.75) + perp * (cam_w * 0.42)
+	var front_l: Vector2 = cam_anchor + fwd * (cam_len * 0.75) - perp * (cam_w * 0.42)
+	draw_colored_polygon(PackedVector2Array([back_l, back_r, front_r, front_l]), casing_col)
+	draw_polyline(PackedVector2Array([back_l, back_r, front_r, front_l, back_l]), Color(0.06, 0.07, 0.10), 1.2)
+
+	# Metallic Specular Sheen
+	var sheen_a: Vector2 = back_l.lerp(back_r, 0.22)
+	var sheen_b: Vector2 = front_l.lerp(front_r, 0.22)
+	draw_line(sheen_a, sheen_b, rim_col, 1.0)
+
+	# Front Lens Face & Glint
+	var lens_center: Vector2 = cam_anchor + fwd * (cam_len * 0.78)
+	draw_line(front_l, front_r, Color(0.05, 0.06, 0.09), 2.2)
+	draw_circle(lens_center, 1.3, Color(0.20, 0.70, 1.0, 0.85))
+
+	# Weather Visor Hood
+	draw_line(front_l + fwd * 2.2, front_r + fwd * 2.2, casing_col.lightened(0.18), 1.4)
+
+	# 5. Dynamic Tally Recording LED
+	var led_pos: Vector2 = cam_anchor - fwd * (cam_len * 0.06) + perp * (cam_w * 0.30)
+	var led_col: Color
+	var led_glow: Color
+	if is_level_won:
+		led_col = Color(0.18, 0.95, 0.45)
+		led_glow = Color(0.18, 0.95, 0.45, 0.35)
+	elif cctv_alert_timer > 0.0:
+		var strobe: float = 1.0 if fmod(cctv_alert_timer * 9.0, 1.0) < 0.5 else 0.15
+		led_col = Color(1.0, 0.22, 0.05, strobe)
+		led_glow = Color(1.0, 0.22, 0.05, strobe * 0.45)
+	elif cctv_motion_timer > 0.0:
+		led_col = Color(1.0, 0.15, 0.25)
+		led_glow = Color(1.0, 0.15, 0.25, 0.45)
+	else:
+		var cycle: float = fmod(cctv_tally_timer, 2.2)
+		var a: float = 1.0 if cycle < 1.4 else (0.2 + 0.8 * (cycle - 1.4) / 0.8)
+		led_col = Color(1.0, 0.18, 0.22, a)
+		led_glow = Color(1.0, 0.18, 0.22, a * 0.35)
+
+	draw_circle(led_pos, 3.2, led_glow)
+	draw_circle(led_pos, 1.4, led_col)
+	draw_circle(led_pos - Vector2(0.4, 0.4), 0.6, Color(1.0, 1.0, 1.0, 0.90))
 
 
 func _draw_crate(rect: Rect2, on_goal: bool, logical_pos: Vector2i = Vector2i.ZERO) -> void:

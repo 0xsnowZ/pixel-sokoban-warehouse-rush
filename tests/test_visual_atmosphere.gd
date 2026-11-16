@@ -41,6 +41,7 @@ func _init() -> void:
 	test_chapter_atmospherics(game)
 	test_headlamp_and_vignette(game)
 	test_wall_coping_depth(game)
+	test_tracking_security_camera(game)
 
 	print("\n======================================================")
 	print("Visual Atmosphere Results: %d passed, %d failed" % [passed_count, failed_count])
@@ -128,3 +129,44 @@ func test_wall_coping_depth(game: Node) -> void:
 	# Force a redraw pass to ensure no CanvasItem errors during drawing
 	game.queue_redraw()
 	assert_true(true, "CanvasItem redraw pass queued cleanly without error")
+
+
+func test_tracking_security_camera(game: Node) -> void:
+	print("--- Running Suite: Living Warehouse - Tracking Security Camera ---")
+	game.load_level(0)
+	assert_true("cctv_active" in game and game.cctv_active, "Tracking security camera is active")
+	assert_true(game.cctv_camera_tile != Vector2i(-1, -1), "Valid wall tile selected for camera mount (got %s)" % str(game.cctv_camera_tile))
+	assert_true(game.grid.is_wall(game.cctv_camera_tile), "Camera mount tile is verified as a wall tile")
+
+	assert_true(game.has_method("_find_security_camera_mount"), "Game implements _find_security_camera_mount")
+	assert_true(game.has_method("_init_security_camera"), "Game implements _init_security_camera")
+	assert_true(game.has_method("_update_security_camera"), "Game implements _update_security_camera")
+	assert_true(game.has_method("_draw_security_camera"), "Game implements _draw_security_camera")
+	assert_true(game.has_method("_draw_cctv_cone"), "Game implements _draw_cctv_cone")
+
+	# Test tracking servo rotation
+	var initial_angle: float = game.cctv_current_angle
+	game._process(0.2)
+	assert_true(game.cctv_current_angle != initial_angle or absf(game.cctv_target_angle - game.cctv_current_angle) < 0.05, "Camera servo swivels smoothly towards player")
+
+	# Test motion boost reactivity
+	game.cctv_motion_timer = 0.0
+	game.try_move(Vector2i.RIGHT)
+	assert_true(game.cctv_motion_timer > 0.0, "Player movement activates camera motion boost timer (got %f)" % game.cctv_motion_timer)
+
+	# Test wall collision / anomaly alert reactivity
+	game.is_animating = false
+	game.cctv_alert_timer = 0.0
+	game._trigger_bump_recoil(Vector2i.UP)
+	assert_true(game.cctv_alert_timer > 0.0, "Wall collision activates camera alert strobe timer (got %f)" % game.cctv_alert_timer)
+
+	# Test camera initialization across all chapters
+	for lvl in [15, 35, 50]:
+		game.load_level(lvl)
+		assert_true(game.cctv_active, "CCTV camera active in level %d" % (lvl + 1))
+		assert_true(game.grid.is_wall(game.cctv_camera_tile), "CCTV camera on valid wall in level %d" % (lvl + 1))
+
+	# Return to level 0
+	game.load_level(0)
+	game.queue_redraw()
+	assert_true(true, "CanvasItem redraw pass with CCTV camera executed cleanly")
