@@ -2020,8 +2020,10 @@ func _on_menu_pressed() -> void:
 		audio_mgr.play_click()
 		if audio_mgr.has_method("unduck_music"):
 			audio_mgr.unduck_music(0.5)
-		if audio_mgr.has_method("set_dock_progress"):
-			audio_mgr.set_dock_progress(0, 1, false)
+		if audio_mgr.has_method("reset_to_menu_music"):
+			audio_mgr.reset_to_menu_music()
+		elif audio_mgr.has_method("set_dock_progress"):
+			audio_mgr.set_dock_progress(0, 0, false)
 	if haptic_mgr:
 		haptic_mgr.vibrate_click()
 	_transition_to_scene(MAIN_MENU_SCENE_PATH)

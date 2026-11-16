@@ -39,11 +39,16 @@ var sfx_hint: AudioStreamWAV
 var sfx_deadlock: AudioStreamWAV
 var sfx_goal_lock_final: AudioStreamWAV
 
-# Goal Docking Progress Tracking
+# Dynamic Harmonic Goal Docking (Dynamic Music Layering)
 var harmonic_player: AudioStreamPlayer = null
 var current_dock_progress: float = 0.0 # 0.0 (empty) to 1.0 (all goals docked)
 var current_docked_count: int = 0
-var current_total_goals: int = 1
+var current_total_goals: int = 0
+var _dock_volume_offset_db: float = 0.0
+var _music_lpf: AudioEffectLowPassFilter = null
+var _lpf_cutoff_tween: Tween = null
+const LPF_MENU_CUTOFF: float = 20500.0
+const LPF_BASE_CUTOFF: float = 650.0
 
 # Dynamic Anti-Fatigue Footstep & Voice Management
 var _footstep_toggle: bool = false
@@ -103,10 +108,34 @@ func _create_player_pool() -> void:
 		_players.append(p)
 
 
+func _setup_music_bus() -> void:
+	var bus_idx: int = AudioServer.get_bus_index("Music")
+	if bus_idx == -1:
+		AudioServer.add_bus()
+		bus_idx = AudioServer.get_bus_count() - 1
+		AudioServer.set_bus_name(bus_idx, "Music")
+		AudioServer.set_bus_send(bus_idx, "Master")
+
+	_music_lpf = null
+	var effect_count: int = AudioServer.get_bus_effect_count(bus_idx)
+	for i in range(effect_count):
+		var eff: AudioEffect = AudioServer.get_bus_effect(bus_idx, i)
+		if eff is AudioEffectLowPassFilter:
+			_music_lpf = eff as AudioEffectLowPassFilter
+			break
+
+	if _music_lpf == null:
+		_music_lpf = AudioEffectLowPassFilter.new()
+		_music_lpf.cutoff_hz = LPF_MENU_CUTOFF
+		_music_lpf.resonance = 0.5
+		AudioServer.add_bus_effect(bus_idx, _music_lpf)
+
+
 func _create_music_player() -> void:
+	_setup_music_bus()
 	if music_player == null:
 		music_player = AudioStreamPlayer.new()
-		music_player.bus = "Master"
+		music_player.bus = "Music"
 		add_child(music_player)
 	harmonic_player = null
 
@@ -152,7 +181,7 @@ func get_effective_music_volume_db() -> float:
 	var base_db: float = get_music_volume_db()
 	if base_db <= -75.0:
 		return -80.0
-	return clampf(base_db + _duck_offset_db, -80.0, 6.0)
+	return clampf(base_db + _duck_offset_db + _dock_volume_offset_db, -80.0, 6.0)
 
 
 func get_sfx_volume_db() -> float:
@@ -237,6 +266,8 @@ func cleanup() -> void:
 func stop_music() -> void:
 	if _music_fade_tween != null and _music_fade_tween.is_valid():
 		_music_fade_tween.kill()
+	if _lpf_cutoff_tween != null and _lpf_cutoff_tween.is_valid():
+		_lpf_cutoff_tween.kill()
 	if music_player != null and music_player.playing:
 		music_player.stop()
 
@@ -314,14 +345,66 @@ func set_music_enabled(enabled: bool) -> void:
 		stop_music()
 
 
-## Updates the docking progress ratio (0.0 to 1.0) for crate goal tracking.
-func set_dock_progress(docked_count: int, total_goals: int, _immediate: bool = false) -> void:
-	current_docked_count = clampi(docked_count, 0, maxi(total_goals, 1))
-	current_total_goals = maxi(total_goals, 1)
-	if current_total_goals > 0:
-		current_dock_progress = clampf(float(current_docked_count) / float(current_total_goals), 0.0, 1.0)
+## Updates the harmonic docking progress (0.0 to 1.0) and dynamically layers the background music.
+## In levels, filters the BGM from warm ambient lo-fi (650 Hz) at 0% to full fidelity (20,500 Hz) at 100%.
+func set_dock_progress(docked_count: int, total_goals: int, immediate: bool = false) -> void:
+	if total_goals <= 0:
+		current_docked_count = 0
+		current_total_goals = 0
+		current_dock_progress = 1.0
+		_dock_volume_offset_db = 0.0
+		_set_lpf_cutoff(LPF_MENU_CUTOFF, immediate)
+		_smooth_volume_to(get_effective_music_volume_db(), 0.1 if immediate else 0.4)
+		return
+
+	current_docked_count = clampi(docked_count, 0, total_goals)
+	current_total_goals = total_goals
+	current_dock_progress = clampf(float(current_docked_count) / float(current_total_goals), 0.0, 1.0)
+
+	var target_cutoff: float = get_target_harmonic_cutoff(current_dock_progress)
+	_dock_volume_offset_db = lerpf(-3.5, 0.0, current_dock_progress)
+
+	_set_lpf_cutoff(target_cutoff, immediate)
+	_smooth_volume_to(get_effective_music_volume_db(), 0.1 if immediate else 0.45)
+
+
+func reset_to_menu_music(immediate: bool = false) -> void:
+	set_dock_progress(0, 0, immediate)
+
+
+func get_target_harmonic_cutoff(progress: float) -> float:
+	if progress <= 0.001:
+		return LPF_BASE_CUTOFF
+	elif progress >= 0.999:
+		return LPF_MENU_CUTOFF
+	elif progress <= 0.25:
+		return lerpf(650.0, 2200.0, progress / 0.25)
+	elif progress <= 0.50:
+		return lerpf(2200.0, 5500.0, (progress - 0.25) / 0.25)
+	elif progress <= 0.75:
+		return lerpf(5500.0, 11000.0, (progress - 0.50) / 0.25)
 	else:
-		current_dock_progress = 0.0
+		return lerpf(11000.0, 20500.0, (progress - 0.75) / 0.25)
+
+
+func _set_lpf_cutoff(target_hz: float, immediate: bool = false) -> void:
+	if _music_lpf == null:
+		return
+
+	if _lpf_cutoff_tween != null and _lpf_cutoff_tween.is_valid():
+		_lpf_cutoff_tween.kill()
+
+	if immediate or DisplayServer.get_name() == "headless" or not is_inside_tree():
+		_music_lpf.cutoff_hz = target_hz
+	else:
+		_lpf_cutoff_tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		_lpf_cutoff_tween.tween_property(_music_lpf, "cutoff_hz", target_hz, 0.45)
+
+
+func get_current_music_cutoff() -> float:
+	if _music_lpf != null:
+		return _music_lpf.cutoff_hz
+	return LPF_MENU_CUTOFF
 
 
 func set_sound_enabled(enabled: bool) -> void:

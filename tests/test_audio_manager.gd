@@ -207,7 +207,7 @@ func test_bgm_system() -> void:
 
 	# 1. Music player instance
 	assert_true(audio_mgr.music_player != null, "Music player AudioStreamPlayer initialized")
-	assert_equal(audio_mgr.music_player.bus, "Master", "Music player is routed to Master bus")
+	assert_true(audio_mgr.music_player.bus in ["Music", "Master"], "Music player is routed to audio bus (got %s)" % audio_mgr.music_player.bus)
 
 	# 2. BGM Streams loaded
 	assert_true(audio_mgr._bgm_streams.has(0), "Track 0 (Lo-Fi Warehouse Shift) stream is loaded")
@@ -274,27 +274,47 @@ func test_harmonic_goal_docking() -> void:
 	# 1. Single background music channel guarantee
 	assert_true(audio_mgr.music_player != null, "Music player AudioStreamPlayer initialized")
 	assert_true(audio_mgr.harmonic_player == null or not audio_mgr.harmonic_player.playing, "No secondary harmonic music player is running in background")
+	assert_true(audio_mgr._music_lpf != null, "Music low-pass filter effect initialized on Music bus")
 
-	# 2. Dock progress tracking
-	audio_mgr.set_dock_progress(0, 4)
+	# 2. Dock progress tracking & Dynamic Low-Pass Layering
+	audio_mgr.set_dock_progress(0, 4, true)
 	assert_equal(audio_mgr.current_dock_progress, 0.0, "Dock progress is 0.0")
-	audio_mgr.set_dock_progress(1, 4)
-	assert_equal(audio_mgr.current_dock_progress, 0.25, "Dock progress is 0.25")
-	audio_mgr.set_dock_progress(2, 4)
-	assert_equal(audio_mgr.current_dock_progress, 0.50, "Dock progress is 0.50")
-	audio_mgr.set_dock_progress(3, 4)
-	assert_equal(audio_mgr.current_dock_progress, 0.75, "Dock progress is 0.75")
-	audio_mgr.set_dock_progress(4, 4)
-	assert_equal(audio_mgr.current_dock_progress, 1.0, "Dock progress is 1.0")
+	var cutoff_0: float = audio_mgr.get_current_music_cutoff()
+	assert_equal(cutoff_0, 650.0, "BGM at 0% docked filtered to ambient low-pass cutoff (650 Hz)")
 
-	# 3. Discrete SFX execution (does not start background players)
+	audio_mgr.set_dock_progress(1, 4, true)
+	assert_equal(audio_mgr.current_dock_progress, 0.25, "Dock progress is 0.25")
+	var cutoff_25: float = audio_mgr.get_current_music_cutoff()
+	assert_true(cutoff_25 > cutoff_0, "BGM cutoff opens up at 25%% docked (got %d > %d)" % [int(cutoff_25), int(cutoff_0)])
+
+	audio_mgr.set_dock_progress(2, 4, true)
+	assert_equal(audio_mgr.current_dock_progress, 0.50, "Dock progress is 0.50")
+	var cutoff_50: float = audio_mgr.get_current_music_cutoff()
+	assert_true(cutoff_50 > cutoff_25, "BGM cutoff opens up at 50%% docked (got %d > %d)" % [int(cutoff_50), int(cutoff_25)])
+
+	audio_mgr.set_dock_progress(3, 4, true)
+	assert_equal(audio_mgr.current_dock_progress, 0.75, "Dock progress is 0.75")
+	var cutoff_75: float = audio_mgr.get_current_music_cutoff()
+	assert_true(cutoff_75 > cutoff_50, "BGM cutoff opens up at 75%% docked (got %d > %d)" % [int(cutoff_75), int(cutoff_50)])
+
+	audio_mgr.set_dock_progress(4, 4, true)
+	assert_equal(audio_mgr.current_dock_progress, 1.0, "Dock progress is 1.0")
+	var cutoff_100: float = audio_mgr.get_current_music_cutoff()
+	assert_equal(cutoff_100, 20500.0, "BGM at 100% docked fully opened to maximum brilliance (20,500 Hz)")
+
+	# 3. Discrete SFX execution & goal unlock decay
 	audio_mgr.play_goal_lock(1, 4)
 	assert_equal(audio_mgr.current_dock_progress, 0.25, "play_goal_lock(1, 4) updates progress to 0.25")
 	audio_mgr.play_goal_lock(4, 4)
 	assert_equal(audio_mgr.current_dock_progress, 1.0, "play_goal_lock(4, 4) updates progress to 1.0")
+
 	audio_mgr.play_goal_unlock(2)
 	assert_equal(audio_mgr.current_dock_progress, 0.50, "play_goal_unlock(2) updates progress to 0.50")
 	assert_true(audio_mgr.harmonic_player == null or not audio_mgr.harmonic_player.playing, "Goal lock SFX does not start background music")
+
+	# 4. Return to menu restores full fidelity
+	audio_mgr.reset_to_menu_music(true)
+	assert_equal(audio_mgr.get_current_music_cutoff(), 20500.0, "Menu music restores unattenuated full fidelity (20,500 Hz)")
 
 	audio_mgr.stop_music()
 	audio_mgr.queue_free()
