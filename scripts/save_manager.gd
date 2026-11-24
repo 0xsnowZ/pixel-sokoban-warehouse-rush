@@ -46,6 +46,10 @@ var daily_challenge_date: String = ""
 var daily_challenge_streak: int = 0
 var daily_challenge_completed: bool = false
 
+# First-time onboarding coaching flags (Phase 2 UX)
+var has_completed_tutorial: bool = false
+var has_seen_deadlock_tip: bool = false
+
 # Progressive Star Vault Milestone Chests rewarding dedicated players
 const STAR_VAULTS: Array[Dictionary] = [
 	{"stars": 15, "name": "Bronze Supply Cache", "reward_type": "hints", "amount": 5, "icon": "🥉"},
@@ -489,7 +493,9 @@ func to_dict() -> Dictionary:
 			"claimed_star_vaults": claimed_star_vaults,
 			"daily_challenge_date": daily_challenge_date,
 			"daily_challenge_streak": daily_challenge_streak,
-			"daily_challenge_completed": daily_challenge_completed
+			"daily_challenge_completed": daily_challenge_completed,
+			"has_completed_tutorial": has_completed_tutorial,
+			"has_seen_deadlock_tip": has_seen_deadlock_tip
 		}
 	}
 
@@ -531,6 +537,8 @@ func from_dict(data: Dictionary) -> void:
 	daily_challenge_date = str(economy.get("daily_challenge_date", ""))
 	daily_challenge_streak = int(economy.get("daily_challenge_streak", 0))
 	daily_challenge_completed = bool(economy.get("daily_challenge_completed", false))
+	has_completed_tutorial = bool(economy.get("has_completed_tutorial", false))
+	has_seen_deadlock_tip = bool(economy.get("has_seen_deadlock_tip", false))
 
 
 ## Saves game state to JSON on disk atomically with backup copy protection.
@@ -641,6 +649,8 @@ func reset_all_progress(custom_path: String = "") -> void:
 	daily_challenge_date = ""
 	daily_challenge_streak = 0
 	daily_challenge_completed = false
+	has_completed_tutorial = false
+	has_seen_deadlock_tip = false
 	save_data(custom_path)
 	var target_path: String = custom_path if not custom_path.is_empty() else DEFAULT_SAVE_PATH
 	var bak_path: String = target_path + ".bak"

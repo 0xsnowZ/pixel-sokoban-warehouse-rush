@@ -201,6 +201,81 @@ static func get_next_hint(grid: GridLogic, level_index: int, level_path: String 
 	return ""
 
 
+## Traces forward from the current board state up to the next meaningful crate push (or max walk cap).
+## Returns: { "first_char": String, "walk_waypoints": Array[Vector2i], "has_push": bool, "push_from": Vector2i, "push_to": Vector2i, "push_dir": Vector2i, "deadlock": bool }
+static func get_next_push_plan(grid: GridLogic, level_index: int, level_path: String = "", max_walk_steps: int = 12) -> Dictionary:
+	var plan: Dictionary = {
+		"first_char": "",
+		"walk_waypoints": [] as Array[Vector2i],
+		"has_push": false,
+		"push_from": Vector2i.ZERO,
+		"push_to": Vector2i.ZERO,
+		"push_dir": Vector2i.ZERO,
+		"deadlock": false
+	}
+	if grid == null or grid.is_won():
+		return plan
+
+	var sim: GridLogic = grid.clone() as GridLogic
+	if sim == null:
+		return plan
+
+	var waypoints: Array[Vector2i] = []
+	var custom_solution: String = ""
+	var custom_idx: int = 0
+
+	for step_i in range(max_walk_steps + 1):
+		var move_ch: String = get_next_hint(sim, level_index, level_path)
+		if move_ch.is_empty():
+			if sim.has_deadlock():
+				if step_i == 0:
+					plan["deadlock"] = true
+				break
+			if custom_solution.is_empty():
+				var res: SolverResult = solve(sim, 15000)
+				if res.is_solvable and not res.solution_str.is_empty():
+					custom_solution = res.solution_str
+					custom_idx = 0
+				elif res.is_deadlock and step_i == 0:
+					plan["deadlock"] = true
+					break
+				else:
+					break
+			if custom_idx < custom_solution.length():
+				move_ch = custom_solution.substr(custom_idx, 1)
+				custom_idx += 1
+			else:
+				break
+
+		var dir: Vector2i = Vector2i.ZERO
+		match move_ch:
+			"u": dir = Vector2i.UP
+			"d": dir = Vector2i.DOWN
+			"l": dir = Vector2i.LEFT
+			"r": dir = Vector2i.RIGHT
+		if dir == Vector2i.ZERO:
+			break
+
+		if step_i == 0:
+			plan["first_char"] = move_ch
+
+		var target_tile: Vector2i = sim.player_pos + dir
+		var is_push: bool = sim.has_crate(target_tile)
+		if not sim.move(dir):
+			break
+
+		waypoints.append(target_tile)
+		if is_push:
+			plan["has_push"] = true
+			plan["push_from"] = target_tile
+			plan["push_to"] = target_tile + dir
+			plan["push_dir"] = dir
+			break
+
+	plan["walk_waypoints"] = waypoints
+	return plan
+
+
 ## Checks if a position is impassable boundary (wall, out of bounds, or exterior void).
 static func is_blocked_tile(pos: Vector2i, grid_or_walls: Variant, w: int = 0, h: int = 0) -> bool:
 	if grid_or_walls is GridLogic:

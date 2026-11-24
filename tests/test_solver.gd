@@ -21,6 +21,7 @@ func _init() -> void:
 	run_suite("All 10 Shipped Levels Verification", test_all_10_levels_solvable)
 	run_suite("Unsolvable & Deadlock Detection", test_unsolvable_deadlock)
 	run_suite("Walk Pathfinding Around Crates", test_walk_pathfinding)
+	run_suite("Next Meaningful Push Plan Tracing", test_next_push_plan)
 
 	print("\n==================================================")
 	print("Test Suites: %d passed, %d failed" % [_passed_suites, _failed_suites])
@@ -118,3 +119,22 @@ func test_walk_pathfinding() -> void:
 
 	var blocked: Array[Vector2i] = SokobanSolverScript.find_player_walk_path(Vector2i(1, 3), Vector2i(2, 1), grid)
 	assert_true(blocked.is_empty(), "Targeting a crate tile returns empty walk path")
+
+
+func test_next_push_plan() -> void:
+	var grid = GridLogicScript.new()
+	assert_true(grid.load_from_file("res://levels/level_01.sok"), "Loaded level_01 for push plan test")
+	# Move left first if open, or test from starting state directly so solver walks toward first crate push
+	var plan: Dictionary = SokobanSolverScript.get_next_push_plan(grid, 0, "res://levels/level_01.sok", 12)
+	assert_false(String(plan.get("first_char", "")).is_empty(), "Push plan returns a valid first move character")
+	assert_true(bool(plan.get("has_push", false)), "Push plan reaches an upcoming crate push")
+	var waypoints: Array = plan.get("walk_waypoints", [])
+	assert_true(waypoints.size() >= 1, "Push plan provides at least 1 walk waypoint")
+	assert_true(plan.get("push_dir", Vector2i.ZERO) != Vector2i.ZERO, "Push plan provides non-zero push direction")
+
+	# Verify corner deadlock state reports deadlock without crashing
+	var dead_grid = grid.clone()
+	dead_grid.execute_moves("rdr")
+	var dead_plan: Dictionary = SokobanSolverScript.get_next_push_plan(dead_grid, 0, "res://levels/level_01.sok", 12)
+	assert_true(String(dead_plan.get("first_char", "")).is_empty(), "Deadlocked board returns empty first_char")
+	assert_true(bool(dead_plan.get("deadlock", false)), "Deadlocked board flags deadlock = true")

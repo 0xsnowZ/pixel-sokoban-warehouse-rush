@@ -27,6 +27,7 @@ func _init() -> void:
 	run_suite("Persistence (Save & Load to Disk)", test_persistence)
 	run_suite("Corrupt & Missing File Resilience", test_corrupt_and_missing_file)
 	run_suite("Breakout Hit Engine: Star Vaults, Daily Challenge & Level Skip", test_breakout_hit_engine)
+	run_suite("Phase 2 Onboarding & Deadlock Coaching Flags", test_phase2_coaching_flags)
 
 	_cleanup_test_file()
 
@@ -443,3 +444,24 @@ func test_breakout_hit_engine() -> void:
 	mgr2.free()
 
 
+
+
+func test_phase2_coaching_flags() -> void:
+	_cleanup_test_file()
+	var mgr = SaveManagerScript.new()
+	assert_false(mgr.has_completed_tutorial, "has_completed_tutorial defaults to false")
+	assert_false(mgr.has_seen_deadlock_tip, "has_seen_deadlock_tip defaults to false")
+
+	mgr.has_completed_tutorial = true
+	mgr.has_seen_deadlock_tip = true
+	assert_true(mgr.save_data(TEST_SAVE_PATH), "Saved Phase 2 coaching flags")
+
+	var mgr_reload = SaveManagerScript.new()
+	assert_true(mgr_reload.load_data(TEST_SAVE_PATH), "Loaded Phase 2 coaching flags")
+	assert_true(mgr_reload.has_completed_tutorial, "has_completed_tutorial persists across reload")
+	assert_true(mgr_reload.has_seen_deadlock_tip, "has_seen_deadlock_tip persists across reload")
+
+	mgr_reload.reset_all_progress(TEST_SAVE_PATH)
+	assert_false(mgr_reload.has_completed_tutorial, "reset_all_progress clears has_completed_tutorial")
+	assert_false(mgr_reload.has_seen_deadlock_tip, "reset_all_progress clears has_seen_deadlock_tip")
+	_cleanup_test_file()

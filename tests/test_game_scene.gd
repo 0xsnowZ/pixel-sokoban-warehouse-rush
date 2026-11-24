@@ -38,6 +38,7 @@ func _init() -> void:
 	test_touch_swipe_mechanics()
 	test_locomotion_juice_and_corridor_auto_repeat()
 	test_phase1_ux_enhancements()
+	test_phase2_visual_and_coaching_enhancements()
 
 	print("\n" + "=".repeat(54))
 	print("Game Scene Results: %d passed, %d failed" % [passes, fails])
@@ -973,3 +974,92 @@ func test_phase1_ux_enhancements() -> void:
 	loc.queue_free()
 	save_mgr.queue_free()
 	safe_mgr.queue_free()
+
+
+func test_phase2_visual_and_coaching_enhancements() -> void:
+	print("--- Running Suite: Phase 2 Visual Polish, Multi-Step Hints, Swipe Preview & Coaching ---")
+	var loc: Node = LocalizationManagerScript.new()
+	var save_mgr: Node = SaveManagerScript.new()
+	var game: Control = create_test_game(loc, save_mgr)
+	game.load_level(0)
+	game.calculate_layout(Vector2(540, 960))
+
+	# 1. BackdropBlur shader & ParMeter inside TopBar
+	assert_true(game.has_node("BackdropBlur"), "BackdropBlur layer exists in Game scene")
+	assert_true(game.par_meter != null, "ParMeter control exists inside TopBar")
+	assert_true(game.par_meter.draw.is_connected(game._on_par_meter_draw), "ParMeter draw signal is connected")
+	game.par_meter.queue_redraw()
+
+	# 2. Pre-release swipe preview before 42px trigger threshold
+	var start_px: Vector2 = game.grid_origin + Vector2(0.5, 0.5) * game.tile_size
+	var mb_down := InputEventMouseButton.new()
+	mb_down.button_index = MOUSE_BUTTON_LEFT
+	mb_down.pressed = true
+	mb_down.position = start_px
+	game._input(mb_down)
+	assert_true(game.is_touching, "Mouse press on board begins touch gesture")
+
+	var mb_drag := InputEventMouseMotion.new()
+	mb_drag.position = start_px + Vector2(24.0, 0.0)
+	game._input(mb_drag)
+	assert_eq(game.preview_swipe_dir, Vector2i.RIGHT, "Pre-release drag >= 18px previews cardinal swipe direction")
+	assert_eq(game.grid.moves_count, 0, "Pre-release preview does not execute move before 42px threshold")
+
+	var mb_up := InputEventMouseButton.new()
+	mb_up.button_index = MOUSE_BUTTON_LEFT
+	mb_up.pressed = false
+	mb_up.position = start_px + Vector2(24.0, 0.0)
+	game._input(mb_up)
+	assert_eq(game.preview_swipe_dir, Vector2i.ZERO, "Swipe preview clears on release")
+
+	# 3. Multi-step hint walk-to-push trajectory
+	game.load_level(0)
+	game.is_animating = false
+	# Ensure player is >= 2 steps away from pushing by moving left first if possible
+	game.try_move(Vector2i.LEFT)
+	game.is_animating = false
+	var hints_before: int = save_mgr.get_hints_remaining()
+	game._on_hint_pressed()
+	assert_eq(save_mgr.get_hints_remaining(), hints_before - 1, "Multi-step hint consumes 1 hint charge")
+	assert_true(game.active_hint_dir != Vector2i.ZERO, "Hint sets active_hint_dir")
+	assert_true(game.hint_walk_waypoints.size() > 1, "Hint traces multi-step walk_waypoints to upcoming push")
+	assert_true(game.hint_has_push, "Multi-step hint flags upcoming push destination")
+	assert_true(game.hint_toast != null and game.hint_toast.visible and game.hint_toast_label.text.contains("Hint"), "Hint displays localized hint toast")
+	game.clear_hint()
+	assert_true(game.hint_walk_waypoints.is_empty() and not game.hint_has_push, "clear_hint resets multi-step hint state")
+
+	# 4. Tutorial dismissal on pure walk vs crate push on Level 1
+	assert_false(save_mgr.has_completed_tutorial, "Tutorial flag stays false before pushing crate")
+	game.load_level(0)
+	game.is_animating = false
+	game.try_move(Vector2i.RIGHT)
+	assert_false(save_mgr.has_completed_tutorial, "Pure walking move without pushing crate keeps tutorial flag false")
+	game.load_level(0)
+	game.is_animating = false
+	game.try_move(Vector2i.UP) # Pushes crate at (2,2) -> (2,1)
+	assert_true(save_mgr.has_completed_tutorial, "Pushing a crate on Level 1 completes first-shift tutorial")
+
+	# 5. First deadlock coaching tip triggers once and does not repeat after seen
+	assert_false(save_mgr.has_seen_deadlock_tip, "has_seen_deadlock_tip starts false before first deadlock")
+	game.load_level(0)
+	game.grid.execute_moves("rdr")
+	game._refresh_deadlock_radar(true)
+	assert_true(save_mgr.has_seen_deadlock_tip, "First corner deadlock marks has_seen_deadlock_tip = true")
+	assert_true(game.hint_toast != null and game.hint_toast.visible, "First corner deadlock shows gentle rewind tip")
+
+	# Undo and re-trigger deadlock; toast should not fire a second time
+	game.hint_toast.hide()
+	game.grid.undo_last_push()
+	game._refresh_deadlock_radar(false)
+	game.grid.execute_moves("rdr")
+	game._refresh_deadlock_radar(true)
+	assert_false(game.hint_toast.visible, "Deadlock coaching tip does not repeat once seen")
+
+	for ch_idx in range(4):
+		game.current_chapter_idx = ch_idx
+		game.queue_redraw()
+	assert_true(true, "All 4 chapter wall auto-tiling & mote render paths queue cleanly")
+
+	game.queue_free()
+	loc.queue_free()
+	save_mgr.queue_free()

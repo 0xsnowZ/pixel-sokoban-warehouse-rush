@@ -892,6 +892,21 @@ const TRANSLATIONS: Dictionary = {
 		"en": "Supply Cache",
 		"fr": "Réserve",
 		"ar": "مخزون"
+	},
+	"TUTORIAL_FIRST_PUSH": {
+		"en": "Swipe or tap to push crate onto dock",
+		"fr": "Glissez ou touchez pour pousser la caisse",
+		"ar": "اسحب أو المس لدفع الصندوق إلى المنصة"
+	},
+	"TOAST_FIRST_DEADLOCK": {
+		"en": "Corner trap! Rewind Push anytime — no penalty",
+		"fr": "Caisse bloquée ! Annulez à tout moment",
+		"ar": "صندوق عالق! تراجع عن الدفعة في أي وقت"
+	},
+	"HINT_PUSH_PLAN": {
+		"en": "Hint: Follow path & push crate",
+		"fr": "Indice : Suivez le trajet et poussez",
+		"ar": "تلميح: اتبع المسار وادفع الصندوق"
 	}
 }
 
