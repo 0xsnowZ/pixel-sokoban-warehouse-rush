@@ -206,14 +206,19 @@ func _update_localized_text(val: float) -> void:
 	var base_text: String = ""
 	if loc_mgr and loc_mgr.has_method("get_text"):
 		base_text = loc_mgr.get_text(key)
+	elif loc_mgr and loc_mgr.has_method("tr_text"):
+		base_text = loc_mgr.tr_text(key)
 	else:
 		match key:
 			"SPLASH_INIT":
 				base_text = "INITIALIZING SYSTEM..."
 			"SPLASH_LEVELS":
-				base_text = "LOADING 50 SOKOBAN LEVELS..."
+				base_text = "LOADING 75 SOKOBAN LEVELS..."
 			"SPLASH_READY":
 				base_text = "READY! TAP TO START"
+
+	if loc_mgr and loc_mgr.has_method("apply_rtl") and margin != null:
+		loc_mgr.apply_rtl(margin)
 
 	if val < 90.0:
 		status_label.text = "%s %d%%" % [base_text, int(val)]
@@ -257,8 +262,8 @@ func _trigger_haptic() -> void:
 	var haptic_mgr: Node = null
 	if is_inside_tree() and get_tree() and get_tree().root:
 		haptic_mgr = get_tree().root.get_node_or_null("HapticManager")
-	if haptic_mgr and haptic_mgr.has_method("play_click"):
-		haptic_mgr.play_click()
+	if haptic_mgr and haptic_mgr.has_method("vibrate_click"):
+		haptic_mgr.vibrate_click()
 
 
 func _transition_to_menu(fade_time: float = 0.35) -> void:

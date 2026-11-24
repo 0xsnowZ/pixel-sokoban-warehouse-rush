@@ -1026,8 +1026,8 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 			tw.tween_property(desc_lbl, "modulate", Color.WHITE, 0.24)
 			if audio_mgr and audio_mgr.has_method("play_ui_click"):
 				audio_mgr.play_ui_click()
-			if haptic_mgr and haptic_mgr.has_method("vibrate_light"):
-				haptic_mgr.vibrate_light()
+			if haptic_mgr and haptic_mgr.has_method("vibrate_click"):
+				haptic_mgr.vibrate_click()
 		)
 		_attach_spring_physics(act_btn)
 
@@ -1042,10 +1042,8 @@ func _refresh_achievements_ui() -> void:
 	var ach_list: Array = []
 	if achievement_mgr and achievement_mgr.has_method("get_all_achievements"):
 		ach_list = achievement_mgr.get_all_achievements()
-	elif save_mgr and save_mgr.has_method("get_unlocked_achievements"):
-		# In case achievement_mgr is absent, build from save_mgr
-		var unlocked: Array[String] = save_mgr.get_unlocked_achievements()
-		ach_list = []
+	elif AchievementManagerScript != null:
+		ach_list = AchievementManagerScript.ACHIEVEMENTS
 
 	var unlocked_count: int = 0
 	for ach in ach_list:
@@ -1083,7 +1081,7 @@ func _refresh_achievements_ui() -> void:
 		var card: Control = _create_achievement_item_card(
 			ach.get("id", ""),
 			ach.get("icon", "🏆"),
-			loc_mgr.tr_text(ach.get("title_key", "")) if loc_mgr else ach.get("title", ""),
+			loc_mgr.tr_text(ach.get("name_key", "")) if loc_mgr else ach.get("name", ""),
 			loc_mgr.tr_text(ach.get("desc_key", "")) if loc_mgr else ach.get("desc", ""),
 			is_unlocked
 		)
@@ -1254,6 +1252,13 @@ func _on_track_cycle_pressed() -> void:
 
 
 func _update_menu_state() -> void:
+	if loc_mgr and loc_mgr.has_method("apply_rtl"):
+		for rtl_ctrl in [main_view, level_select_view, settings_modal, locker_modal, achievements_modal, credits_modal, star_vault_modal]:
+			loc_mgr.apply_rtl(rtl_ctrl)
+		if level_grid != null:
+			level_grid.layout_direction = Control.LAYOUT_DIRECTION_LTR
+		if locker_preview_content != null:
+			locker_preview_content.layout_direction = Control.LAYOUT_DIRECTION_LTR
 	var unlocked_lvl: int = save_mgr.unlocked_level if save_mgr else 0
 	var last_lvl: int = save_mgr.last_played_level if save_mgr else 0
 	var has_progress: bool = (unlocked_lvl > 0 or (save_mgr and save_mgr.is_level_completed(0)))
@@ -2024,7 +2029,17 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 		if vault.get("reward_type") == "hints":
 			desc_lbl.text = "Congratulations! You earned +%d Free Solver Hints for your dedication!" % vault.get("amount", 5)
 		else:
-			desc_lbl.text = "Exclusive Outfit Unlocked! Visit the Supply Depot to equip your new gear!"
+			var s_id: String = vault.get("skin_id", "")
+			var is_crate: bool = false
+			if save_mgr and save_mgr.has_method("get_all_crate_skins"):
+				for cs in save_mgr.get_all_crate_skins():
+					if cs.get("id", "") == s_id:
+						is_crate = true
+						break
+			if is_crate:
+				desc_lbl.text = "Exclusive Crate Skin Unlocked! Visit the Supply Depot to equip your new gear!"
+			else:
+				desc_lbl.text = "Exclusive Outfit Unlocked! Visit the Supply Depot to equip your new gear!"
 
 	if claim_btn:
 		for conn in claim_btn.pressed.get_connections():

@@ -89,3 +89,8 @@ static func get_level_data(level_index: int) -> String:
 		push_error("Level index out of bounds: %d" % level_index)
 		return ""
 	return LEVELS[level_index]
+
+
+## Convenience 1-indexed accessor matching level_XX.sok filenames.
+static func get_level_text(level_number: int) -> String:
+	return get_level_data(level_number - 1)

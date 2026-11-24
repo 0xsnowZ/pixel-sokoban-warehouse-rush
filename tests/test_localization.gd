@@ -103,6 +103,12 @@ func test_translations_lookup() -> void:
 	assert_eq(loc.tr_text("BTN_RESTART"), "إعادة", "AR BTN_RESTART")
 	assert_eq(loc.tr_text("MENU_CREDITS"), "حول اللعبة", "AR MENU_CREDITS")
 	assert_eq(loc.tr_text("MENU_HAPTICS", ["مفعّل"]), "الاهتزاز: مفعّل", "AR MENU_HAPTICS")
+	assert_true(loc.tr_text("BTN_SKIP_LEVEL") != "BTN_SKIP_LEVEL", "BTN_SKIP_LEVEL translated")
+	assert_true("225" in loc.tr_text("LOCKER_STARS_BADGE", [10]), "LOCKER_STARS_BADGE reflects 225 stars")
+	assert_true("75" in loc.tr_text("SPLASH_LEVELS"), "SPLASH_LEVELS reflects 75 levels")
+
+	var base_font: FontFile = load("res://assets/fonts/OpenSans-Bold.ttf") as FontFile
+	assert_true(base_font != null and base_font.has_char("ع".unicode_at(0)), "Arabic glyph fallback registered on OpenSans-Bold.ttf")
 
 	loc.queue_free()
 
@@ -223,6 +229,11 @@ func test_main_menu_localization_integration() -> void:
 	menu._update_menu_state()
 	assert_eq(menu.play_btn.text, "ابدأ", "Main menu Play button in AR")
 	assert_eq(menu.language_btn.text, "اللغة: العربية", "Language button in AR")
+	assert_eq(menu.main_view.layout_direction, Control.LAYOUT_DIRECTION_RTL, "Main menu switches layout_direction to RTL in Arabic")
+
+	loc.set_language("en")
+	menu._update_menu_state()
+	assert_eq(menu.main_view.layout_direction, Control.LAYOUT_DIRECTION_LTR, "Main menu restores layout_direction to LTR in English")
 
 	menu.queue_free()
 	loc.queue_free()

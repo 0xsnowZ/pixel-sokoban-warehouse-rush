@@ -12,7 +12,7 @@
   <img src="https://img.shields.io/badge/Engine-Godot%204.7%2B-478CBF?style=for-the-badge&logo=godotengine&logoColor=white" alt="Godot 4.7+"/>
   <img src="https://img.shields.io/badge/Language-GDScript%202.0-blue?style=for-the-badge" alt="GDScript"/>
   <img src="https://img.shields.io/badge/Platform-Android%20%7C%20Linux%20%7C%20Desktop-green?style=for-the-badge" alt="Platforms"/>
-  <img src="https://img.shields.io/badge/Tests-19%20Suites%20Passing-brightgreen?style=for-the-badge" alt="19 Test Suites"/>
+  <img src="https://img.shields.io/badge/Tests-20%20Suites%20Passing-brightgreen?style=for-the-badge" alt="20 Test Suites"/>
   <img src="https://img.shields.io/badge/Localization-EN%20%7C%20FR%20%7C%20AR%20(RTL)-orange?style=for-the-badge" alt="Trilingual"/>
   <img src="https://img.shields.io/badge/License-MIT-lightgrey?style=for-the-badge" alt="MIT License"/>
 </p>
@@ -21,30 +21,30 @@
 
 ## 📖 Overview
 
-**Pixel Sokoban: Warehouse Rush** is a modern reimagining of the classic Japanese box-pushing puzzle genre. Step into the steel-toe boots of an industrial warehouse technician navigating 50 algorithmically validated, non-square warehouse layouts. 
+**Pixel Sokoban: Warehouse Rush** is a modern reimagining of the classic Japanese box-pushing puzzle genre. Step into the steel-toe boots of an industrial warehouse technician navigating 75 algorithmically validated, non-square warehouse layouts. 
 
-Carefully chart your path through tight warehouse corridors, position crates onto hydraulic goal docks, collect stars, avoid catastrophic deadlocks, and unlock a rich collection of worker skins and custom crates in the **Supply Depot**.
+Carefully chart your path through tight warehouse corridors, position crates onto hydraulic goal docks, collect stars and Master Crowns, avoid catastrophic deadlocks, and unlock a rich collection of worker skins and custom crates in the **Supply Depot**.
 
 ---
 
 ## ✨ Key Features
 
-### 📦 50 Handcrafted & Solvable Levels
-- **3 Industrial Sectors**: Progressive challenge curve ranging from introductory warehouse bays to high-density logistics complexes.
+### 📦 75 Handcrafted & Solvable Levels
+- **4 Industrial Sectors**: Progressive challenge curve across *Cargo Bay*, *Cold Storage*, *Cyber Depot*, and *Quantum Vault*.
 - **Dynamic Non-Square Framing**: Adaptive camera auto-centering with zero wasted screen space, slim bezel framing, and custom safe-area margins for modern notch/pill displays.
-- **3-Star Performance Rating**: Earn stars on every level based on optimal move counts and push efficiency.
+- **3-Star Performance Rating & Master Crowns**: Earn stars via chapter-adaptive par targets and Master Crowns for exact optimal clears.
 
 ### 💡 High-Performance BFS Solver & Hint Engine
-- **Instant Step-by-Step Guidance**: Powered by a custom bidirectional Breadth-First Search solver executing in `< 0.1ms`.
-- **Proactive Deadlock Detection**: Real-time corner and boundary analysis instantly alerts players before committing irreversible blunders.
+- **Instant Step-by-Step Guidance**: Powered by precomputed optimal solutions and a custom Breadth-First Search solver (`SokobanSolver`).
+- **Proactive Deadlock Detection**: Real-time corner and 2×2 block analysis instantly alerts players before committing irreversible blunders.
 
 ### 🏭 Supply Depot & Live Cosmetic Stage
-- **Worker Wardrobe**: Unlock outfits including *Classic Denim*, *Workshop Mechanic*, *Safety Vest*, and *Hazmat Specialist*.
-- **Industrial Crates**: Push premium cargo containers such as *Classic Pine*, *Reinforced Steel*, *Cryo Container*, and the gilded *Executive Safe*.
+- **Worker Wardrobe**: Unlock outfits including *Classic Denim*, *Safety Vest*, *Workshop Mechanic*, *Foreman*, *Hazmat Specialist*, and *Golden Master*.
+- **Industrial Crates**: Push premium cargo containers such as *Classic Pine*, *Steel Container*, *Cryo Container*, *Hazard Crate*, and the gilded *Executive Safe*.
 - **Real-Time 2.5D Preview Stage**: Dynamic live animation viewport rendering character idle bounces, directional walk cycles, and hydraulic goal-docking particle effects.
 
 ### 🏆 Achievements & Milestones
-- **9 Unlockable Achievements**: Dedicated modal tracking progression milestones (*First Push*, *Docking Pro*, *Speed Porter*, *Locker Enthusiast*, and more).
+- **11 Unlockable Achievements**: Dedicated modal tracking progression milestones (*First Shift*, *Logistics Specialist*, *Sub-Zero Handler*, *Cyber Specialist*, *Quantum Master*, *Unstoppable Porter*, and more).
 - **Juiced Celebrations**: Confetti particle cascades, animated counter ribbons, and glowing completion badges.
 
 ### 🌍 Trilingual Native Localization
@@ -73,20 +73,20 @@ godot/
 ├── scenes/                  # Scene definitions and view controllers
 │   ├── splash_screen.tscn   # Animated retro splash sequence
 │   ├── main_menu.tscn       # 3-tier main menu, level grid, modals, and preview stage
-│   ├── game.tscn            # Core game viewport, HUD ribbons, and pause menu
+│   ├── game.tscn            # Core game viewport and HUD ribbons
+│   ├── game.gd              # Gameplay coordinator, custom renderer, input, and win validation
 │   └── end_screen.tscn      # Campaign victory celebration screen
 ├── scripts/                 # Core engine logic and manager singletons
 │   ├── main_menu.gd         # Menu state machine, animations, and modal managers
-│   ├── game.gd              # Gameplay coordinator, move execution, and win validation
-│   ├── sokoban_solver.gd    # High-speed BFS solver and deadlock detection engine
+│   ├── grid_logic.gd        # Pure Sokoban rules, undo stack, and deadlock logic
+│   ├── sokoban_solver.gd    # High-speed BFS solver and hint engine
 │   ├── save_manager.gd      # Persistent JSON storage, star counts, and cosmetics
-│   ├── audio_manager.gd     # SFX synthesis, background music loops, and volume bus
+│   ├── audio_manager.gd     # Procedural SFX synthesis, BGM loops, and harmonic LPF bus
 │   ├── localization_manager.gd # Trilingual lookup dictionary and RTL management
 │   └── haptic_manager.gd    # Android vibration patterns and fallback handlers
 ├── shaders/                 # GLSL canvas shaders
-│   ├── blur_backdrop.gdshader # Screen texture mipmap blur with vignette tint
-│   └── crt_vignette.gdshader  # Retro arcade monitor curve and chromatic aberration
-├── tests/                   # 19 automated headless test suites
+│   └── blur_backdrop.gdshader # Screen texture mipmap blur with vignette tint
+├── tests/                   # 20 automated headless test suites
 └── tools/                   # Asset generation, icon renderers, and level solvers
 ```
 
@@ -94,15 +94,13 @@ godot/
 
 ## 🧪 Automated Test Suite
 
-The project includes **19 headless test suites** covering all critical gameplay logic, solvers, localization, and UI states.
+The project includes **20 headless test suites** plus a 75-level solver verification script covering all critical gameplay logic, solvers, localization, and UI states.
 
 To run the full test suite headless:
 
 ```bash
-# Run all 19 test suites sequentially
-for test in tests/test_*.gd; do
-    godot --headless --script "$test"
-done
+# Run all 20 test suites and 75-level solver verification
+godot --headless --path . -s scripts/run_all_tests.gd
 ```
 
 Or run individual suites:
@@ -154,11 +152,11 @@ godot --headless --script tests/test_localization.gd
 
 | Action | Touch / Gesture | Keyboard | Gamepad |
 | :--- | :--- | :--- | :--- |
-| **Move / Push** | Swipe / Virtual D-Pad | `W` `A` `S` `D` / Arrow Keys | D-Pad / Left Stick |
-| **Undo Move** | Tap "Undo" Button | `Z` / `U` / `Ctrl+Z` | `B` / `Circle` |
+| **Move / Push** | Swipe / Virtual D-Pad | `W` `A` `S` `D` / Arrow Keys | D-Pad |
+| **Undo Move** | Tap "Undo" Button | `Z` / `U` / `Backspace` / `Ctrl+Z` | `B` / `Circle` |
 | **Reset Level** | Tap "Restart" Button | `R` | `Y` / `Triangle` |
 | **Hint (BFS)** | Tap "Hint" Button | `H` | `X` / `Square` |
-| **Pause Menu** | Tap "Pause" / Gear | `Escape` | `Start` |
+| **Back / Dismiss** | Android Back / Scrim | `Escape` | `Start` |
 
 ---
 

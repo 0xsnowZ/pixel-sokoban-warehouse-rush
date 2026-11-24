@@ -660,9 +660,37 @@ func test_rewarded_ad_hint_economy_in_game() -> void:
 	# 5. Test Skip Level lifeline
 	game._show_ad_reward_modal()
 	assert_true(game.ad_reward_modal.visible, "AdRewardModal shown for Level Skip")
+	assert_true(skip_btn.visible, "SkipLevelBtn visible before final level")
 	game._on_skip_level_pressed()
 	assert_true(not game.ad_reward_modal.visible, "AdRewardModal hidden after Level Skip")
 	assert_eq(game.current_level_index, 1, "Level skipped from 0 to 1")
+
+	# 5b. Final level (75, idx 74) cannot be skipped or auto-won via skip
+	game.save_mgr.unlocked_level = 74
+	game.load_level(74)
+	game._show_ad_reward_modal()
+	assert_false(skip_btn.visible, "SkipLevelBtn hidden on final level 75")
+	game._on_skip_level_pressed()
+	assert_false(game.is_level_won, "Final level cannot be won via skip lifeline")
+
+	# 5c. Keyboard Hint ('H') & Escape modal dismissal
+	game.load_level(0)
+	game.save_mgr.hints_remaining = 3
+	var key_h: InputEventKey = InputEventKey.new()
+	key_h.keycode = KEY_H
+	key_h.pressed = true
+	key_h.echo = false
+	game._input(key_h)
+	assert_true(game.active_hint_dir != Vector2i.ZERO, "KEY_H triggers hint in game")
+
+	game._show_ad_reward_modal()
+	assert_true(game.ad_reward_modal.visible, "AdRewardModal visible before KEY_ESCAPE")
+	var key_esc: InputEventKey = InputEventKey.new()
+	key_esc.keycode = KEY_ESCAPE
+	key_esc.pressed = true
+	key_esc.echo = false
+	game._input(key_esc)
+	assert_false(game.ad_reward_modal.visible, "KEY_ESCAPE dismisses open AdRewardModal")
 
 	# 6. Test Daily Challenge Mode UI
 	game.is_daily_challenge = true

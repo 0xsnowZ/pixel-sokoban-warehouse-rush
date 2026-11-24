@@ -124,6 +124,8 @@ func _update_ui() -> void:
 		stars_lbl.text = "★ Total Stars: %d / 225 ★" % total_stars
 
 	if loc_mgr:
+		if loc_mgr.has_method("apply_rtl") and margin_container != null:
+			loc_mgr.apply_rtl(margin_container)
 		title_label.text = loc_mgr.tr_text("END_TITLE")
 		thanks_label.text = loc_mgr.tr_text("END_THANKS")
 		more_levels_label.text = loc_mgr.tr_text("END_MORE_LEVELS")

@@ -81,7 +81,7 @@ func test_achievement_catalog() -> void:
 	var ach_mgr = AchievementManagerScript.new()
 	var all_achs = ach_mgr.get_all_achievements()
 
-	assert_equal(all_achs.size(), 10, "All 10 achievements registered in catalog")
+	assert_equal(all_achs.size(), 11, "All 11 achievements registered in catalog")
 
 	var first_shift = ach_mgr.get_achievement_info("first_shift")
 	assert_false(first_shift.is_empty(), "First Shift achievement exists")
@@ -103,7 +103,7 @@ func test_unlock_mechanics() -> void:
 	assert_equal(ach_mgr.get_unlocked_count(save_mgr), 0, "Initial unlocked count is 0")
 	assert_false(ach_mgr.is_unlocked("first_shift", save_mgr), "First shift is locked initially")
 
-	var signal_received: Dictionary = { "fired": false, "id": "" }
+	var signal_received: Dictionary = {"fired": false, "id": ""}
 	ach_mgr.achievement_unlocked.connect(func(id: String, _info: Dictionary):
 		signal_received["fired"] = true
 		signal_received["id"] = id
@@ -142,6 +142,12 @@ func test_progression_evaluation() -> void:
 		save_mgr.record_level_completion(lvl, 8, 3, TEST_SAVE_PATH)
 	new_unlocked = ach_mgr.evaluate_progress(save_mgr)
 	assert_true("cargo_master" in new_unlocked, "evaluate_progress unlocks cargo_master upon completing Chapter 1")
+
+	# 2b. Complete all of Chapter 2 (Levels 35 to 49)
+	for lvl in range(35, 50):
+		save_mgr.record_level_completion(lvl, 30, 12, TEST_SAVE_PATH)
+	new_unlocked = ach_mgr.evaluate_progress(save_mgr)
+	assert_true("cyber_master" in new_unlocked, "evaluate_progress unlocks cyber_master upon completing Chapter 3 Cyber Depot")
 
 	# 3. Equip a cosmetic
 	save_mgr.selected_worker_skin = "safety_vest"

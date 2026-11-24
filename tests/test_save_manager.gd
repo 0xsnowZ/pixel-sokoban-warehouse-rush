@@ -306,7 +306,7 @@ func test_porter_locker_cosmetics() -> void:
 	assert_false(mgr.is_worker_skin_unlocked("mechanic"), "Mechanic uniform is locked initially (needs 45 stars)")
 	assert_false(mgr.is_worker_skin_unlocked("foreman"), "Foreman uniform is locked initially (needs 60 stars)")
 	assert_false(mgr.is_worker_skin_unlocked("hazmat"), "Hazmat Specialist is locked initially (needs 95 stars)")
-	assert_false(mgr.is_worker_skin_unlocked("golden_porter"), "Golden Master is locked initially (needs 120 stars)")
+	assert_false(mgr.is_worker_skin_unlocked("golden_porter"), "Golden Master is locked initially (needs 100 stars)")
 	assert_false(mgr.is_crate_skin_unlocked("steel_container"), "Steel Container is locked initially (needs 40 stars)")
 	assert_false(mgr.is_crate_skin_unlocked("cryo_vault"), "Cryo Container is locked initially (needs 65 stars)")
 	assert_false(mgr.is_crate_skin_unlocked("hazard_box"), "Hazard Crate is locked initially (needs 80 stars)")
@@ -392,6 +392,15 @@ func test_breakout_hit_engine() -> void:
 	# Attempt duplicate claim
 	var dup_reward: Dictionary = mgr.claim_star_vault(0)
 	assert_true(dup_reward.is_empty(), "Duplicate vault claim prevented")
+
+	# Claim 100-star Golden Master Vault (tier 5) -> unlocks and equips golden_porter
+	for i in range(5, 34):
+		mgr.completed_levels[str(i)] = { "stars": 3, "best_moves": 4, "best_pushes": 2 }
+	assert_true(mgr.get_total_stars() >= 100, "Total stars >= 100 for Golden Master Vault")
+	var gold_reward: Dictionary = mgr.claim_star_vault(5)
+	assert_false(gold_reward.is_empty(), "claim_star_vault(5) succeeded at 100 stars")
+	assert_true(mgr.is_worker_skin_unlocked("golden_porter"), "golden_porter unlocked at 100 stars")
+	assert_equal(mgr.selected_worker_skin, "golden_porter", "golden_porter auto-equipped upon claiming Golden Master Vault")
 
 	# 3. Daily Warehouse Shift Challenge
 	var daily_info: Dictionary = mgr.get_daily_challenge_info()

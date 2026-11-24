@@ -368,17 +368,21 @@ func test_achievements_modal() -> void:
 	# 2. Open achievements modal
 	menu._show_achievements()
 	assert_true(menu.achievements_modal.visible, "Achievements modal opens via _show_achievements")
-	assert_true("0 / 10" in menu.achievements_counter_badge.text or "0" in menu.achievements_counter_badge.text, "Achievements counter badge starts at 0")
+	assert_true("0 / 11" in menu.achievements_counter_badge.text or "0" in menu.achievements_counter_badge.text, "Achievements counter badge starts at 0")
 
-	# 3. 10 achievement cards populated
+	# 3. 11 achievement cards populated with non-empty localized titles
 	var cards = menu.achievements_items_vbox.get_children()
-	assert_equal(cards.size(), 10, "Achievements modal displays all 10 achievement cards")
+	assert_equal(cards.size(), 11, "Achievements modal displays all 11 achievement cards")
+	if cards.size() > 0:
+		var first_title: Label = cards[0].get_child(0).get_child(0).get_child(1).get_child(0) as Label
+		assert_true(first_title != null and not first_title.text.is_empty(), "Achievement card title label is populated (got '%s')" % (first_title.text if first_title else ""))
+		assert_equal(first_title.text, "First Shift", "First achievement card displays 'First Shift'")
 
 	# 4. Unlock an achievement and refresh
 	if menu.achievement_mgr:
 		menu.achievement_mgr.unlock("first_shift")
 		menu._refresh_achievements_ui()
-		assert_true("1 / 10" in menu.achievements_counter_badge.text, "Counter badge updates to 1 / 10 unlocked")
+		assert_true("1 / 11" in menu.achievements_counter_badge.text, "Counter badge updates to 1 / 11 unlocked")
 
 	# 5. Close modal
 	menu._hide_achievements()

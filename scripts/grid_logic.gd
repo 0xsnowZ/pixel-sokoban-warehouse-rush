@@ -193,7 +193,7 @@ func load_from_file(file_path: String) -> bool:
 	var result: RegExMatch = regex.search(file_path)
 	if result:
 		var lvl_num: int = result.get_string(1).to_int()
-		var fallback_text: String = LevelData.get_level_text(lvl_num)
+		var fallback_text: String = LevelData.get_level_data(lvl_num - 1)
 		if not fallback_text.is_empty():
 			return load_from_text(fallback_text)
 

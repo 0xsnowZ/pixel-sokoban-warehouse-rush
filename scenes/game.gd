@@ -852,6 +852,10 @@ func _update_ui(_new_lang: String = "") -> void:
 	_prev_live_stars = live_stars
 
 	if loc_mgr:
+		if loc_mgr.has_method("apply_rtl"):
+			for rtl_ctrl in [win_modal, restart_dialog, ad_reward_modal, hint_toast]:
+				if rtl_ctrl is Control:
+					loc_mgr.apply_rtl(rtl_ctrl)
 		if is_daily_challenge:
 			var daily_info: Dictionary = save_mgr.get_daily_challenge_info() if save_mgr else {}
 			var streak_val: int = daily_info.get("streak", 0)
@@ -1496,6 +1500,10 @@ func _stop_held_move(dir: Vector2i = Vector2i.ZERO) -> void:
 
 
 func _process_game_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.keycode == KEY_ESCAPE and event.is_pressed() and not event.is_echo():
+		_handle_mobile_back_request()
+		return
+
 	if win_modal != null and win_modal.visible:
 		return
 	if restart_dialog != null and restart_dialog.visible:
@@ -1531,6 +1539,8 @@ func _process_game_input(event: InputEvent) -> void:
 					try_move(Vector2i.RIGHT)
 				KEY_R:
 					_on_restart_pressed()
+				KEY_H:
+					_on_hint_pressed()
 		elif not event.is_pressed():
 			match event.keycode:
 				KEY_UP, KEY_W:
@@ -1540,6 +1550,41 @@ func _process_game_input(event: InputEvent) -> void:
 				KEY_LEFT, KEY_A:
 					_stop_held_move(Vector2i.LEFT)
 				KEY_RIGHT, KEY_D:
+					_stop_held_move(Vector2i.RIGHT)
+
+	# Gamepad navigation (D-Pad & Face Buttons)
+	elif event is InputEventJoypadButton:
+		if event.pressed:
+			match event.button_index:
+				JOY_BUTTON_DPAD_UP:
+					_start_held_move(Vector2i.UP)
+					try_move(Vector2i.UP)
+				JOY_BUTTON_DPAD_DOWN:
+					_start_held_move(Vector2i.DOWN)
+					try_move(Vector2i.DOWN)
+				JOY_BUTTON_DPAD_LEFT:
+					_start_held_move(Vector2i.LEFT)
+					try_move(Vector2i.LEFT)
+				JOY_BUTTON_DPAD_RIGHT:
+					_start_held_move(Vector2i.RIGHT)
+					try_move(Vector2i.RIGHT)
+				JOY_BUTTON_B:
+					_on_undo_pressed()
+				JOY_BUTTON_Y:
+					_on_restart_pressed()
+				JOY_BUTTON_X:
+					_on_hint_pressed()
+				JOY_BUTTON_START:
+					_handle_mobile_back_request()
+		else:
+			match event.button_index:
+				JOY_BUTTON_DPAD_UP:
+					_stop_held_move(Vector2i.UP)
+				JOY_BUTTON_DPAD_DOWN:
+					_stop_held_move(Vector2i.DOWN)
+				JOY_BUTTON_DPAD_LEFT:
+					_stop_held_move(Vector2i.LEFT)
+				JOY_BUTTON_DPAD_RIGHT:
 					_stop_held_move(Vector2i.RIGHT)
 
 	# 1. Native Mobile Screen Touch (Primary on Android & iOS devices)
@@ -1989,11 +2034,18 @@ func _on_hint_pressed() -> void:
 	hint_pulse_timer = 0.0
 
 	var dir_key: String = "UP"
-	if active_hint_dir == Vector2i.DOWN: dir_key = "DOWN"
-	elif active_hint_dir == Vector2i.LEFT: dir_key = "LEFT"
-	elif active_hint_dir == Vector2i.RIGHT: dir_key = "RIGHT"
+	var hint_loc_key: String = "HINT_STEP_UP"
+	if active_hint_dir == Vector2i.DOWN:
+		dir_key = "DOWN"
+		hint_loc_key = "HINT_STEP_DOWN"
+	elif active_hint_dir == Vector2i.LEFT:
+		dir_key = "LEFT"
+		hint_loc_key = "HINT_STEP_LEFT"
+	elif active_hint_dir == Vector2i.RIGHT:
+		dir_key = "RIGHT"
+		hint_loc_key = "HINT_STEP_RIGHT"
 
-	var toast_msg: String = loc_mgr.tr_text("HINT_STEP_" + dir_key) if loc_mgr else ("Hint: Move " + dir_key)
+	var toast_msg: String = loc_mgr.tr_text(hint_loc_key) if loc_mgr else ("Hint: Move " + dir_key)
 	_show_hint_toast(toast_msg, Color(1.0, 0.95, 0.6))
 	queue_redraw()
 
@@ -3966,6 +4018,11 @@ func _create_ad_reward_modal() -> PanelContainer:
 func _show_ad_reward_modal() -> void:
 	if ad_reward_modal == null:
 		ad_reward_modal = _create_ad_reward_modal()
+	if loc_mgr and loc_mgr.has_method("apply_rtl"):
+		loc_mgr.apply_rtl(ad_reward_modal)
+	var skip_btn: Button = ad_reward_modal.find_child("SkipLevelBtn", true, false) as Button
+	if skip_btn != null:
+		skip_btn.visible = (current_level_index < level_paths.size() - 1)
 	ad_reward_modal.show()
 	ad_reward_modal.modulate.a = 0.0
 	var tw: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
@@ -3992,19 +4049,19 @@ func _on_skip_level_pressed() -> void:
 	if audio_mgr:
 		audio_mgr.play_click()
 	_hide_ad_reward_modal()
-	if save_mgr != null:
-		save_mgr.skip_level(current_level_index)
 	var next_idx: int = current_level_index + 1
 	if next_idx < level_paths.size():
+		if save_mgr != null:
+			save_mgr.skip_level(current_level_index)
 		load_level(next_idx)
-		var msg: String = loc_mgr.tr_text("TOAST_LEVEL_SKIPPED") if loc_mgr else "Level Skipped! Resumed at Level %d" % (next_idx + 1)
+		var msg: String = loc_mgr.tr_text("TOAST_LEVEL_SKIPPED", [next_idx + 1]) if loc_mgr else "Level Skipped! Resumed at Level %d" % (next_idx + 1)
 		_show_hint_toast(msg, Color(0.35, 0.85, 1.0))
 		if audio_mgr:
 			audio_mgr.play_win()
 		if haptic_mgr:
 			haptic_mgr.vibrate_target()
 	else:
-		_on_level_won()
+		_show_hint_toast("Final level cannot be skipped!", Color(1.0, 0.7, 0.4))
 
 
 func _on_rewarded_hints_earned(reward_type: String, amount: int) -> void:

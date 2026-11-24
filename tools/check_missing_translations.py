@@ -1,4 +1,5 @@
 import re
+import sys
 
 with open("scripts/localization_manager.gd", "r") as f:
     loc_code = f.read()
@@ -21,7 +22,7 @@ for path in files_to_scan:
         code = f.read()
     found_keys = re.findall(r'tr_text\("([A-Z0-9_]+)"', code)
     found_keys += re.findall(r'["\'](?:name_key|desc_key)["\']:\s*["\']([A-Z0-9_]+)["\']', code)
-    
+
     for k in found_keys:
         if k not in keys_in_loc:
             if k not in missing:
@@ -31,4 +32,6 @@ for path in files_to_scan:
 print(f"\nMissing Translation Keys ({len(missing)} total):")
 for k, paths in sorted(missing.items()):
     print(f"  - {k} (used in: {', '.join(set(paths))})")
+
+sys.exit(1 if missing else 0)
 

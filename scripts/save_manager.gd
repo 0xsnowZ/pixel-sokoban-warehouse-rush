@@ -261,7 +261,7 @@ const WORKER_SKINS: Array[Dictionary] = [
 		"desc": "Radiant prestige uniform reserved for master puzzle solvers.",
 		"name_key": "SKIN_WORKER_GOLDEN_PORTER",
 		"desc_key": "SKIN_WORKER_GOLDEN_PORTER_DESC",
-		"required_stars": 120,
+		"required_stars": 100,
 		"icon": "👑",
 		"accent_color": Color(1.0, 0.84, 0.20),
 		"sprite_tint": Color(1.20, 1.05, 0.40)

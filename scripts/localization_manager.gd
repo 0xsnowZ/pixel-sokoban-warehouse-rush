@@ -7,13 +7,14 @@ extends Node
 signal language_changed(lang_code: String)
 
 const SUPPORTED_LANGUAGES: Array[Dictionary] = [
-	{ "code": "en", "name": "English", "is_rtl": false },
-	{ "code": "fr", "name": "Français", "is_rtl": false },
-	{ "code": "ar", "name": "العربية", "is_rtl": true }
+	{"code": "en", "name": "English", "is_rtl": false},
+	{"code": "fr", "name": "Français", "is_rtl": false},
+	{"code": "ar", "name": "العربية", "is_rtl": true}
 ]
 
 var current_language: String = "en"
 var save_mgr: Node = null
+var _arabic_fallback_ready: bool = false
 
 # Core translation dictionary (PRD Section 10: "All text lives in one translation table")
 const TRANSLATIONS: Dictionary = {
@@ -173,9 +174,9 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "مستودع الإمدادات"
 	},
 	"LOCKER_STARS_BADGE": {
-		"en": "%d / 150 Stars Collected",
-		"fr": "%d / 150 Étoiles collectées",
-		"ar": "%d / 150 نجمة تم جمعها"
+		"en": "%d / 225 Stars Collected",
+		"fr": "%d / 225 Étoiles collectées",
+		"ar": "%d / 225 نجمة تم جمعها"
 	},
 	"LOCKER_TAB_OUTFITS": {
 		"en": "OUTFITS",
@@ -408,9 +409,9 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "جاري تهيئة النظام..."
 	},
 	"SPLASH_LEVELS": {
-		"en": "LOADING 50 SOKOBAN LEVELS...",
-		"fr": "CHARGEMENT DE 50 NIVEAUX SOKOBAN...",
-		"ar": "تحميل 50 مرحلة سوكوبان..."
+		"en": "LOADING 75 SOKOBAN LEVELS...",
+		"fr": "CHARGEMENT DE 75 NIVEAUX SOKOBAN...",
+		"ar": "تحميل 75 مرحلة سوكوبان..."
 	},
 	"SPLASH_READY": {
 		"en": "READY! TAP TO START",
@@ -562,6 +563,16 @@ const TRANSLATIONS: Dictionary = {
 		"fr": "+3 Indices Ajoutés !",
 		"ar": "تمت إضافة 3 تلميحات!"
 	},
+	"BTN_SKIP_LEVEL": {
+		"en": "SKIP THIS LEVEL (LIFELINE)",
+		"fr": "PASSER CE NIVEAU (JOKER)",
+		"ar": "تخطي هذا المستوى (مساعدة)"
+	},
+	"TOAST_LEVEL_SKIPPED": {
+		"en": "Level Skipped! Resumed at Level %d",
+		"fr": "Niveau passé ! Reprise au niveau %d",
+		"ar": "تم تخطي المستوى! المتابعة في المستوى %d"
+	},
 	"MENU_ACHIEVEMENTS": {
 		"en": "ACHIEVEMENTS",
 		"fr": "SUCCÈS",
@@ -573,9 +584,9 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "إنجازات المستودع"
 	},
 	"ACHIEVEMENTS_COUNTER": {
-		"en": "%d / 10 Unlocked",
-		"fr": "%d / 10 Débloqués",
-		"ar": "%d / 10 تم الفتح"
+		"en": "%d / %d Unlocked",
+		"fr": "%d / %d Débloqués",
+		"ar": "%d / %d تم الفتح"
 	},
 	"ACH_FIRST_SHIFT": {
 		"en": "First Shift",
@@ -606,6 +617,16 @@ const TRANSLATIONS: Dictionary = {
 		"en": "Conquer all 20 levels of Chapter 2 Cold Storage.",
 		"fr": "Terminez les 20 niveaux de la Chambre froide.",
 		"ar": "أتقن جميع مستويات التخزين البارد الـ 20."
+	},
+	"ACH_CYBER_MASTER": {
+		"en": "Cyber Specialist",
+		"fr": "Spécialiste Cyber",
+		"ar": "خبير المستودع الذكي"
+	},
+	"ACH_CYBER_MASTER_DESC": {
+		"en": "Conquer all 15 levels of Chapter 3 Cyber Depot.",
+		"fr": "Terminez les 15 niveaux du Cyber Dépôt.",
+		"ar": "أتقن جميع مستويات المستودع الذكي الـ 15."
 	},
 	"ACH_QUANTUM_MASTER": {
 		"en": "Quantum Master",
@@ -686,8 +707,36 @@ func _ready() -> void:
 		if "language" in save_mgr and not save_mgr.language.is_empty():
 			current_language = save_mgr.language
 
+	_ensure_arabic_font_fallback()
 	_register_godot_translations()
 	set_language(current_language)
+
+
+## Ensures bundled NotoSansArabic-Bold is registered as a fallback on OpenSans-Bold
+## so Arabic glyphs render reliably even without OS system Arabic fonts.
+func _ensure_arabic_font_fallback() -> void:
+	if _arabic_fallback_ready:
+		return
+	const BASE_FONT_PATH: String = "res://assets/fonts/OpenSans-Bold.ttf"
+	const AR_FONT_PATH: String = "res://assets/fonts/NotoSansArabic-Bold.ttf"
+	if not ResourceLoader.exists(BASE_FONT_PATH) or not ResourceLoader.exists(AR_FONT_PATH):
+		return
+	var base_font: FontFile = load(BASE_FONT_PATH) as FontFile
+	var ar_font: FontFile = load(AR_FONT_PATH) as FontFile
+	if base_font == null or ar_font == null:
+		return
+	var fallbacks: Array[Font] = base_font.fallbacks.duplicate()
+	if not fallbacks.has(ar_font):
+		fallbacks.append(ar_font)
+		base_font.fallbacks = fallbacks
+	_arabic_fallback_ready = true
+
+
+## Applies LTR/RTL layout direction to a Control node matching current language.
+func apply_rtl(control: Control) -> void:
+	if control == null:
+		return
+	control.layout_direction = Control.LAYOUT_DIRECTION_RTL if is_rtl() else Control.LAYOUT_DIRECTION_LTR
 
 
 func _register_godot_translations() -> void:
@@ -704,6 +753,9 @@ func _register_godot_translations() -> void:
 func set_language(lang_code: String) -> void:
 	if not has_language(lang_code):
 		lang_code = "en"
+
+	if lang_code == "ar":
+		_ensure_arabic_font_fallback()
 
 	current_language = lang_code
 	TranslationServer.set_locale(current_language)

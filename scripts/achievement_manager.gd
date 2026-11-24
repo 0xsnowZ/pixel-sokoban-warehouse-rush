@@ -32,6 +32,14 @@ const ACHIEVEMENTS: Array[Dictionary] = [
 		"desc_key": "ACH_COLD_STORAGE_DESC"
 	},
 	{
+		"id": "cyber_master",
+		"icon": "⚡",
+		"name": "Cyber Specialist",
+		"name_key": "ACH_CYBER_MASTER",
+		"desc": "Conquer all 15 levels of Chapter 3 Cyber Depot.",
+		"desc_key": "ACH_CYBER_MASTER_DESC"
+	},
+	{
 		"id": "quantum_master",
 		"icon": "⚛️",
 		"name": "Quantum Master",
@@ -109,7 +117,7 @@ func get_achievement_info(id: String) -> Dictionary:
 	return {}
 
 
-## Returns all 10 achievement definitions.
+## Returns all achievement definitions.
 func get_all_achievements() -> Array[Dictionary]:
 	return ACHIEVEMENTS
 
@@ -160,7 +168,12 @@ func evaluate_progress(custom_save_mgr: Node = null) -> Array[String]:
 		if unlock("cold_storage", mgr):
 			newly_unlocked.append("cold_storage")
 
-	# 4. Quantum Master (Completed all 25 levels of Chapter 3)
+	# 4. Cyber Specialist (Completed all 15 levels of Chapter 2)
+	if mgr.is_chapter_completed(2):
+		if unlock("cyber_master", mgr):
+			newly_unlocked.append("cyber_master")
+
+	# 5. Quantum Master (Completed all 25 levels of Chapter 3)
 	if mgr.is_chapter_completed(3):
 		if unlock("quantum_master", mgr):
 			newly_unlocked.append("quantum_master")
@@ -206,7 +219,7 @@ func evaluate_progress(custom_save_mgr: Node = null) -> Array[String]:
 	return newly_unlocked
 
 
-## Returns number of unlocked achievements out of 9.
+## Returns number of unlocked achievements out of all defined milestones.
 func get_unlocked_count(custom_save_mgr: Node = null) -> int:
 	var mgr: Node = custom_save_mgr if custom_save_mgr != null else save_mgr
 	if mgr == null:

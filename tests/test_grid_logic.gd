@@ -113,6 +113,13 @@ func test_level_1_single_crate_tutorial() -> void:
 	assert_true(file_loaded, "Level 1 loaded from res://levels/level_01.sok")
 	assert_true(grid_file.is_in_bounds(grid_file.get_player_pos()), "File loaded player position is in bounds")
 
+	# Test fallback to embedded LevelData when .sok path is missing
+	var grid_fallback = GridLogicScript.new()
+	var fallback_loaded: bool = grid_fallback.load_from_file("res://levels/missing_dir/level_01.sok")
+	assert_true(fallback_loaded, "Missing level_01.sok falls back cleanly to embedded LevelData")
+	assert_equal(grid_fallback.get_player_pos(), grid_file.get_player_pos(), "Fallback Level 1 player position matches disk file")
+	assert_equal(grid_fallback.get_crate_count(), grid_file.get_crate_count(), "Fallback Level 1 crate count matches disk file")
+
 	# Test wall collision: moving down to floor (2, 4), then attempting to enter wall (2, 5)
 	assert_true(grid.move(Vector2i.DOWN), "Player moves down to (2, 4)")
 	assert_equal(signal_stats["player_moved"], 1, "player_moved signal emitted once")
