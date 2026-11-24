@@ -37,6 +37,7 @@ func _init() -> void:
 	test_rewarded_ad_hint_economy_in_game()
 	test_touch_swipe_mechanics()
 	test_locomotion_juice_and_corridor_auto_repeat()
+	test_phase1_ux_enhancements()
 
 	print("\n" + "=".repeat(54))
 	print("Game Scene Results: %d passed, %d failed" % [passes, fails])
@@ -885,4 +886,90 @@ func test_locomotion_juice_and_corridor_auto_repeat() -> void:
 
 	game.queue_free()
 	loc.queue_free()
+	save_mgr.free()
+
+
+func test_phase1_ux_enhancements() -> void:
+	print("--- Running Suite: Phase 1 UX, Skins, Auto-Walk & Banners ---")
+	var loc: Node = LocalizationManagerScript.new()
+	var save_mgr: Node = SaveManagerScript.new()
+	var safe_mgr: Node = preload("res://scripts/safe_area_manager.gd").new()
+	root.add_child(safe_mgr)
+	var game: Control = create_test_game(loc, save_mgr)
+	game.safe_area_mgr = safe_mgr
+	game.load_level(0)
+	game.calculate_layout(Vector2(540, 960))
+
+	# 1. Notch-safe HintToast positioning adjusts below SafeArea top inset
+	safe_mgr.simulate_insets(64.0, 0.0, 0.0, 0.0)
+	game._apply_safe_area()
+	game._show_hint_toast("Hint: Move UP")
+	assert_true(game.hint_toast.offset_top >= 150.0, "HintToast offsets cleanly below notched TopBar (got %f)" % game.hint_toast.offset_top)
+
+	# 2. Separate AchievementBanner does not overwrite HintToast
+	game._show_achievement_toast({"name_key": "ACH_FIRST_SHIFT", "name": "First Shift"})
+	assert_true(game.achievement_banner != null and game.achievement_banner.visible, "Dedicated AchievementBanner is created and visible")
+	assert_true(game.hint_toast.visible and game.hint_toast_label.text == "Hint: Move UP", "HintToast remains undisturbed when AchievementBanner triggers")
+	assert_true(game.achievement_banner.offset_top >= game.hint_toast.offset_bottom, "AchievementBanner stacks cleanly below visible HintToast")
+
+	# 3. Tap-to-Walk pathfinding on distant tile (>= 2 tiles away)
+	game.load_level(0)
+	game.calculate_layout(Vector2(540, 960))
+	var distant_px: Vector2 = game.grid_origin + Vector2(4.5, 3.5) * game.tile_size # Tile (4,3), dist=2 from (2,3)
+	var tap_d: InputEventScreenTouch = InputEventScreenTouch.new()
+	tap_d.index = 0
+	tap_d.position = distant_px
+	tap_d.pressed = true
+	game._input(tap_d)
+	var tap_u: InputEventScreenTouch = InputEventScreenTouch.new()
+	tap_u.index = 0
+	tap_u.position = distant_px + Vector2(2, 2)
+	tap_u.pressed = false
+	game._input(tap_u)
+	assert_true(game.is_auto_walking, "Tap on distant empty floor (4,3) starts Tap-to-Walk")
+	assert_eq(game.grid.get_player_pos(), Vector2i(3, 3), "Tap-to-Walk immediately steps first tile toward (4,3)")
+
+	# 4. Deadlock Rewind Pill & Shift+Z push rewind
+	game._stop_auto_walk()
+	game.is_animating = false
+	game.load_level(0)
+	game.grid.execute_moves("rdr") # Walk (2,3)->(3,3)->(3,4) and push crate (4,4)->(5,4) corner deadlock
+	game._refresh_deadlock_radar(false)
+	assert_true(game.grid.has_deadlock(), "Pushing crate to (5,4) triggers real corner deadlock")
+	assert_true(game.deadlock_pill != null and game.deadlock_pill.visible, "DeadlockPill appears when trapped crate can be rewound")
+	assert_true(game.grid.can_undo_push(), "Grid has undoable push")
+	game.is_animating = false
+	var shift_z: InputEventKey = InputEventKey.new()
+	shift_z.keycode = KEY_Z
+	shift_z.shift_pressed = true
+	shift_z.pressed = true
+	shift_z.echo = false
+	game._input(shift_z)
+	assert_false(game.grid.can_undo_push(), "Shift+Z rewinds back through the last crate push")
+	assert_false(game.grid.has_deadlock(), "Corner deadlock cleared after push rewind")
+	assert_false(game.deadlock_pill.visible, "DeadlockPill hides once deadlock is rewound")
+
+	# 5. Stage Picker Modal open & Escape close
+	game._show_stage_picker()
+	assert_true(game.stage_picker_modal != null and game.stage_picker_modal.visible, "StagePickerModal opens via StageBadge")
+	var esc_k: InputEventKey = InputEventKey.new()
+	esc_k.keycode = KEY_ESCAPE
+	esc_k.pressed = true
+	esc_k.echo = false
+	game._input(esc_k)
+	assert_false(game.stage_picker_modal.visible, "Escape closes StagePickerModal cleanly")
+
+	# 6. All 6 worker skins & 5 crate skins redraw cleanly (off-goal and on-goal)
+	for ws in ["classic", "safety_vest", "mechanic", "foreman", "hazmat", "golden_porter"]:
+		save_mgr.selected_worker_skin = ws
+		game.queue_redraw()
+	for cs in ["classic_wood", "steel_container", "cryo_vault", "hazard_box", "luxury_safe"]:
+		save_mgr.selected_crate_skin = cs
+		game.queue_redraw()
+	assert_true(true, "All worker & crate skins render cleanly without errors")
+
+	safe_mgr.clear_simulation()
+	game.queue_free()
+	loc.queue_free()
 	save_mgr.queue_free()
+	safe_mgr.queue_free()

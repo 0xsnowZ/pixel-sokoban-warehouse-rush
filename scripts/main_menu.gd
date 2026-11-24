@@ -69,10 +69,11 @@ var achievement_mgr: Node = null
 @onready var play_btn: Button = _find_button("PlayBtn", "MainView/BottomMargin/ActionDeck/PlayBtn")
 @onready var level_select_btn: Button = _find_button("LevelSelectBtn", "MainView/BottomMargin/ActionDeck/DualDeck/LevelSelectBtn")
 @onready var settings_btn: Button = _find_button("SettingsBtn", "MainView/TopBarMargin/HBox/QuickBar/SettingsBtn")
-@onready var sound_btn: Button = _find_button("SoundToggleBtn", "SettingsModal/Margin/VBox/SfxBox/SoundToggleBtn")
-@onready var haptics_btn: Button = _find_button("HapticsToggleBtn", "SettingsModal/Margin/VBox/HapticsToggleBtn")
-@onready var language_btn: Button = _find_button("LanguageBtn", "SettingsModal/Margin/VBox/LanguageBtn")
-@onready var credits_btn: Button = _find_button("CreditsBtn", "SettingsModal/Margin/VBox/CreditsBtn")
+@onready var sound_btn: Button = _find_button("SoundToggleBtn", "SettingsModal/Margin/VBox/Scroll/ItemsVBox/SfxBox/SfxRow/SoundToggleBtn")
+@onready var haptics_btn: Button = _find_button("HapticsToggleBtn", "SettingsModal/Margin/VBox/Scroll/ItemsVBox/HapticsToggleBtn")
+@onready var tap_walk_btn: Button = _find_button("TapWalkToggleBtn", "SettingsModal/Margin/VBox/Scroll/ItemsVBox/ControlBox/TapWalkToggleBtn")
+@onready var language_btn: Button = _find_button("LanguageBtn", "SettingsModal/Margin/VBox/Scroll/ItemsVBox/LanguageBtn")
+@onready var credits_btn: Button = _find_button("CreditsBtn", "SettingsModal/Margin/VBox/Scroll/ItemsVBox/CreditsBtn")
 @onready var locker_btn: Button = _find_button("LockerBtn", "MainView/BottomMargin/ActionDeck/DualDeck/LockerBtn")
 @onready var locker_btn_label: Label = find_child("LockerBtn", true, false).find_child("Label", true, false) as Label if find_child("LockerBtn", true, false) else null
 @onready var locker_btn_icon: TextureRect = find_child("LockerBtn", true, false).find_child("Icon", true, false) as TextureRect if find_child("LockerBtn", true, false) else null
@@ -104,15 +105,16 @@ var _active_spring_button: Button = null
 @onready var modal_blur_overlay: ColorRect = $ModalBlurOverlay if has_node("ModalBlurOverlay") else null
 
 # Settings elements
+@onready var settings_title_label: Label = find_child("SettingsModal", true, false).find_child("Title", true, false) as Label if find_child("SettingsModal", true, false) else null
 @onready var music_vol_label: Label = find_child("MusicVolLabel", true, false) as Label
 @onready var music_slider: HSlider = find_child("MusicSlider", true, false) as HSlider
-@onready var music_toggle_btn: Button = _find_button("MusicToggleBtn", "SettingsModal/Margin/VBox/MusicBox/MusicToggleBtn")
+@onready var music_toggle_btn: Button = _find_button("MusicToggleBtn", "SettingsModal/Margin/VBox/Scroll/ItemsVBox/MusicBox/MusicRow/MusicToggleBtn")
 @onready var track_label: Label = find_child("TrackLabel", true, false) as Label
-@onready var track_cycle_btn: Button = _find_button("TrackCycleBtn", "SettingsModal/Margin/VBox/TrackBox/TrackCycleBtn")
+@onready var track_cycle_btn: Button = _find_button("TrackCycleBtn", "SettingsModal/Margin/VBox/Scroll/ItemsVBox/TrackBox/TrackCycleBtn")
 @onready var sfx_vol_label: Label = find_child("SfxVolLabel", true, false) as Label
 @onready var sfx_slider: HSlider = find_child("SfxSlider", true, false) as HSlider
 @onready var close_settings_btn: Button = _find_button("CloseSettingsBtn", "SettingsModal/Margin/VBox/CloseSettingsBtn")
-@onready var control_mode_btn: Button = _find_button("ControlModeBtn", "SettingsModal/Margin/VBox/ControlBox/ControlModeBtn")
+@onready var control_mode_btn: Button = _find_button("ControlModeBtn", "SettingsModal/Margin/VBox/Scroll/ItemsVBox/ControlBox/ControlModeBtn")
 
 # Level Select elements
 @onready var level_grid: GridContainer = find_child("LevelGrid", true, false) as GridContainer
@@ -139,19 +141,22 @@ func _initialize_nodes() -> void:
 		play_btn = _find_button("PlayBtn", "MainView/BottomMargin/ActionDeck/PlayBtn")
 		level_select_btn = _find_button("LevelSelectBtn", "MainView/BottomMargin/ActionDeck/DualDeck/LevelSelectBtn")
 		settings_btn = _find_button("SettingsBtn", "MainView/TopBarMargin/HBox/QuickBar/SettingsBtn")
-		sound_btn = _find_button("SoundToggleBtn", "SettingsModal/Margin/VBox/SfxBox/SoundToggleBtn")
-		haptics_btn = _find_button("HapticsToggleBtn", "SettingsModal/Margin/VBox/HapticsToggleBtn")
-		language_btn = _find_button("LanguageBtn", "SettingsModal/Margin/VBox/LanguageBtn")
-		credits_btn = _find_button("CreditsBtn", "SettingsModal/Margin/VBox/CreditsBtn")
+		sound_btn = _find_button("SoundToggleBtn", "SettingsModal/Margin/VBox/Scroll/ItemsVBox/SfxBox/SfxRow/SoundToggleBtn")
+		haptics_btn = _find_button("HapticsToggleBtn", "SettingsModal/Margin/VBox/Scroll/ItemsVBox/HapticsToggleBtn")
+		tap_walk_btn = _find_button("TapWalkToggleBtn", "SettingsModal/Margin/VBox/Scroll/ItemsVBox/ControlBox/TapWalkToggleBtn")
+		language_btn = _find_button("LanguageBtn", "SettingsModal/Margin/VBox/Scroll/ItemsVBox/LanguageBtn")
+		credits_btn = _find_button("CreditsBtn", "SettingsModal/Margin/VBox/Scroll/ItemsVBox/CreditsBtn")
+		if settings_modal != null:
+			settings_title_label = settings_modal.find_child("Title", true, false) as Label
 		music_vol_label = find_child("MusicVolLabel", true, false) as Label
 		music_slider = find_child("MusicSlider", true, false) as HSlider
-		music_toggle_btn = _find_button("MusicToggleBtn", "SettingsModal/Margin/VBox/MusicBox/MusicToggleBtn")
+		music_toggle_btn = _find_button("MusicToggleBtn", "SettingsModal/Margin/VBox/Scroll/ItemsVBox/MusicBox/MusicRow/MusicToggleBtn")
 		track_label = find_child("TrackLabel", true, false) as Label
-		track_cycle_btn = _find_button("TrackCycleBtn", "SettingsModal/Margin/VBox/TrackBox/TrackCycleBtn")
+		track_cycle_btn = _find_button("TrackCycleBtn", "SettingsModal/Margin/VBox/Scroll/ItemsVBox/TrackBox/TrackCycleBtn")
 		sfx_vol_label = find_child("SfxVolLabel", true, false) as Label
 		sfx_slider = find_child("SfxSlider", true, false) as HSlider
 		close_settings_btn = _find_button("CloseSettingsBtn", "SettingsModal/Margin/VBox/CloseSettingsBtn")
-		control_mode_btn = _find_button("ControlModeBtn", "SettingsModal/Margin/VBox/ControlBox/ControlModeBtn")
+		control_mode_btn = _find_button("ControlModeBtn", "SettingsModal/Margin/VBox/Scroll/ItemsVBox/ControlBox/ControlModeBtn")
 		level_grid = find_child("LevelGrid", true, false) as GridContainer
 		back_btn = _find_button("BackBtn", "LevelSelectView/TopBar/Margin/HBox/BackBtn")
 		close_credits_btn = _find_button("CloseCreditsBtn", "CreditsModal/VBox/CloseCreditsBtn")
@@ -182,11 +187,12 @@ func _initialize_nodes() -> void:
 
 func _ready() -> void:
 	_initialize_nodes()
-	if is_inside_tree() and get_tree().root.has_node("SaveManager"):
-		save_mgr = get_tree().root.get_node("SaveManager")
-	else:
-		save_mgr = SaveManagerScript.new()
-		add_child(save_mgr)
+	if save_mgr == null:
+		if is_inside_tree() and get_tree().root.has_node("SaveManager"):
+			save_mgr = get_tree().root.get_node("SaveManager")
+		else:
+			save_mgr = SaveManagerScript.new()
+			add_child(save_mgr)
 
 	if is_inside_tree() and get_tree().root.has_node("AudioManager"):
 		audio_mgr = get_tree().root.get_node("AudioManager")
@@ -220,6 +226,8 @@ func _ready() -> void:
 		sound_btn.pressed.connect(_on_sound_toggle_pressed)
 	if haptics_btn and not haptics_btn.pressed.is_connected(_on_haptics_toggle_pressed):
 		haptics_btn.pressed.connect(_on_haptics_toggle_pressed)
+	if tap_walk_btn and not tap_walk_btn.pressed.is_connected(_on_tap_walk_toggle_pressed):
+		tap_walk_btn.pressed.connect(_on_tap_walk_toggle_pressed)
 	if not language_btn.pressed.is_connected(_on_language_pressed):
 		language_btn.pressed.connect(_on_language_pressed)
 	if not credits_btn.pressed.is_connected(_show_credits):
@@ -327,11 +335,21 @@ func _ready() -> void:
 		sub_tw.tween_property(subtitle, "modulate:a", 1.0, 1.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 	# Tactile arcade button physics
-	for b in [continue_btn, play_btn, level_select_btn, locker_btn, achievements_btn, settings_btn, sound_btn, haptics_btn, language_btn, credits_btn, back_btn, close_credits_btn, close_settings_btn, close_locker_btn, close_achievements_btn, outfits_tab_btn, crates_tab_btn, music_toggle_btn, track_cycle_btn, control_mode_btn, star_progress_btn, quick_lang_btn]:
+	for b in [continue_btn, play_btn, level_select_btn, locker_btn, achievements_btn, settings_btn, sound_btn, haptics_btn, tap_walk_btn, language_btn, credits_btn, back_btn, close_credits_btn, close_settings_btn, close_locker_btn, close_achievements_btn, outfits_tab_btn, crates_tab_btn, music_toggle_btn, track_cycle_btn, control_mode_btn, star_progress_btn, quick_lang_btn]:
 		if b != null:
 			_attach_spring_physics(b)
 
 	_setup_touch_scrolling()
+
+	var open_lvl_select: bool = false
+	if save_mgr != null and save_mgr.has_meta("open_level_select") and bool(save_mgr.get_meta("open_level_select")):
+		open_lvl_select = true
+		save_mgr.set_meta("open_level_select", false)
+	if is_inside_tree() and get_tree() and get_tree().root and get_tree().root.has_meta("open_level_select") and bool(get_tree().root.get_meta("open_level_select")):
+		open_lvl_select = true
+		get_tree().root.set_meta("open_level_select", false)
+	if open_lvl_select:
+		_show_level_select()
 
 	ResourceLoader.load_threaded_request(GAME_SCENE_PATH)
 
@@ -385,6 +403,9 @@ func _apply_safe_area() -> void:
 
 func _on_safe_area_changed(_insets: Dictionary) -> void:
 	_apply_safe_area()
+	for m in [settings_modal, locker_modal, achievements_modal, credits_modal]:
+		if m != null and m.visible:
+			_clamp_modal_to_safe_area(m)
 
 
 func _sanitize_main_view_top_bar() -> void:
@@ -501,12 +522,33 @@ func _on_modal_backdrop_gui_input(event: InputEvent) -> void:
 			_hide_credits()
 
 
+func _clamp_modal_to_safe_area(modal: Control) -> void:
+	if modal == null:
+		return
+	var vp_sz: Vector2 = get_viewport_rect().size if (is_inside_tree() and get_viewport() != null) else (size if size != Vector2.ZERO else Vector2(540.0, 960.0))
+	if vp_sz.x <= 10.0 or vp_sz.y <= 10.0:
+		return
+	var insets: Dictionary = safe_area_mgr.get_safe_insets(self) if safe_area_mgr else {"top": 0.0, "bottom": 0.0, "left": 0.0, "right": 0.0}
+	var avail_w: float = maxf(280.0, vp_sz.x - insets.get("left", 0.0) - insets.get("right", 0.0) - 32.0)
+	var avail_h: float = maxf(300.0, vp_sz.y - insets.get("top", 0.0) - insets.get("bottom", 0.0) - 48.0)
+	var target_w: float = minf(absf(modal.offset_right - modal.offset_left), avail_w)
+	var target_h: float = minf(absf(modal.offset_bottom - modal.offset_top), avail_h)
+	if target_w > 0.0:
+		modal.offset_left = -target_w * 0.5
+		modal.offset_right = target_w * 0.5
+	if target_h > 0.0:
+		var y_bias: float = (insets.get("top", 0.0) - insets.get("bottom", 0.0)) * 0.5
+		modal.offset_top = -target_h * 0.5 + y_bias
+		modal.offset_bottom = target_h * 0.5 + y_bias
+
+
 func _animate_modal_open(modal: Control) -> void:
 	if modal == null:
 		return
 	if audio_mgr and audio_mgr.has_method("play_modal_open"):
 		audio_mgr.play_modal_open()
 	_show_modal_backdrop()
+	_clamp_modal_to_safe_area(modal)
 	modal.show()
 	modal.pivot_offset = modal.size / 2.0
 	modal.scale = Vector2(0.90, 0.90)
@@ -1155,6 +1197,12 @@ func _update_settings_ui() -> void:
 	var s_vol: float = save_mgr.sfx_volume if "sfx_volume" in save_mgr else 0.8
 	var m_on: bool = save_mgr.music_enabled if "music_enabled" in save_mgr else true
 	var track_idx: int = save_mgr.selected_bgm_track if "selected_bgm_track" in save_mgr else 0
+	var tap_walk_on: bool = save_mgr.tap_to_walk_enabled if "tap_to_walk_enabled" in save_mgr else true
+
+	if settings_title_label and loc_mgr:
+		settings_title_label.text = loc_mgr.tr_text("SETTINGS_TITLE")
+	if track_label and loc_mgr:
+		track_label.text = loc_mgr.tr_text("SETTINGS_TRACK_TITLE")
 
 	if music_slider:
 		music_slider.set_value_no_signal(m_vol)
@@ -1165,8 +1213,19 @@ func _update_settings_ui() -> void:
 			music_vol_label.text = "MUSIC: %d%%" % int(m_vol * 100)
 
 	if music_toggle_btn:
-		var status_text: String = "ON" if m_on else "OFF"
-		music_toggle_btn.text = "MUSIC: " + status_text
+		if loc_mgr:
+			var m_status: String = loc_mgr.tr_text("MENU_SOUND_ON" if m_on else "MENU_SOUND_OFF")
+			music_toggle_btn.text = loc_mgr.tr_text("SETTINGS_MUSIC_TOGGLE", [m_status])
+		else:
+			var status_text: String = "ON" if m_on else "OFF"
+			music_toggle_btn.text = "MUSIC: " + status_text
+
+	if tap_walk_btn:
+		if loc_mgr:
+			var tw_status: String = loc_mgr.tr_text("MENU_SOUND_ON" if tap_walk_on else "MENU_SOUND_OFF")
+			tap_walk_btn.text = loc_mgr.tr_text("SETTINGS_TAP_WALK", [tw_status])
+		else:
+			tap_walk_btn.text = "TAP TO WALK: %s" % ("ON" if tap_walk_on else "OFF")
 
 	if sfx_slider:
 		sfx_slider.set_value_no_signal(s_vol)
@@ -1310,7 +1369,18 @@ func _update_menu_state() -> void:
 			credits_btn.text = loc_mgr.tr_text("MENU_CREDITS")
 		if back_btn != null:
 			back_btn.text = loc_mgr.tr_text("BTN_BACK")
-		var lvl_title: Label = find_child("Title", true, false) as Label
+		var game_subtitle: Label = find_child("GameSubtitle", true, false) as Label
+		if game_subtitle != null:
+			game_subtitle.text = loc_mgr.tr_text("MAIN_SUBTITLE")
+		var footer_lbl: Label = find_child("Footer", true, false) as Label
+		if footer_lbl != null:
+			footer_lbl.text = loc_mgr.tr_text("MAIN_FOOTER")
+		for sec_i in range(4):
+			var tab_node: Button = find_child("SectorTab%d" % sec_i, true, false) as Button
+			if tab_node != null:
+				var name_lbl: Label = tab_node.find_child("Name", true, false) as Label
+				if name_lbl != null:
+					name_lbl.text = loc_mgr.tr_text("SECTOR_TAB_%d" % sec_i)
 		if has_node("LevelSelectView/TopBar/Margin/HBox/Title"):
 			$LevelSelectView/TopBar/Margin/HBox/Title.text = loc_mgr.tr_text("LEVEL_SELECT_TITLE")
 		if has_node("CreditsModal/VBox/Title"):
@@ -1319,6 +1389,12 @@ func _update_menu_state() -> void:
 			$CreditsModal/VBox/Description.text = loc_mgr.tr_text("CREDITS_BODY")
 		if close_credits_btn != null:
 			close_credits_btn.text = loc_mgr.tr_text("BTN_CLOSE")
+		if settings_modal != null and settings_modal.visible:
+			_update_settings_ui()
+		var tap_walk_val: bool = save_mgr.tap_to_walk_enabled if (save_mgr and "tap_to_walk_enabled" in save_mgr) else true
+		if tap_walk_btn != null:
+			var tw_s: String = loc_mgr.tr_text("MENU_SOUND_ON" if tap_walk_val else "MENU_SOUND_OFF")
+			tap_walk_btn.text = loc_mgr.tr_text("SETTINGS_TAP_WALK", [tw_s])
 	else:
 		if has_progress:
 			if continue_btn != null:
@@ -1351,6 +1427,9 @@ func _update_menu_state() -> void:
 			sound_btn.text = "SOUND: %s" % ("ON" if is_sound_on else "OFF")
 		if haptics_btn:
 			haptics_btn.text = "HAPTICS: %s" % ("ON" if is_haptics_on else "OFF")
+		if tap_walk_btn:
+			var tw_en: bool = save_mgr.tap_to_walk_enabled if (save_mgr and "tap_to_walk_enabled" in save_mgr) else true
+			tap_walk_btn.text = "TAP TO WALK: %s" % ("ON" if tw_en else "OFF")
 		language_btn.text = "LANGUAGE: English"
 
 	var total_stars: int = save_mgr.get_total_stars() if (save_mgr and save_mgr.has_method("get_total_stars")) else 0
@@ -1362,8 +1441,14 @@ func _update_menu_state() -> void:
 			ch_title = loc_mgr.tr_text("CHAPTER_%d_TITLE" % sector_idx)
 		elif save_mgr and save_mgr.has_method("get_chapter_info"):
 			ch_title = save_mgr.get_chapter_info(sector_idx).get("name", "Cargo Bay")
-		var crown_str: String = " • %d 👑" % total_crowns if total_crowns > 0 else ""
-		star_progress_btn.text = "%d / 225 Stars%s • Sector %d: %s" % [total_stars, crown_str, sector_idx + 1, ch_title]
+		if loc_mgr:
+			if total_crowns > 0:
+				star_progress_btn.text = loc_mgr.tr_text("STAR_PROGRESS_PILL_CROWN", [total_stars, total_crowns, sector_idx + 1, ch_title])
+			else:
+				star_progress_btn.text = loc_mgr.tr_text("STAR_PROGRESS_PILL", [total_stars, sector_idx + 1, ch_title])
+		else:
+			var crown_str: String = " • %d 👑" % total_crowns if total_crowns > 0 else ""
+			star_progress_btn.text = "%d / 225 Stars%s • Sector %d: %s" % [total_stars, crown_str, sector_idx + 1, ch_title]
 	if quick_lang_btn:
 		var lang_code: String = loc_mgr.current_language.to_upper() if loc_mgr else "EN"
 		quick_lang_btn.text = lang_code
@@ -1400,13 +1485,13 @@ func _update_menu_state() -> void:
 		var streak_count: int = d_info.get("streak", 0)
 		var is_done: bool = d_info.get("is_completed", false)
 		if is_done:
-			daily_shift_btn.text = "DAILY SHIFT: CLEARED ✓ (STREAK: %d)" % streak_count
+			daily_shift_btn.text = loc_mgr.tr_text("DAILY_SHIFT_CLEARED", [streak_count]) if loc_mgr else ("DAILY SHIFT: CLEARED ✓ (STREAK: %d)" % streak_count)
 			daily_shift_btn.modulate = Color(0.80, 1.0, 0.85)
 		else:
 			if streak_count > 0:
-				daily_shift_btn.text = "DAILY SHIFT • %d STREAK (+3 HINTS)" % streak_count
+				daily_shift_btn.text = loc_mgr.tr_text("DAILY_SHIFT_STREAK", [streak_count]) if loc_mgr else ("DAILY SHIFT • %d STREAK (+3 HINTS)" % streak_count)
 			else:
-				daily_shift_btn.text = "DAILY SHIFT • PLAY (+3 HINTS)"
+				daily_shift_btn.text = loc_mgr.tr_text("DAILY_SHIFT_PLAY") if loc_mgr else "DAILY SHIFT • PLAY (+3 HINTS)"
 			daily_shift_btn.modulate = Color(1.0, 0.92, 0.55)
 
 
@@ -1463,6 +1548,18 @@ func _on_haptics_toggle_pressed() -> void:
 
 	if audio_mgr:
 		audio_mgr.play_click()
+	_update_menu_state()
+
+
+func _on_tap_walk_toggle_pressed() -> void:
+	if save_mgr:
+		save_mgr.tap_to_walk_enabled = not save_mgr.tap_to_walk_enabled
+		save_mgr.save_data()
+	if audio_mgr:
+		audio_mgr.play_click()
+	if haptic_mgr:
+		haptic_mgr.vibrate_click()
+	_update_settings_ui()
 	_update_menu_state()
 
 
@@ -1722,6 +1819,13 @@ func _refresh_level_grid_buttons() -> void:
 				next_vault_info = " • Next Vault: %s (%d★)" % [next_vault_name, next_vault_stars]
 				break
 
+	var campaign_title: Label = find_child("CampaignTitle", true, false) as Label
+	if campaign_title != null and loc_mgr:
+		campaign_title.text = loc_mgr.tr_text("CAMPAIGN_TITLE")
+	var campaign_badge: Label = find_child("CampaignBadge", true, false) as Label
+	if campaign_badge != null and loc_mgr:
+		campaign_badge.text = loc_mgr.tr_text("CAMPAIGN_BADGE")
+
 	var stars_count_lbl: Label = find_child("StarsCountLabel", true, false) as Label
 	var vault_card: PanelContainer = find_child("VaultMilestoneCard", true, false) as PanelContainer
 	var vault_lbl: Label = find_child("VaultMilestoneLabel", true, false) as Label
@@ -1729,17 +1833,18 @@ func _refresh_level_grid_buttons() -> void:
 
 	if stars_count_lbl != null:
 		if vault_card != null and vault_lbl != null:
-			stars_count_lbl.text = "%d / 225 Stars Collected" % total_stars
+			stars_count_lbl.text = loc_mgr.tr_text("LOCKER_STARS_BADGE", [total_stars]) if loc_mgr else ("%d / 225 Stars Collected" % total_stars)
 		else:
-			stars_count_lbl.text = "%d / 225 Stars Collected%s" % [total_stars, next_vault_info]
+			var stars_base: String = loc_mgr.tr_text("LOCKER_STARS_BADGE", [total_stars]) if loc_mgr else ("%d / 225 Stars Collected" % total_stars)
+			stars_count_lbl.text = "%s%s" % [stars_base, next_vault_info]
 
 	if vault_card != null and vault_lbl != null:
 		if next_vault_name != "":
-			vault_lbl.text = "NEXT VAULT: %s (%d★)" % [next_vault_name.to_upper(), next_vault_stars]
+			vault_lbl.text = loc_mgr.tr_text("NEXT_VAULT_LABEL", [next_vault_name.to_upper(), next_vault_stars]) if loc_mgr else ("NEXT VAULT: %s (%d★)" % [next_vault_name.to_upper(), next_vault_stars])
 			if vault_icon_rect != null:
 				vault_icon_rect.texture = icon_trophy
 		else:
-			vault_lbl.text = "ALL VAULT REWARDS SECURED ✓"
+			vault_lbl.text = loc_mgr.tr_text("ALL_VAULTS_SECURED") if loc_mgr else "ALL VAULT REWARDS SECURED ✓"
 			if vault_icon_rect != null:
 				vault_icon_rect.texture = icon_check
 
@@ -1750,7 +1855,7 @@ func _refresh_level_grid_buttons() -> void:
 			if save_mgr.is_level_completed(i):
 				completed_count += 1
 		var pct: int = int((float(completed_count) / float(TOTAL_LEVELS_COUNT)) * 100.0)
-		completion_lbl.text = "%d/75 Cleared • %d%%" % [completed_count, pct]
+		completion_lbl.text = loc_mgr.tr_text("CAMPAIGN_COMPLETION", [completed_count, pct]) if loc_mgr else ("%d/75 Cleared • %d%%" % [completed_count, pct])
 
 	var s1_stars: int = save_mgr.get_chapter_stars(0) if save_mgr else 0
 	var s2_stars: int = save_mgr.get_chapter_stars(1) if save_mgr else 0
@@ -1839,19 +1944,22 @@ func _refresh_level_grid_buttons() -> void:
 			if active_frontier_btn == null:
 				active_frontier_btn = child
 		else:
-			child.text = ""
 			if is_available:
+				child.text = "%d" % [lvl_idx + 1]
+				child.add_theme_font_size_override("font_size", 13)
 				child.icon = icon_lock
 				child.expand_icon = true
-				child.add_theme_constant_override("icon_max_width", 24)
-				child.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+				child.add_theme_constant_override("icon_max_width", 14)
+				child.add_theme_constant_override("h_separation", 4)
+				child.icon_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 				child.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
-				child.add_theme_color_override("icon_disabled_color", Color(1.0, 1.0, 1.0, 0.75))
+				child.add_theme_color_override("icon_disabled_color", Color(1.0, 1.0, 1.0, 0.72))
 				if not is_mobile_or_touch:
 					child.tooltip_text = "Level %d • %s (Locked)" % [lvl_idx + 1, ch_title_str]
 				else:
 					child.tooltip_text = ""
 			else:
+				child.text = ""
 				child.icon = null
 			child.disabled = true
 			child.theme_type_variation = &"LevelBtnLocked"
@@ -1927,6 +2035,10 @@ func _setup_touch_scrolling() -> void:
 		var ach_scroll: ScrollContainer = achievements_modal.find_child("Scroll", true, false) as ScrollContainer
 		if ach_scroll != null:
 			scroll_candidates.append(ach_scroll)
+	if settings_modal != null:
+		var set_scroll: ScrollContainer = settings_modal.find_child("Scroll", true, false) as ScrollContainer
+		if set_scroll != null:
+			scroll_candidates.append(set_scroll)
 
 	for s in scroll_candidates:
 		if s != null:
@@ -2013,7 +2125,7 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 	var claim_btn: Button = star_vault_modal.find_child("ClaimVaultBtn", true, false) as Button
 
 	if title_lbl:
-		title_lbl.text = "★ STAR VAULT UNLOCKED! ★"
+		title_lbl.text = loc_mgr.tr_text("VAULT_UNLOCKED_TITLE") if loc_mgr else "★ STAR VAULT UNLOCKED! ★"
 	var icon_rect: TextureRect = star_vault_modal.find_child("VaultIconRect", true, false) as TextureRect
 	if icon_rect:
 		if vault.get("reward_type") == "hints":
@@ -2024,10 +2136,12 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 		icon_lbl.text = ""
 		icon_lbl.visible = false
 	if name_lbl:
-		name_lbl.text = "%s (%d Stars)" % [vault.get("name", "Supply Cache"), vault.get("stars", 15)]
+		var v_name: String = vault.get("name", loc_mgr.tr_text("STAR_VAULT_STASH") if loc_mgr else "Supply Cache")
+		var v_stars: int = vault.get("stars", 15)
+		name_lbl.text = loc_mgr.tr_text("VAULT_NAME_FORMAT", [v_name, v_stars]) if loc_mgr else ("%s (%d Stars)" % [v_name, v_stars])
 	if desc_lbl:
 		if vault.get("reward_type") == "hints":
-			desc_lbl.text = "Congratulations! You earned +%d Free Solver Hints for your dedication!" % vault.get("amount", 5)
+			desc_lbl.text = loc_mgr.tr_text("VAULT_DESC_HINTS", [vault.get("amount", 5)]) if loc_mgr else ("Congratulations! You earned +%d Free Solver Hints for your dedication!" % vault.get("amount", 5))
 		else:
 			var s_id: String = vault.get("skin_id", "")
 			var is_crate: bool = false
@@ -2037,9 +2151,17 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 						is_crate = true
 						break
 			if is_crate:
-				desc_lbl.text = "Exclusive Crate Skin Unlocked! Visit the Supply Depot to equip your new gear!"
+				desc_lbl.text = loc_mgr.tr_text("VAULT_DESC_CRATE") if loc_mgr else "Exclusive Crate Skin Unlocked! Visit the Supply Depot to equip your new gear!"
 			else:
-				desc_lbl.text = "Exclusive Outfit Unlocked! Visit the Supply Depot to equip your new gear!"
+				desc_lbl.text = loc_mgr.tr_text("VAULT_DESC_OUTFIT") if loc_mgr else "Exclusive Outfit Unlocked! Visit the Supply Depot to equip your new gear!"
+
+	if claim_btn:
+		claim_btn.text = loc_mgr.tr_text("BTN_CLAIM_REWARD") if loc_mgr else "CLAIM REWARD"
+	var close_v_btn: Button = star_vault_modal.find_child("CloseVaultBtn", true, false) as Button
+	if close_v_btn:
+		close_v_btn.text = loc_mgr.tr_text("BTN_LATER") if loc_mgr else "LATER"
+	if loc_mgr and loc_mgr.has_method("apply_rtl"):
+		loc_mgr.apply_rtl(star_vault_modal)
 
 	if claim_btn:
 		for conn in claim_btn.pressed.get_connections():

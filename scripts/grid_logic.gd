@@ -320,6 +320,31 @@ func undo() -> bool:
 	return true
 
 
+## Returns true if there is at least one crate push in history to rewind.
+func can_undo_push() -> bool:
+	for entry in history:
+		if entry.get("pushed_crate", false):
+			return true
+	return false
+
+
+## Rewinds moves back through and including the most recent crate push.
+## Returns the total number of moves rewound (0 if no push exists in history).
+func undo_last_push() -> int:
+	if not can_undo_push():
+		return 0
+	var rewound: int = 0
+	while not history.is_empty():
+		var was_push: bool = bool(history.back().get("pushed_crate", false))
+		if undo():
+			rewound += 1
+		else:
+			break
+		if was_push:
+			break
+	return rewound
+
+
 ## Restarts the level back to its initial loaded state.
 ## Resets player position, crates, moves_count, and pushes_count.
 func restart() -> void:

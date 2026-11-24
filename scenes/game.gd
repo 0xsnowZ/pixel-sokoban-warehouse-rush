@@ -201,8 +201,17 @@ var swipe_triggered_in_gesture: bool = false
 const SWIPE_THRESHOLD_PIXELS: float = 42.0
 const CONTINUOUS_DRAG_THRESHOLD_PIXELS: float = 80.0
 
+# Tap-to-Walk pathfinding state (Phase 1 QoL)
+var auto_walk_path: Array[Vector2i] = []
+var auto_walk_target: Vector2i = Vector2i(-1, -1)
+var is_auto_walking: bool = false
+
 var achievement_mgr: Node = null
 var ad_reward_modal: PanelContainer = null
+var achievement_banner: PanelContainer = null
+var _achievement_banner_tw: Tween = null
+var stage_picker_modal: PanelContainer = null
+var deadlock_pill: PanelContainer = null
 
 # UI references
 @onready var top_bar: PanelContainer = $TopBar if has_node("TopBar") else null
@@ -212,6 +221,7 @@ var ad_reward_modal: PanelContainer = null
 @onready var menu_button: Button = find_child("MenuBtn", true, false) as Button
 @onready var music_button: Button = find_child("MusicBtn", true, false) as Button
 @onready var control_button: Button = find_child("ControlBtn", true, false) as Button
+@onready var stage_badge: PanelContainer = find_child("StageBadge", true, false) as PanelContainer
 @onready var chapter_badge: Label = find_child("ChapterBadge", true, false) as Label
 @onready var dpad_overlay: Control = find_child("DPadOverlay", true, false) as Control
 @onready var dpad_up: Button = find_child("DPadUp", true, false) as Button
@@ -293,6 +303,9 @@ var icon_dpad_right: Texture2D = preload("res://assets/icons/icon_dpad_right.png
 var icon_undo: Texture2D = preload("res://assets/icons/icon_undo.png")
 var icon_restart: Texture2D = preload("res://assets/icons/icon_restart.png")
 var icon_hint: Texture2D = preload("res://assets/icons/icon_hint.png")
+var icon_trophy: Texture2D = preload("res://assets/icons/icon_trophy.png")
+var icon_lock: Texture2D = preload("res://assets/icons/icon_lock.png")
+var icon_check: Texture2D = preload("res://assets/icons/icon_check.png")
 
 
 func _initialize_nodes() -> void:
@@ -313,6 +326,8 @@ func _initialize_nodes() -> void:
 		music_button = find_child("MusicBtn", true, false) as Button
 	if control_button == null:
 		control_button = find_child("ControlBtn", true, false) as Button
+	if stage_badge == null:
+		stage_badge = find_child("StageBadge", true, false) as PanelContainer
 	if chapter_badge == null:
 		chapter_badge = find_child("ChapterBadge", true, false) as Label
 	if level_label == null:
@@ -497,6 +512,8 @@ func _ready() -> void:
 		music_button.pressed.connect(_on_music_btn_pressed)
 	if control_button != null and not control_button.pressed.is_connected(_on_control_button_pressed):
 		control_button.pressed.connect(_on_control_button_pressed)
+	if stage_badge != null and not stage_badge.gui_input.is_connected(_on_stage_badge_gui_input):
+		stage_badge.gui_input.connect(_on_stage_badge_gui_input)
 	if dpad_up != null:
 		if not dpad_up.pressed.is_connected(_on_dpad_up_pressed):
 			dpad_up.pressed.connect(_on_dpad_up_pressed)
@@ -598,7 +615,10 @@ func _notification(what: int) -> void:
 
 
 func _handle_mobile_back_request() -> void:
-	if ad_reward_modal != null and ad_reward_modal.visible:
+	if stage_picker_modal != null and stage_picker_modal.visible:
+		_hide_stage_picker()
+		if get_viewport(): get_viewport().set_input_as_handled()
+	elif ad_reward_modal != null and ad_reward_modal.visible:
 		ad_reward_modal.hide()
 		if get_viewport(): get_viewport().set_input_as_handled()
 	elif win_modal != null and win_modal.visible:
@@ -618,6 +638,7 @@ func _on_application_paused() -> void:
 	undo_hold_time = 0.0
 	undo_step_timer = 0.0
 	_stop_held_move()
+	_stop_auto_walk()
 	_dpad_moved_on_down = false
 	is_touching = false
 	active_touch_index = -1
@@ -648,6 +669,9 @@ func _apply_safe_area() -> void:
 		if bottom_bar_margin != null:
 			safe_area_mgr.apply_safe_area_margins(bottom_bar_margin, 16, 10, 16, 10, false, true)
 	_update_dpad_position()
+	_update_hint_toast_position()
+	_update_achievement_banner_position()
+	_update_deadlock_pill()
 	calculate_layout()
 	queue_redraw()
 
@@ -660,6 +684,9 @@ func _on_viewport_size_changed() -> void:
 	_layout_dirty = true
 	_apply_safe_area()
 	calculate_layout()
+	_update_hint_toast_position()
+	_update_achievement_banner_position()
+	_update_deadlock_pill()
 	queue_redraw()
 
 
@@ -719,6 +746,7 @@ func load_level(index: int) -> void:
 	is_animating = false
 	queued_move_dir = Vector2i.ZERO
 	_stop_held_move()
+	_stop_auto_walk()
 	_dpad_moved_on_down = false
 	stride_arc_y = 0.0
 	player_scale = Vector2.ONE
@@ -783,7 +811,7 @@ func _update_ui(_new_lang: String = "") -> void:
 
 	if chapter_badge != null:
 		var ch_info: Dictionary = get_current_chapter_theme()
-		chapter_badge.text = "CH. %d" % [current_chapter_idx + 1]
+		chapter_badge.text = loc_mgr.tr_text("CHAPTER_BADGE", [current_chapter_idx + 1]) if loc_mgr else ("CH. %d" % [current_chapter_idx + 1])
 		var badge_col: Color = ch_info.get("badge_color", Color(0.98, 0.82, 0.25))
 		chapter_badge.modulate = Color.WHITE
 		chapter_badge.add_theme_color_override("font_color", badge_col)
@@ -853,13 +881,13 @@ func _update_ui(_new_lang: String = "") -> void:
 
 	if loc_mgr:
 		if loc_mgr.has_method("apply_rtl"):
-			for rtl_ctrl in [win_modal, restart_dialog, ad_reward_modal, hint_toast]:
+			for rtl_ctrl in [win_modal, restart_dialog, ad_reward_modal, hint_toast, achievement_banner, deadlock_pill]:
 				if rtl_ctrl is Control:
 					loc_mgr.apply_rtl(rtl_ctrl)
 		if is_daily_challenge:
 			var daily_info: Dictionary = save_mgr.get_daily_challenge_info() if save_mgr else {}
 			var streak_val: int = daily_info.get("streak", 0)
-			level_label.text = "DAILY SHIFT • STREAK: %d" % streak_val
+			level_label.text = loc_mgr.tr_text("GAME_DAILY_SHIFT", [streak_val])
 		else:
 			level_label.text = loc_mgr.tr_text("GAME_LEVEL_LABEL", [current_level_index + 1, level_paths.size()])
 		stats_label.text = "%s%s   •   %s%s" % [
@@ -1003,6 +1031,7 @@ func _refresh_deadlock_radar(is_push: bool = false) -> void:
 		deadlock_pulse_timer = 0.0
 		if is_instance_valid(undo_button) and undo_button.modulate != Color.WHITE:
 			undo_button.modulate = Color.WHITE
+	_update_deadlock_pill()
 
 
 func _on_level_won() -> void:
@@ -1057,7 +1086,8 @@ func _on_level_won() -> void:
 		if is_daily_challenge:
 			var d_res: Dictionary = save_mgr.record_daily_challenge_completed()
 			var cur_streak: int = d_res.get("streak", 1)
-			_show_hint_toast("DAILY SHIFT CLEARED! +3 HINTS • %d DAY STREAK" % cur_streak, Color(1.0, 0.85, 0.25))
+			var daily_msg: String = loc_mgr.tr_text("TOAST_DAILY_CLEARED", [cur_streak]) if loc_mgr else ("DAILY SHIFT CLEARED! +3 HINTS • %d DAY STREAK" % cur_streak)
+			_show_hint_toast(daily_msg, Color(1.0, 0.85, 0.25))
 	_check_achievements()
 	if ad_mgr:
 		ad_mgr.record_level_completed(current_level_index)
@@ -1095,7 +1125,7 @@ func _on_level_won() -> void:
 	if level_placard_label:
 		var ch_info: Dictionary = get_current_chapter_theme()
 		var ch_title_text: String = loc_mgr.tr_text("CHAPTER_%d_TITLE" % current_chapter_idx) if loc_mgr else ch_info.get("name", "Cargo Bay")
-		level_placard_label.text = "LEVEL %d  •  %s" % [current_level_index + 1, ch_title_text.to_upper()]
+		level_placard_label.text = loc_mgr.tr_text("WIN_LEVEL_PLACARD", [current_level_index + 1, ch_title_text.to_upper()]) if loc_mgr else ("LEVEL %d  •  %s" % [current_level_index + 1, ch_title_text.to_upper()])
 
 	var is_master: bool = (grid.moves_count <= optimal_moves)
 	if loc_mgr:
@@ -1207,6 +1237,7 @@ func _on_level_reset() -> void:
 	current_walk_frame = 0
 	walk_step_count = 0
 	_stop_held_move()
+	_stop_auto_walk()
 	_dpad_moved_on_down = false
 	stride_arc_y = 0.0
 	player_scale = Vector2.ONE
@@ -1245,9 +1276,9 @@ func _animate_player(from_pos: Vector2i, to_pos: Vector2i) -> void:
 	cctv_motion_timer = 0.55
 	cctv_idle_pan_timer = 0.0
 
-	# Heavy pushing uses deliberate cubic ease-out curve; walking uses swift quad ease-out
+	# Heavy pushing uses deliberate cubic ease-out curve; walking uses swift quad ease-out (brisker during auto-walk)
 	var trans_mode: Tween.TransitionType = Tween.TRANS_CUBIC if was_push else Tween.TRANS_QUAD
-	var anim_duration: float = 0.135 if was_push else 0.11
+	var anim_duration: float = 0.135 if was_push else (0.072 if is_auto_walking else 0.11)
 
 	# Footstep floor dust puff when walking on empty floor (every 2 steps)
 	if not was_push and (walk_step_count % 2 == 0):
@@ -1299,9 +1330,15 @@ func _animate_player(from_pos: Vector2i, to_pos: Vector2i) -> void:
 		queue_redraw()
 		# Process queued move if one was buffered during animation (PRD Section 5)
 		if queued_move_dir != Vector2i.ZERO:
+			_stop_auto_walk()
 			var dir_to_run: Vector2i = queued_move_dir
 			queued_move_dir = Vector2i.ZERO
 			try_move(dir_to_run)
+		elif is_auto_walking:
+			if not auto_walk_path.is_empty():
+				_step_auto_walk()
+			else:
+				_stop_auto_walk()
 	)
 
 
@@ -1373,10 +1410,14 @@ func _animate_crate(from_pos: Vector2i, to_pos: Vector2i) -> void:
 	, squash_start, Vector2.ONE, 0.28 if is_entering_goal else 0.22)
 
 
-func try_move(dir: Vector2i) -> void:
+func try_move(dir: Vector2i, from_auto_walk: bool = false) -> void:
+	if not from_auto_walk:
+		_stop_auto_walk()
 	player_facing_dir = dir
 	clear_hint()
 	if win_modal != null and win_modal.visible:
+		return
+	if stage_picker_modal != null and stage_picker_modal.visible:
 		return
 
 	if is_animating:
@@ -1387,6 +1428,8 @@ func try_move(dir: Vector2i) -> void:
 	if grid != null:
 		var moved: bool = grid.move(dir)
 		if not moved:
+			if from_auto_walk:
+				_stop_auto_walk()
 			_trigger_bump_recoil(dir)
 
 
@@ -1444,12 +1487,18 @@ func _is_touch_on_ui(pos: Vector2) -> bool:
 		return true
 	if ad_reward_modal != null and ad_reward_modal.visible:
 		return true
+	if stage_picker_modal != null and stage_picker_modal.visible:
+		return true
+	if deadlock_pill != null and deadlock_pill.is_visible_in_tree() and deadlock_pill.get_global_rect().has_point(pos):
+		return true
 
 	# Top bar region (TopBar header and status bar / cutout)
 	var top_h: float = 96.0
 	if safe_area_mgr != null:
 		var insets: Dictionary = safe_area_mgr.get_safe_insets(self)
 		top_h += insets.get("top", 0.0)
+	if top_bar != null and top_bar.size.y > 0.0:
+		top_h = maxf(top_h, top_bar.position.y + top_bar.size.y)
 	if pos.y <= top_h:
 		return true
 
@@ -1510,15 +1559,20 @@ func _process_game_input(event: InputEvent) -> void:
 		return
 	if ad_reward_modal != null and ad_reward_modal.visible:
 		return
+	if stage_picker_modal != null and stage_picker_modal.visible:
+		return
 
 	# Keyboard navigation (Desktop / Testing) with Rapid Rewind on Hold & Corridor Auto-Repeat
 	if event is InputEventKey:
 		if event.keycode in [KEY_Z, KEY_U, KEY_BACKSPACE]:
 			if event.is_pressed() and not event.is_echo():
-				is_undo_held = true
-				undo_hold_time = 0.0
-				undo_step_timer = 0.0
-				_on_undo_pressed()
+				if event.keycode == KEY_Z and (event.shift_pressed or event.ctrl_pressed):
+					_on_undo_push_pressed()
+				else:
+					is_undo_held = true
+					undo_hold_time = 0.0
+					undo_step_timer = 0.0
+					_on_undo_pressed()
 			elif not event.is_pressed():
 				is_undo_held = false
 				undo_hold_time = 0.0
@@ -1602,6 +1656,8 @@ func _process_game_input(event: InputEvent) -> void:
 					var release_delta: Vector2 = event.position - touch_start_pos
 					if release_delta.length() >= SWIPE_THRESHOLD_PIXELS:
 						_handle_swipe(release_delta)
+					elif release_delta.length() <= 18.0 and not _is_touch_on_ui(event.position):
+						_try_tap_to_walk(event.position)
 				is_touching = false
 				active_touch_index = -1
 				swipe_triggered_in_gesture = false
@@ -1635,6 +1691,8 @@ func _process_game_input(event: InputEvent) -> void:
 						var release_delta: Vector2 = event.position - touch_start_pos
 						if release_delta.length() >= SWIPE_THRESHOLD_PIXELS:
 							_handle_swipe(release_delta)
+						elif release_delta.length() <= 18.0 and not _is_touch_on_ui(event.position):
+							_try_tap_to_walk(event.position)
 					is_touching = false
 					swipe_triggered_in_gesture = false
 
@@ -1803,6 +1861,7 @@ func _update_dpad_position() -> void:
 	dpad_overlay.offset_right = half_w
 	dpad_overlay.offset_bottom = -(bot_bar_h + clearance)
 	dpad_overlay.offset_top = -(bot_bar_h + clearance + dpad_h)
+	_update_deadlock_pill()
 
 
 func _update_control_scheme_ui() -> void:
@@ -1905,6 +1964,7 @@ func _on_undo_button_up() -> void:
 func _on_undo_pressed() -> void:
 	if win_modal != null and win_modal.visible:
 		return
+	_stop_auto_walk()
 	is_animating = false
 	queued_move_dir = Vector2i.ZERO
 	clear_hint()
@@ -1917,6 +1977,24 @@ func _on_undo_pressed() -> void:
 		if haptic_mgr:
 			haptic_mgr.vibrate_click()
 		grid.undo()
+
+
+func _on_undo_push_pressed() -> void:
+	if win_modal != null and win_modal.visible:
+		return
+	_stop_auto_walk()
+	is_animating = false
+	queued_move_dir = Vector2i.ZERO
+	clear_hint()
+	if grid != null and grid.can_undo_push():
+		if audio_mgr:
+			if audio_mgr.has_method("play_undo"):
+				audio_mgr.play_undo()
+			else:
+				audio_mgr.play_click()
+		if haptic_mgr:
+			haptic_mgr.vibrate_click()
+		grid.undo_last_push()
 
 
 func _on_move_undone(p_pos: Vector2i, _had_crate: bool, _crate_from: Vector2i, _crate_to: Vector2i) -> void:
@@ -1946,6 +2024,7 @@ func _on_move_undone(p_pos: Vector2i, _had_crate: bool, _crate_from: Vector2i, _
 
 
 func _on_hint_pressed() -> void:
+	_stop_auto_walk()
 	if is_animating:
 		return
 	if win_modal != null and win_modal.visible:
@@ -2053,10 +2132,12 @@ func _on_hint_pressed() -> void:
 func _show_hint_toast(msg: String, color: Color = Color(1.0, 0.95, 0.6)) -> void:
 	if hint_toast == null or hint_toast_label == null:
 		return
+	_update_hint_toast_position()
 	hint_toast_label.text = msg
 	hint_toast_label.modulate = color
 	hint_toast.modulate.a = 0.0
 	hint_toast.show()
+	_update_achievement_banner_position()
 	var tw: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.tween_property(hint_toast, "modulate:a", 1.0, 0.18)
 	tw.tween_interval(2.2)
@@ -2624,6 +2705,9 @@ func _draw() -> void:
 
 	# 6.5. Proactive Deadlock Radar (Ghost Warning Glyph & Hazard Halo)
 	_draw_deadlock_radar(effective_origin, ch)
+
+	# 6.8. Tap-to-Walk Pathfinding Breadcrumbs & Target Marker
+	_draw_auto_walk_path(effective_origin, ch)
 
 	# 7. Draw Directional Porter Worker
 	var player_padding: float = tile_size * 0.04
@@ -3295,14 +3379,22 @@ func _draw_crate(rect: Rect2, on_goal: bool, logical_pos: Vector2i = Vector2i.ZE
 	draw_colored_polygon(pts_c_core, Color(0.0, 0.0, 0.0, 0.48))
 
 	var ch: Dictionary = get_current_chapter_theme()
-	var c_tex: Texture2D = tex_crate_goal if on_goal else tex_crate
 
 	# Crate Skin from Porter Locker
 	var crate_skin_info: Dictionary = save_mgr.get_crate_skin_info() if (save_mgr and save_mgr.has_method("get_crate_skin_info")) else {}
 	var crate_skin_id: String = crate_skin_info.get("id", "classic_wood")
 	var crate_tint: Color = crate_skin_info.get("tint", Color.WHITE)
 
-	var c_mod: Color = Color(1.0, 1.0, 1.0) if on_goal else (ch["crate_tint"] * crate_tint)
+	var c_tex: Texture2D
+	var c_mod: Color
+	if crate_skin_id == "classic_wood":
+		c_tex = tex_crate_goal if on_goal else tex_crate
+		c_mod = Color(1.0, 1.0, 1.0) if on_goal else (ch["crate_tint"] * crate_tint)
+	else:
+		# Custom unlocked skins preserve their unique surface texture & tint even when docked!
+		c_tex = tex_crate
+		var base_skin_mod: Color = ch["crate_tint"] * crate_tint
+		c_mod = base_skin_mod.lerp(Color(1.05, 1.02, 0.80), 0.25) if on_goal else base_skin_mod
 	draw_texture_rect(c_tex, draw_r, false, c_mod)
 
 	# 2. 3D Volume Key-Light & Ambient Occlusion Shading
@@ -3316,59 +3408,54 @@ func _draw_crate(rect: Rect2, on_goal: bool, logical_pos: Vector2i = Vector2i.ZE
 	draw_line(draw_r.position + Vector2(2.0, draw_r.size.y - 1.0), draw_r.end - Vector2(2.0, 1.0), Color(0.0, 0.0, 0.0, 0.45), 2.0)
 	draw_line(Vector2(draw_r.end.x - 1.0, draw_r.position.y + 2.0), draw_r.end - Vector2(1.0, 2.0), Color(0.0, 0.0, 0.0, 0.35), 1.8)
 
-	# Crate custom skin accessories (only when not on goal so goal star is unobstructed)
-	if not on_goal:
-		match crate_skin_id:
-			"steel_container":
-				# Cold-rolled metallic corner angle braces
-				var brace_len: float = draw_r.size.x * 0.22
-				var b_col: Color = Color(0.85, 0.92, 1.0, 0.75)
-				# Top-left corner
-				draw_line(draw_r.position, draw_r.position + Vector2(brace_len, 0), b_col, 2.0)
-				draw_line(draw_r.position, draw_r.position + Vector2(0, brace_len), b_col, 2.0)
-				# Top-right corner
-				draw_line(draw_r.position + Vector2(draw_r.size.x, 0), draw_r.position + Vector2(draw_r.size.x - brace_len, 0), b_col, 2.0)
-				draw_line(draw_r.position + Vector2(draw_r.size.x, 0), draw_r.position + Vector2(draw_r.size.x, brace_len), b_col, 2.0)
-				# Bottom-left corner
-				draw_line(draw_r.position + Vector2(0, draw_r.size.y), draw_r.position + Vector2(brace_len, draw_r.size.y), b_col, 2.0)
-				draw_line(draw_r.position + Vector2(0, draw_r.size.y), draw_r.position + Vector2(0, draw_r.size.y - brace_len), b_col, 2.0)
-				# Bottom-right corner
-				draw_line(draw_r.end, draw_r.end - Vector2(brace_len, 0), b_col, 2.0)
-				draw_line(draw_r.end, draw_r.end - Vector2(0, brace_len), b_col, 2.0)
-			"hazard_box":
-				# Caution diagonal hazard accent in center
-				var h_col: Color = Color(0.12, 0.12, 0.15, 0.70)
-				var c_len: float = draw_r.size.x * 0.35
-				draw_line(c_center - Vector2(c_len * 0.5, c_len * 0.5), c_center + Vector2(c_len * 0.5, c_len * 0.5), h_col, 3.5)
-				draw_line(c_center - Vector2(c_len * 0.5, -c_len * 0.5), c_center + Vector2(c_len * 0.5, -c_len * 0.5), h_col, 3.5)
-			"cryo_vault":
-				# 4 Frost crystalline corner studs
-				var pad: float = draw_r.size.x * 0.18
-				var frost_pts: Array[Vector2] = [
-					draw_r.position + Vector2(pad, pad),
-					draw_r.position + Vector2(draw_r.size.x - pad, pad),
-					draw_r.position + Vector2(pad, draw_r.size.y - pad),
-					draw_r.position + Vector2(draw_r.size.x - pad, draw_r.size.y - pad)
-				]
-				for pt in frost_pts:
-					draw_circle(pt, 2.0, Color(0.85, 0.98, 1.0, 0.85))
-					draw_circle(pt, 0.9, Color(1.0, 1.0, 1.0, 0.95))
-			"luxury_safe":
-				# Central brass vault combination dial
-				draw_circle(c_center, 6.0, Color(0.12, 0.10, 0.08, 0.85))
-				draw_circle(c_center, 5.0, Color(1.0, 0.86, 0.28, 0.95))
-				draw_circle(c_center, 2.0, Color(0.30, 0.20, 0.05, 1.0))
-				# 4 Gold corner rivets
-				var g_pad: float = draw_r.size.x * 0.14
-				var g_corners: Array[Vector2] = [
-					draw_r.position + Vector2(g_pad, g_pad),
-					draw_r.position + Vector2(draw_r.size.x - g_pad, g_pad),
-					draw_r.position + Vector2(g_pad, draw_r.size.y - g_pad),
-					draw_r.position + Vector2(draw_r.size.x - g_pad, draw_r.size.y - g_pad)
-				]
-				for pt in g_corners:
-					draw_circle(pt, 2.4, Color(1.0, 0.85, 0.25, 0.95))
-					draw_circle(pt - Vector2(0.5, 0.5), 0.8, Color(1.0, 1.0, 0.90, 1.0))
+	# Crate custom skin accessories (retained both on and off goals so skin identity shines!)
+	match crate_skin_id:
+		"steel_container":
+			# Cold-rolled metallic corner angle braces
+			var brace_len: float = draw_r.size.x * 0.22
+			var b_col: Color = Color(0.85, 0.92, 1.0, 0.85)
+			draw_line(draw_r.position, draw_r.position + Vector2(brace_len, 0), b_col, 2.0)
+			draw_line(draw_r.position, draw_r.position + Vector2(0, brace_len), b_col, 2.0)
+			draw_line(draw_r.position + Vector2(draw_r.size.x, 0), draw_r.position + Vector2(draw_r.size.x - brace_len, 0), b_col, 2.0)
+			draw_line(draw_r.position + Vector2(draw_r.size.x, 0), draw_r.position + Vector2(draw_r.size.x, brace_len), b_col, 2.0)
+			draw_line(draw_r.position + Vector2(0, draw_r.size.y), draw_r.position + Vector2(brace_len, draw_r.size.y), b_col, 2.0)
+			draw_line(draw_r.position + Vector2(0, draw_r.size.y), draw_r.position + Vector2(0, draw_r.size.y - brace_len), b_col, 2.0)
+			draw_line(draw_r.end, draw_r.end - Vector2(brace_len, 0), b_col, 2.0)
+			draw_line(draw_r.end, draw_r.end - Vector2(0, brace_len), b_col, 2.0)
+		"hazard_box":
+			# Caution diagonal hazard accent in center
+			var h_col: Color = Color(0.12, 0.12, 0.15, 0.75)
+			var c_len: float = draw_r.size.x * 0.35
+			draw_line(c_center - Vector2(c_len * 0.5, c_len * 0.5), c_center + Vector2(c_len * 0.5, c_len * 0.5), h_col, 3.5)
+			draw_line(c_center - Vector2(c_len * 0.5, -c_len * 0.5), c_center + Vector2(c_len * 0.5, -c_len * 0.5), h_col, 3.5)
+		"cryo_vault":
+			# 4 Frost crystalline corner studs
+			var pad: float = draw_r.size.x * 0.18
+			var frost_pts: Array[Vector2] = [
+				draw_r.position + Vector2(pad, pad),
+				draw_r.position + Vector2(draw_r.size.x - pad, pad),
+				draw_r.position + Vector2(pad, draw_r.size.y - pad),
+				draw_r.position + Vector2(draw_r.size.x - pad, draw_r.size.y - pad)
+			]
+			for pt in frost_pts:
+				draw_circle(pt, 2.2, Color(0.85, 0.98, 1.0, 0.88))
+				draw_circle(pt, 1.0, Color(1.0, 1.0, 1.0, 0.98))
+		"luxury_safe":
+			# Central brass vault combination dial
+			draw_circle(c_center, 6.2, Color(0.12, 0.10, 0.08, 0.88))
+			draw_circle(c_center, 5.0, Color(1.0, 0.86, 0.28, 0.96))
+			draw_circle(c_center, 2.0, Color(0.30, 0.20, 0.05, 1.0))
+			# 4 Gold corner rivets
+			var g_pad: float = draw_r.size.x * 0.14
+			var g_corners: Array[Vector2] = [
+				draw_r.position + Vector2(g_pad, g_pad),
+				draw_r.position + Vector2(draw_r.size.x - g_pad, g_pad),
+				draw_r.position + Vector2(g_pad, draw_r.size.y - g_pad),
+				draw_r.position + Vector2(draw_r.size.x - g_pad, draw_r.size.y - g_pad)
+			]
+			for pt in g_corners:
+				draw_circle(pt, 2.4, Color(1.0, 0.85, 0.25, 0.95))
+				draw_circle(pt - Vector2(0.5, 0.5), 0.8, Color(1.0, 1.0, 0.90, 1.0))
 
 	if on_goal:
 		var time_sec: float = float(Time.get_ticks_msec()) / 1000.0
@@ -3485,8 +3572,44 @@ func _draw_player(rect: Rect2) -> void:
 
 	draw_texture_rect(p_tex, hopped_rect, false, p_modulate)
 
-	# Skin Accessory & Visual Accent Overlays
+	# Skin Accessory & Visual Accent Overlays (matches all 6 Supply Depot outfits in-game)
+	var hw: float = hopped_rect.size.x
+	var hh: float = hopped_rect.size.y
 	match skin_id:
+		"safety_vest":
+			# High-visibility neon orange chest vest + reflective silver bands
+			var torso_y: float = hopped_rect.position.y + hh * 0.54
+			var band_w: float = hw * 0.22
+			draw_rect(Rect2(center.x - band_w, torso_y - 2.0, band_w * 2.0, hh * 0.22), Color(1.0, 0.45, 0.08, 0.55))
+			draw_line(Vector2(center.x - band_w, torso_y + 1.0), Vector2(center.x + band_w, torso_y + 1.0), Color(0.95, 0.98, 1.0, 0.95), maxf(2.0, hh * 0.045))
+			draw_line(Vector2(center.x - band_w * 0.7, torso_y - 3.0), Vector2(center.x - band_w * 0.7, torso_y + hh * 0.16), Color(0.95, 0.98, 1.0, 0.88), maxf(1.6, hw * 0.035))
+			draw_line(Vector2(center.x + band_w * 0.7, torso_y - 3.0), Vector2(center.x + band_w * 0.7, torso_y + hh * 0.16), Color(0.95, 0.98, 1.0, 0.88), maxf(1.6, hw * 0.035))
+		"mechanic":
+			# Reinforced dark utility belt + steel buckle + wrench hanging on hip
+			var belt_y: float = hopped_rect.position.y + hh * 0.64
+			var half_b: float = hw * 0.23
+			draw_line(Vector2(center.x - half_b, belt_y), Vector2(center.x + half_b, belt_y), Color(0.14, 0.16, 0.22, 0.95), maxf(2.5, hh * 0.05))
+			draw_rect(Rect2(center.x - hw * 0.05, belt_y - hh * 0.035, hw * 0.10, hh * 0.07), Color(0.85, 0.90, 0.98, 0.95))
+			draw_line(Vector2(center.x + half_b * 0.7, belt_y), Vector2(center.x + half_b * 0.7, belt_y + hh * 0.10), Color(0.82, 0.88, 0.96, 0.95), maxf(2.0, hw * 0.035))
+		"foreman":
+			# Executive gold hardhat brim + front foreman emblem
+			var brim_y: float = hopped_rect.position.y + hh * 0.27
+			var half_h: float = hw * 0.24
+			draw_line(Vector2(center.x - half_h, brim_y), Vector2(center.x + half_h, brim_y), Color(1.0, 0.86, 0.18, 0.96), maxf(2.4, hh * 0.045))
+			draw_circle(Vector2(center.x, hopped_rect.position.y + hh * 0.18), maxf(2.2, hw * 0.04), Color(1.0, 0.94, 0.45, 0.95))
+		"hazmat":
+			# Luminous cyan bio-containment visor shield across face
+			if player_facing_dir != Vector2i.UP:
+				var visor_y: float = hopped_rect.position.y + hh * 0.34
+				var visor_w: float = hw * 0.17 if player_facing_dir == Vector2i.DOWN else hw * 0.12
+				var visor_x_off: float = 0.0 if player_facing_dir == Vector2i.DOWN else float(player_facing_dir.x) * (hw * 0.08)
+				draw_rect(Rect2(center.x + visor_x_off - visor_w, visor_y - hh * 0.045, visor_w * 2.0, hh * 0.09), Color(0.18, 0.96, 1.0, 0.85))
+				draw_line(Vector2(center.x + visor_x_off - visor_w * 0.7, visor_y - hh * 0.02), Vector2(center.x + visor_x_off + visor_w * 0.4, visor_y - hh * 0.02), Color(0.88, 1.0, 1.0, 0.95), 1.4)
+			else:
+				# Dual breather canisters visible on back pack when facing away
+				var pack_y: float = hopped_rect.position.y + hh * 0.56
+				draw_circle(Vector2(center.x - hw * 0.09, pack_y), maxf(2.2, hw * 0.04), Color(0.25, 0.95, 0.55, 0.90))
+				draw_circle(Vector2(center.x + hw * 0.09, pack_y), maxf(2.2, hw * 0.04), Color(0.25, 0.95, 0.55, 0.90))
 		"golden_porter":
 			# Radiant golden sparkles & prestige shimmer
 			var time_sec: float = float(Time.get_ticks_msec()) / 1000.0
@@ -4061,7 +4184,8 @@ func _on_skip_level_pressed() -> void:
 		if haptic_mgr:
 			haptic_mgr.vibrate_target()
 	else:
-		_show_hint_toast("Final level cannot be skipped!", Color(1.0, 0.7, 0.4))
+		var no_skip_msg: String = loc_mgr.tr_text("TOAST_FINAL_NO_SKIP") if loc_mgr else "Final level cannot be skipped!"
+		_show_hint_toast(no_skip_msg, Color(1.0, 0.7, 0.4))
 
 
 func _on_rewarded_hints_earned(reward_type: String, amount: int) -> void:
@@ -4088,10 +4212,526 @@ func _check_achievements() -> void:
 
 
 func _show_achievement_toast(info: Dictionary) -> void:
-	var ach_name: String = loc_mgr.tr_text(info.get("name_key", "")) if loc_mgr else info.get("name", "Achievement")
-	var toast_text: String = "UNLOCKED: %s" % [ach_name]
-	_show_hint_toast(toast_text, Color(1.0, 0.85, 0.25))
+	_show_achievement_banner(info)
 	if audio_mgr:
 		audio_mgr.play_win()
 	if haptic_mgr:
 		haptic_mgr.vibrate_target()
+
+
+# ==============================================================================
+# Phase 1 UX Helpers: Tap-to-Walk, Deadlock Rewind Pill, Achievement Banner & Stage Picker
+# ==============================================================================
+
+func _stop_auto_walk() -> void:
+	var was_active: bool = is_auto_walking or not auto_walk_path.is_empty()
+	is_auto_walking = false
+	auto_walk_path.clear()
+	auto_walk_target = Vector2i(-1, -1)
+	if was_active:
+		queue_redraw()
+
+
+func _try_tap_to_walk(screen_pos: Vector2) -> void:
+	if save_mgr != null and "tap_to_walk_enabled" in save_mgr and not save_mgr.tap_to_walk_enabled:
+		return
+	if save_mgr != null and "control_scheme" in save_mgr and save_mgr.control_scheme == 1:
+		return
+	if grid == null or tile_size <= 0.0 or is_level_won:
+		return
+	if (win_modal and win_modal.visible) or (restart_dialog and restart_dialog.visible) or (ad_reward_modal and ad_reward_modal.visible) or (stage_picker_modal and stage_picker_modal.visible):
+		return
+
+	var rel: Vector2 = screen_pos - grid_origin
+	if rel.x < 0.0 or rel.y < 0.0:
+		return
+	var target_tile: Vector2i = Vector2i(int(floor(rel.x / tile_size)), int(floor(rel.y / tile_size)))
+	if not grid.is_in_bounds(target_tile):
+		return
+
+	# Guard 1-step taps near the character to avoid accidental grip slips (swipes handle 1-step precision)
+	var manhattan_dist: int = abs(target_tile.x - grid.player_pos.x) + abs(target_tile.y - grid.player_pos.y)
+	if manhattan_dist < 2:
+		return
+	if not grid.is_empty_tile(target_tile):
+		return
+
+	var path: Array[Vector2i] = SokobanSolverScript.find_player_walk_path(grid.player_pos, target_tile, grid)
+	if path.is_empty():
+		return
+
+	auto_walk_path = path
+	auto_walk_target = target_tile
+	is_auto_walking = true
+	queued_move_dir = Vector2i.ZERO
+	clear_hint()
+	queue_redraw()
+	if not is_animating:
+		_step_auto_walk()
+
+
+func _step_auto_walk() -> void:
+	if not is_auto_walking or auto_walk_path.is_empty() or grid == null or is_level_won:
+		_stop_auto_walk()
+		return
+	var next_tile: Vector2i = auto_walk_path.pop_front()
+	var dir: Vector2i = next_tile - grid.player_pos
+	if abs(dir.x) + abs(dir.y) != 1 or not grid.is_empty_tile(next_tile):
+		_stop_auto_walk()
+		return
+	try_move(dir, true)
+
+
+func _draw_auto_walk_path(effective_origin: Vector2, ch: Dictionary) -> void:
+	if not is_auto_walking or grid == null:
+		return
+	var accent: Color = ch.get("badge_color", Color(0.45, 0.88, 1.0))
+	for step_pos in auto_walk_path:
+		var pt: Vector2 = effective_origin + Vector2(step_pos) * tile_size + Vector2(tile_size * 0.5, tile_size * 0.5)
+		draw_circle(pt, maxf(2.5, tile_size * 0.08), Color(accent.r, accent.g, accent.b, 0.55))
+	if auto_walk_target.x >= 0 and auto_walk_target.y >= 0:
+		var t_rect: Rect2 = Rect2(effective_origin + Vector2(auto_walk_target) * tile_size, Vector2(tile_size, tile_size)).grow(-tile_size * 0.16)
+		draw_rect(t_rect, Color(accent.r, accent.g, accent.b, 0.80), false, 2.0)
+
+
+func _update_hint_toast_position() -> void:
+	if hint_toast == null:
+		return
+	var safe_top: float = 0.0
+	var safe_horiz: float = 0.0
+	if safe_area_mgr != null:
+		var insets: Dictionary = safe_area_mgr.get_safe_insets(self)
+		safe_top = insets.get("top", 0.0)
+		safe_horiz = insets.get("left", 0.0) + insets.get("right", 0.0)
+	var top_h: float = 96.0 + safe_top
+	if top_bar != null:
+		var tb_bottom: float = top_bar.position.y + top_bar.size.y
+		if tb_bottom > 10.0:
+			top_h = maxf(top_h, tb_bottom)
+	var vp_w: float = size.x if size.x > 0.0 else 540.0
+	var half_w: float = minf(170.0, (vp_w - safe_horiz - 24.0) * 0.5)
+	hint_toast.offset_left = -half_w
+	hint_toast.offset_right = half_w
+	hint_toast.offset_top = top_h + 8.0
+	hint_toast.offset_bottom = top_h + 48.0
+
+
+func _update_achievement_banner_position() -> void:
+	if achievement_banner == null:
+		return
+	var safe_top: float = 0.0
+	var safe_horiz: float = 0.0
+	if safe_area_mgr != null:
+		var insets: Dictionary = safe_area_mgr.get_safe_insets(self)
+		safe_top = insets.get("top", 0.0)
+		safe_horiz = insets.get("left", 0.0) + insets.get("right", 0.0)
+	var top_h: float = 96.0 + safe_top
+	if top_bar != null:
+		var tb_bottom: float = top_bar.position.y + top_bar.size.y
+		if tb_bottom > 10.0:
+			top_h = maxf(top_h, tb_bottom)
+	if hint_toast != null and hint_toast.visible:
+		top_h = maxf(top_h, hint_toast.offset_bottom)
+	var vp_w: float = size.x if size.x > 0.0 else 540.0
+	var half_w: float = minf(185.0, (vp_w - safe_horiz - 24.0) * 0.5)
+	achievement_banner.offset_left = -half_w
+	achievement_banner.offset_right = half_w
+	achievement_banner.offset_top = top_h + 8.0
+	achievement_banner.offset_bottom = top_h + 62.0
+
+
+func _create_achievement_banner() -> PanelContainer:
+	var banner: PanelContainer = PanelContainer.new()
+	banner.name = "AchievementBanner"
+	banner.anchors_preset = Control.PRESET_TOP_WIDE
+	banner.anchor_left = 0.5
+	banner.anchor_right = 0.5
+	banner.anchor_top = 0.0
+	banner.anchor_bottom = 0.0
+	banner.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	banner.visible = false
+
+	var sb: StyleBoxFlat = StyleBoxFlat.new()
+	sb.bg_color = Color(0.08, 0.11, 0.18, 0.96)
+	sb.border_color = Color(1.0, 0.84, 0.28, 1.0)
+	sb.set_border_width_all(2)
+	sb.border_width_bottom = 3
+	sb.set_corner_radius_all(12)
+	sb.shadow_color = Color(0.0, 0.0, 0.0, 0.55)
+	sb.shadow_size = 8
+	banner.add_theme_stylebox_override("panel", sb)
+
+	var margin: MarginContainer = MarginContainer.new()
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margin.add_theme_constant_override("margin_left", 12)
+	margin.add_theme_constant_override("margin_top", 6)
+	margin.add_theme_constant_override("margin_right", 12)
+	margin.add_theme_constant_override("margin_bottom", 6)
+	banner.add_child(margin)
+
+	var hbox: HBoxContainer = HBoxContainer.new()
+	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hbox.add_theme_constant_override("separation", 10)
+	margin.add_child(hbox)
+
+	var icon_rect: TextureRect = TextureRect.new()
+	icon_rect.name = "TrophyIcon"
+	icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon_rect.custom_minimum_size = Vector2(28, 28)
+	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon_rect.texture = icon_trophy
+	hbox.add_child(icon_rect)
+
+	var vbox: VBoxContainer = VBoxContainer.new()
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.add_theme_constant_override("separation", 1)
+	hbox.add_child(vbox)
+
+	var header_lbl: Label = Label.new()
+	header_lbl.name = "HeaderLabel"
+	header_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	header_lbl.text = "ACHIEVEMENT UNLOCKED"
+	header_lbl.add_theme_font_size_override("font_size", 10)
+	header_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.25))
+	vbox.add_child(header_lbl)
+
+	var title_lbl: Label = Label.new()
+	title_lbl.name = "NameLabel"
+	title_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title_lbl.text = "First Shift"
+	title_lbl.add_theme_font_size_override("font_size", 14)
+	title_lbl.add_theme_color_override("font_color", Color(0.96, 0.98, 1.0))
+	vbox.add_child(title_lbl)
+
+	add_child(banner)
+	return banner
+
+
+func _show_achievement_banner(info: Dictionary) -> void:
+	if achievement_banner == null:
+		achievement_banner = _create_achievement_banner()
+	if loc_mgr and loc_mgr.has_method("apply_rtl"):
+		loc_mgr.apply_rtl(achievement_banner)
+	var header_lbl: Label = achievement_banner.find_child("HeaderLabel", true, false) as Label
+	var name_lbl: Label = achievement_banner.find_child("NameLabel", true, false) as Label
+	if header_lbl:
+		header_lbl.text = loc_mgr.tr_text("ACHIEVEMENT_BANNER_HEADER") if loc_mgr else "ACHIEVEMENT UNLOCKED"
+	if name_lbl:
+		name_lbl.text = loc_mgr.tr_text(info.get("name_key", "")) if loc_mgr else info.get("name", "Achievement")
+	_update_achievement_banner_position()
+
+	if _achievement_banner_tw and _achievement_banner_tw.is_valid():
+		_achievement_banner_tw.kill()
+	achievement_banner.modulate.a = 0.0
+	achievement_banner.show()
+	_achievement_banner_tw = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_achievement_banner_tw.tween_property(achievement_banner, "modulate:a", 1.0, 0.20)
+	_achievement_banner_tw.tween_interval(2.6)
+	_achievement_banner_tw.tween_property(achievement_banner, "modulate:a", 0.0, 0.35)
+	_achievement_banner_tw.tween_callback(func():
+		if achievement_banner:
+			achievement_banner.hide()
+	)
+
+
+func _create_deadlock_pill() -> PanelContainer:
+	var pill: PanelContainer = PanelContainer.new()
+	pill.name = "DeadlockPill"
+	pill.anchors_preset = Control.PRESET_CENTER_BOTTOM
+	pill.anchor_left = 0.5
+	pill.anchor_right = 0.5
+	pill.anchor_top = 1.0
+	pill.anchor_bottom = 1.0
+	pill.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	pill.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	pill.visible = false
+
+	var sb: StyleBoxFlat = StyleBoxFlat.new()
+	sb.bg_color = Color(0.24, 0.09, 0.11, 0.96)
+	sb.border_color = Color(1.0, 0.35, 0.30, 0.95)
+	sb.set_border_width_all(2)
+	sb.border_width_bottom = 3
+	sb.set_corner_radius_all(12)
+	sb.shadow_color = Color(0.0, 0.0, 0.0, 0.55)
+	sb.shadow_size = 8
+	pill.add_theme_stylebox_override("panel", sb)
+
+	var margin: MarginContainer = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 10)
+	margin.add_theme_constant_override("margin_top", 5)
+	margin.add_theme_constant_override("margin_right", 8)
+	margin.add_theme_constant_override("margin_bottom", 5)
+	pill.add_child(margin)
+
+	var hbox: HBoxContainer = HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 8)
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	margin.add_child(hbox)
+
+	var msg_lbl: Label = Label.new()
+	msg_lbl.name = "MsgLabel"
+	msg_lbl.text = "Crate trapped!"
+	msg_lbl.add_theme_font_size_override("font_size", 12)
+	msg_lbl.add_theme_color_override("font_color", Color(1.0, 0.82, 0.78))
+	hbox.add_child(msg_lbl)
+
+	var rew_btn: Button = Button.new()
+	rew_btn.name = "RewindPushBtn"
+	rew_btn.text = "Rewind Push"
+	rew_btn.icon = icon_undo
+	rew_btn.expand_icon = true
+	rew_btn.add_theme_constant_override("icon_max_width", 16)
+	rew_btn.add_theme_constant_override("h_separation", 5)
+	rew_btn.custom_minimum_size = Vector2(118, 30)
+	rew_btn.add_theme_font_size_override("font_size", 12)
+	rew_btn.theme_type_variation = &"GameUndoButton"
+	rew_btn.pressed.connect(_on_undo_push_pressed)
+	_attach_spring_physics(rew_btn)
+	hbox.add_child(rew_btn)
+
+	add_child(pill)
+	return pill
+
+
+func _update_deadlock_pill() -> void:
+	var should_show: bool = (
+		not active_deadlocked_crates.is_empty()
+		and grid != null
+		and grid.can_undo_push()
+		and not is_level_won
+		and (win_modal == null or not win_modal.visible)
+	)
+	if not should_show:
+		if deadlock_pill != null:
+			deadlock_pill.hide()
+		return
+	if deadlock_pill == null:
+		deadlock_pill = _create_deadlock_pill()
+	if loc_mgr and loc_mgr.has_method("apply_rtl"):
+		loc_mgr.apply_rtl(deadlock_pill)
+	var msg_lbl: Label = deadlock_pill.find_child("MsgLabel", true, false) as Label
+	var rew_btn: Button = deadlock_pill.find_child("RewindPushBtn", true, false) as Button
+	if msg_lbl:
+		msg_lbl.text = loc_mgr.tr_text("DEADLOCK_PILL_MSG") if loc_mgr else "Crate trapped!"
+	if rew_btn:
+		rew_btn.text = loc_mgr.tr_text("BTN_UNDO_PUSH") if loc_mgr else "Rewind Push"
+	var bot_h: float = _get_actual_bottom_bar_height()
+	if dpad_overlay != null and dpad_overlay.visible:
+		bot_h += 176.0
+	deadlock_pill.offset_left = -155.0
+	deadlock_pill.offset_right = 155.0
+	deadlock_pill.offset_bottom = -(bot_h + 10.0)
+	deadlock_pill.offset_top = -(bot_h + 52.0)
+	deadlock_pill.show()
+
+
+func _on_stage_badge_gui_input(event: InputEvent) -> void:
+	if (win_modal and win_modal.visible) or (restart_dialog and restart_dialog.visible) or (ad_reward_modal and ad_reward_modal.visible):
+		return
+	var clicked: bool = false
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		clicked = true
+	elif event is InputEventScreenTouch and event.pressed:
+		clicked = true
+	if clicked:
+		_show_stage_picker()
+
+
+func _show_stage_picker() -> void:
+	if audio_mgr:
+		audio_mgr.play_click()
+	if haptic_mgr:
+		haptic_mgr.vibrate_click()
+	_stop_auto_walk()
+	if stage_picker_modal == null:
+		stage_picker_modal = _create_stage_picker_modal()
+	_refresh_stage_picker()
+	stage_picker_modal.show()
+
+
+func _hide_stage_picker() -> void:
+	if stage_picker_modal != null:
+		stage_picker_modal.hide()
+
+
+func _create_stage_picker_modal() -> PanelContainer:
+	var modal: PanelContainer = PanelContainer.new()
+	modal.name = "StagePickerModal"
+	modal.anchors_preset = Control.PRESET_FULL_RECT
+	modal.anchor_right = 1.0
+	modal.anchor_bottom = 1.0
+	modal.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	var scrim: ColorRect = ColorRect.new()
+	scrim.anchors_preset = Control.PRESET_FULL_RECT
+	scrim.anchor_right = 1.0
+	scrim.anchor_bottom = 1.0
+	scrim.color = Color(0.03, 0.05, 0.09, 0.84)
+	scrim.gui_input.connect(func(ev: InputEvent):
+		if (ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT) or (ev is InputEventScreenTouch and ev.pressed):
+			_hide_stage_picker()
+	)
+	modal.add_child(scrim)
+
+	var center: CenterContainer = CenterContainer.new()
+	center.anchors_preset = Control.PRESET_FULL_RECT
+	center.anchor_right = 1.0
+	center.anchor_bottom = 1.0
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	modal.add_child(center)
+
+	var card: PanelContainer = PanelContainer.new()
+	card.name = "PickerCard"
+	card.custom_minimum_size = Vector2(390, 440)
+	card.theme_type_variation = &"WinModalPanel"
+	center.add_child(card)
+
+	var margin: MarginContainer = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 16)
+	margin.add_theme_constant_override("margin_top", 14)
+	margin.add_theme_constant_override("margin_right", 16)
+	margin.add_theme_constant_override("margin_bottom", 14)
+	card.add_child(margin)
+
+	var vbox: VBoxContainer = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	margin.add_child(vbox)
+
+	var title_lbl: Label = Label.new()
+	title_lbl.name = "PickerTitle"
+	title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_lbl.add_theme_font_size_override("font_size", 18)
+	title_lbl.add_theme_color_override("font_color", Color(0.98, 0.84, 0.28))
+	vbox.add_child(title_lbl)
+
+	var nav_hbox: HBoxContainer = HBoxContainer.new()
+	nav_hbox.add_theme_constant_override("separation", 10)
+	vbox.add_child(nav_hbox)
+
+	var prev_btn: Button = Button.new()
+	prev_btn.name = "PickerPrevBtn"
+	prev_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	prev_btn.custom_minimum_size = Vector2(0, 38)
+	prev_btn.pressed.connect(func():
+		if current_level_index > 0:
+			_hide_stage_picker()
+			is_daily_challenge = false
+			load_level(current_level_index - 1)
+	)
+	_attach_spring_physics(prev_btn)
+	nav_hbox.add_child(prev_btn)
+
+	var nxt_btn: Button = Button.new()
+	nxt_btn.name = "PickerNextBtn"
+	nxt_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	nxt_btn.custom_minimum_size = Vector2(0, 38)
+	nxt_btn.pressed.connect(func():
+		var next_idx: int = current_level_index + 1
+		if next_idx < level_paths.size() and (save_mgr == null or save_mgr.is_level_unlocked(next_idx)):
+			_hide_stage_picker()
+			is_daily_challenge = false
+			load_level(next_idx)
+	)
+	_attach_spring_physics(nxt_btn)
+	nav_hbox.add_child(nxt_btn)
+
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.name = "PickerScroll"
+	scroll.custom_minimum_size = Vector2(0, 270)
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	vbox.add_child(scroll)
+
+	var grid_cnt: GridContainer = GridContainer.new()
+	grid_cnt.name = "PickerGrid"
+	grid_cnt.columns = 5
+	grid_cnt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid_cnt.add_theme_constant_override("h_separation", 6)
+	grid_cnt.add_theme_constant_override("v_separation", 6)
+	scroll.add_child(grid_cnt)
+
+	var close_btn: Button = Button.new()
+	close_btn.name = "PickerCloseBtn"
+	close_btn.custom_minimum_size = Vector2(150, 40)
+	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	close_btn.pressed.connect(_hide_stage_picker)
+	_attach_spring_physics(close_btn)
+	vbox.add_child(close_btn)
+
+	add_child(modal)
+	return modal
+
+
+func _refresh_stage_picker() -> void:
+	if stage_picker_modal == null:
+		return
+	var picker_card: PanelContainer = stage_picker_modal.find_child("PickerCard", true, false) as PanelContainer
+	if picker_card != null:
+		var vp_sz: Vector2 = get_viewport_rect().size if (is_inside_tree() and get_viewport() != null) else (size if size != Vector2.ZERO else Vector2(540.0, 960.0))
+		var insets: Dictionary = safe_area_mgr.get_safe_insets(self) if safe_area_mgr else {"top": 0.0, "bottom": 0.0, "left": 0.0, "right": 0.0}
+		var max_w: float = clampf(vp_sz.x - insets.get("left", 0.0) - insets.get("right", 0.0) - 36.0, 280.0, 420.0)
+		var max_h: float = clampf(vp_sz.y - insets.get("top", 0.0) - insets.get("bottom", 0.0) - 64.0, 320.0, 480.0)
+		picker_card.custom_minimum_size = Vector2(max_w, max_h)
+	var title_lbl: Label = stage_picker_modal.find_child("PickerTitle", true, false) as Label
+	var prev_btn: Button = stage_picker_modal.find_child("PickerPrevBtn", true, false) as Button
+	var nxt_btn: Button = stage_picker_modal.find_child("PickerNextBtn", true, false) as Button
+	var close_btn: Button = stage_picker_modal.find_child("PickerCloseBtn", true, false) as Button
+	var grid_cnt: GridContainer = stage_picker_modal.find_child("PickerGrid", true, false) as GridContainer
+
+	if title_lbl:
+		title_lbl.text = loc_mgr.tr_text("QUICK_PICKER_TITLE") if loc_mgr else "STAGE DISPATCH"
+	if prev_btn:
+		prev_btn.text = loc_mgr.tr_text("BTN_PREV_LEVEL") if loc_mgr else "◀ PREV"
+		prev_btn.disabled = (current_level_index <= 0)
+	if nxt_btn:
+		nxt_btn.text = loc_mgr.tr_text("BTN_NEXT_LEVEL") if loc_mgr else "NEXT ▶"
+		var next_idx: int = current_level_index + 1
+		var next_unlocked: bool = (next_idx < level_paths.size()) and (save_mgr == null or save_mgr.is_level_unlocked(next_idx))
+		nxt_btn.disabled = not next_unlocked
+	if close_btn:
+		close_btn.text = loc_mgr.tr_text("BTN_CLOSE") if loc_mgr else "Close"
+	if loc_mgr and loc_mgr.has_method("apply_rtl"):
+		loc_mgr.apply_rtl(stage_picker_modal)
+	if grid_cnt == null:
+		return
+	grid_cnt.layout_direction = Control.LAYOUT_DIRECTION_LTR
+	for child in grid_cnt.get_children():
+		grid_cnt.remove_child(child)
+		child.queue_free()
+
+	for i in range(level_paths.size()):
+		var b: Button = Button.new()
+		b.custom_minimum_size = Vector2(56, 46)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var unlocked: bool = (save_mgr == null or save_mgr.is_level_unlocked(i))
+		var completed: bool = (save_mgr != null and save_mgr.is_level_completed(i))
+		if i == current_level_index:
+			b.theme_type_variation = &"PrimaryButton"
+		elif completed:
+			b.theme_type_variation = &"LevelBtnCompleted"
+		elif unlocked:
+			b.theme_type_variation = &"LevelBtnCurrent"
+		else:
+			b.theme_type_variation = &"LevelBtnLocked"
+			b.disabled = true
+			b.icon = icon_lock
+			b.expand_icon = true
+			b.add_theme_constant_override("icon_max_width", 12)
+
+		if completed and save_mgr != null:
+			var stars: int = save_mgr.get_level_stars(i)
+			b.text = "%d\n%s" % [i + 1, "★".repeat(stars)]
+			b.add_theme_font_size_override("font_size", 11)
+		else:
+			b.text = "%d" % (i + 1)
+			b.add_theme_font_size_override("font_size", 12)
+		if unlocked:
+			b.pressed.connect(func():
+				_hide_stage_picker()
+				is_daily_challenge = false
+				load_level(i)
+			)
+		grid_cnt.add_child(b)

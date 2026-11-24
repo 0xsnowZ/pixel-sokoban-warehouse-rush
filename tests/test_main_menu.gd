@@ -165,6 +165,7 @@ func test_level_select_grid() -> void:
 	var btn2: Button = grid_buttons[2] as Button
 	assert_true(btn2.disabled, "Level 3 button is locked until level 2 completed")
 	assert_true(btn2.icon != null, "Level 3 button shows lock icon")
+	assert_equal(btn2.text, "3", "Locked level button retains faded level number alongside lock icon")
 
 	var btn10: Button = grid_buttons[10] as Button
 	assert_true(btn10.disabled, "Level 11 button is locked until unlocked")
@@ -283,9 +284,29 @@ func test_settings_modal_and_sliders() -> void:
 	assert_equal(menu.save_mgr.control_scheme, 0, "Control scheme cycled back to 0 (SWIPE)")
 	assert_true("SWIPE" in menu.control_mode_btn.text, "Control button cycles back to SWIPE")
 
+	# 7. ScrollContainer & Tap-to-Walk toggle inside SettingsModal
+	var settings_scroll: ScrollContainer = menu.settings_modal.find_child("Scroll", true, false) as ScrollContainer
+	assert_true(settings_scroll != null, "SettingsModal encloses controls inside ScrollContainer to prevent overflow")
+	assert_true(menu.tap_walk_btn != null, "Tap-to-Walk toggle exists inside SettingsModal")
+	assert_true("ON" in menu.tap_walk_btn.text, "Tap-to-Walk defaults to ON")
+	menu._on_tap_walk_toggle_pressed()
+	assert_false(menu.save_mgr.tap_to_walk_enabled, "Tap-to-Walk toggled to false via Settings")
+	assert_true("OFF" in menu.tap_walk_btn.text, "Tap-to-Walk button label reflects OFF")
+	menu._on_tap_walk_toggle_pressed()
+	assert_true(menu.save_mgr.tap_to_walk_enabled, "Tap-to-Walk restored to true")
+
 	# Close modal
 	menu._hide_settings()
 	assert_false(menu.settings_modal.visible, "Settings modal hidden via _hide_settings")
+
+	# 8. Direct Level Select open redirect from EndScreen
+	menu.save_mgr.set_meta("open_level_select", true)
+	var menu2: Control = MainMenuScene.instantiate()
+	menu2.save_mgr = menu.save_mgr
+	root.add_child(menu2)
+	menu2._ready()
+	assert_true(menu2.level_select_view.visible, "MainMenu opens LevelSelectView directly when open_level_select meta is set")
+	menu2.queue_free()
 
 	menu.queue_free()
 

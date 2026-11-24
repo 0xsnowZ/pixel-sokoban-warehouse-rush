@@ -63,10 +63,13 @@ alignment = 1
 [node name="StarProgressBtn" type="Button" parent="MainView/TopBarMargin/HBox"]
 custom_minimum_size = Vector2(204, 42)
 layout_mode = 2
+size_flags_horizontal = 3
 theme_type_variation = &"TopBarButton"
 theme_override_colors/font_color = Color(0.98, 0.85, 0.28, 1)
 theme_override_font_sizes/font_size = 13
 text = "0 / 225 Stars • Sector 1"
+clip_text = true
+text_overrun_behavior = 3
 
 [node name="Spacer" type="Control" parent="MainView/TopBarMargin/HBox"]
 layout_mode = 2
@@ -641,24 +644,23 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -230.0
-offset_top = -250.0
+offset_top = -270.0
 offset_right = 230.0
-offset_bottom = 250.0
+offset_bottom = 270.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_type_variation = &"WinModalPanel"
 
 [node name="Margin" type="MarginContainer" parent="SettingsModal"]
 layout_mode = 2
-theme_override_constants/margin_left = 22
-theme_override_constants/margin_top = 18
-theme_override_constants/margin_right = 22
-theme_override_constants/margin_bottom = 18
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 16
 
 [node name="VBox" type="VBoxContainer" parent="SettingsModal/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 12
-alignment = 1
+theme_override_constants/separation = 10
 
 [node name="Title" type="Label" parent="SettingsModal/Margin/VBox"]
 layout_mode = 2
@@ -667,91 +669,119 @@ theme_override_font_sizes/font_size = 20
 text = "AUDIO & SETTINGS"
 horizontal_alignment = 1
 
-[node name="MusicBox" type="VBoxContainer" parent="SettingsModal/Margin/VBox"]
+[node name="Scroll" type="ScrollContainer" parent="SettingsModal/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="ItemsVBox" type="VBoxContainer" parent="SettingsModal/Margin/VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="MusicBox" type="VBoxContainer" parent="SettingsModal/Margin/VBox/Scroll/ItemsVBox"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="MusicVolLabel" type="Label" parent="SettingsModal/Margin/VBox/MusicBox"]
+[node name="MusicVolLabel" type="Label" parent="SettingsModal/Margin/VBox/Scroll/ItemsVBox/MusicBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.9, 0.98, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 text = "MUSIC: 70%"
 
-[node name="MusicSlider" type="HSlider" parent="SettingsModal/Margin/VBox/MusicBox"]
-custom_minimum_size = Vector2(0, 24)
+[node name="MusicRow" type="HBoxContainer" parent="SettingsModal/Margin/VBox/Scroll/ItemsVBox/MusicBox"]
 layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="MusicSlider" type="HSlider" parent="SettingsModal/Margin/VBox/Scroll/ItemsVBox/MusicBox/MusicRow"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
 max_value = 1.0
 step = 0.05
 value = 0.7
 
-[node name="MusicToggleBtn" type="Button" parent="SettingsModal/Margin/VBox/MusicBox"]
-custom_minimum_size = Vector2(0, 36)
+[node name="MusicToggleBtn" type="Button" parent="SettingsModal/Margin/VBox/Scroll/ItemsVBox/MusicBox/MusicRow"]
+custom_minimum_size = Vector2(126, 36)
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 text = "MUSIC: ON"
 
-[node name="TrackBox" type="VBoxContainer" parent="SettingsModal/Margin/VBox"]
+[node name="TrackBox" type="VBoxContainer" parent="SettingsModal/Margin/VBox/Scroll/ItemsVBox"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="TrackLabel" type="Label" parent="SettingsModal/Margin/VBox/TrackBox"]
+[node name="TrackLabel" type="Label" parent="SettingsModal/Margin/VBox/Scroll/ItemsVBox/TrackBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.9, 0.98, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 text = "CURRENT TRACK:"
 
-[node name="TrackCycleBtn" type="Button" parent="SettingsModal/Margin/VBox/TrackBox"]
-custom_minimum_size = Vector2(0, 40)
+[node name="TrackCycleBtn" type="Button" parent="SettingsModal/Margin/VBox/Scroll/ItemsVBox/TrackBox"]
+custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Warehouse Chill"
 
-[node name="SfxBox" type="VBoxContainer" parent="SettingsModal/Margin/VBox"]
+[node name="SfxBox" type="VBoxContainer" parent="SettingsModal/Margin/VBox/Scroll/ItemsVBox"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="SfxVolLabel" type="Label" parent="SettingsModal/Margin/VBox/SfxBox"]
+[node name="SfxVolLabel" type="Label" parent="SettingsModal/Margin/VBox/Scroll/ItemsVBox/SfxBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.9, 0.98, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 text = "SOUND FX: 80%"
 
-[node name="SfxSlider" type="HSlider" parent="SettingsModal/Margin/VBox/SfxBox"]
-custom_minimum_size = Vector2(0, 24)
+[node name="SfxRow" type="HBoxContainer" parent="SettingsModal/Margin/VBox/Scroll/ItemsVBox/SfxBox"]
 layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SfxSlider" type="HSlider" parent="SettingsModal/Margin/VBox/Scroll/ItemsVBox/SfxBox/SfxRow"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
 max_value = 1.0
 step = 0.05
 value = 0.8
 
-[node name="SoundToggleBtn" type="Button" parent="SettingsModal/Margin/VBox/SfxBox"]
-custom_minimum_size = Vector2(0, 36)
+[node name="SoundToggleBtn" type="Button" parent="SettingsModal/Margin/VBox/Scroll/ItemsVBox/SfxBox/SfxRow"]
+custom_minimum_size = Vector2(126, 36)
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 text = "SOUND: ON"
 
-[node name="ControlBox" type="VBoxContainer" parent="SettingsModal/Margin/VBox"]
+[node name="ControlBox" type="VBoxContainer" parent="SettingsModal/Margin/VBox/Scroll/ItemsVBox"]
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 6
 
-[node name="ControlModeBtn" type="Button" parent="SettingsModal/Margin/VBox/ControlBox"]
-custom_minimum_size = Vector2(0, 40)
+[node name="ControlModeBtn" type="Button" parent="SettingsModal/Margin/VBox/Scroll/ItemsVBox/ControlBox"]
+custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "CONTROLS: SWIPE"
 
-[node name="HapticsToggleBtn" type="Button" parent="SettingsModal/Margin/VBox"]
+[node name="TapWalkToggleBtn" type="Button" parent="SettingsModal/Margin/VBox/Scroll/ItemsVBox/ControlBox"]
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "TAP TO WALK: ON"
+
+[node name="HapticsToggleBtn" type="Button" parent="SettingsModal/Margin/VBox/Scroll/ItemsVBox"]
 custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "HAPTICS: ON"
 
-[node name="LanguageBtn" type="Button" parent="SettingsModal/Margin/VBox"]
+[node name="LanguageBtn" type="Button" parent="SettingsModal/Margin/VBox/Scroll/ItemsVBox"]
 custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "LANGUAGE: English"
 
-[node name="CreditsBtn" type="Button" parent="SettingsModal/Margin/VBox"]
+[node name="CreditsBtn" type="Button" parent="SettingsModal/Margin/VBox/Scroll/ItemsVBox"]
 custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
 theme_override_font_sizes/font_size = 14

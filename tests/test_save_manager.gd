@@ -426,6 +426,12 @@ func test_breakout_hit_engine() -> void:
 	assert_equal(mgr2.daily_challenge_streak, 1, "Daily streak persisted across save/load")
 	assert_true(mgr2.daily_challenge_completed, "Daily completion flag persisted across save/load")
 	assert_equal(mgr2.unlocked_level, 1, "Level skip progression persisted across save/load")
+	mgr2.tap_to_walk_enabled = false
+	mgr2.save_data(TEST_SAVE_PATH)
+	var mgr3 = SaveManagerScript.new()
+	mgr3.load_data(TEST_SAVE_PATH)
+	assert_false(mgr3.tap_to_walk_enabled, "tap_to_walk_enabled setting persisted cleanly across save/load")
+	mgr3.free()
 
 	# 5. Reset clears breakout states
 	mgr2.reset_all_progress(TEST_SAVE_PATH)

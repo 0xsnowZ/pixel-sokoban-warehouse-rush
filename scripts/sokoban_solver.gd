@@ -93,6 +93,45 @@ static func get_path_states(level_index: int, level_path: String) -> Array:
 	return states
 
 
+## Finds the shortest walk path of tile coordinates from start_pos to target_pos without pushing crates.
+## Returns an ordered Array[Vector2i] starting after start_pos and ending at target_pos, or [] if unreachable.
+static func find_player_walk_path(start_pos: Vector2i, target_pos: Vector2i, grid: GridLogic) -> Array[Vector2i]:
+	var empty_path: Array[Vector2i] = []
+	if grid == null or start_pos == target_pos:
+		return empty_path
+	if not grid.is_in_bounds(target_pos) or grid.is_wall(target_pos) or grid.is_exterior_void(target_pos) or grid.crates.has(target_pos):
+		return empty_path
+	var queue: Array[Vector2i] = [start_pos]
+	var parent_map: Dictionary = { start_pos: start_pos }
+	var head: int = 0
+	var crates_map: Dictionary = grid.crates
+	var found: bool = false
+	while head < queue.size():
+		var cur: Vector2i = queue[head]
+		head += 1
+		for dir in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+			var np: Vector2i = cur + dir
+			if not grid.is_in_bounds(np) or grid.is_wall(np) or grid.is_exterior_void(np) or crates_map.has(np):
+				continue
+			if not parent_map.has(np):
+				parent_map[np] = cur
+				if np == target_pos:
+					found = true
+					break
+				queue.append(np)
+		if found:
+			break
+	if not found:
+		return empty_path
+	var rev_path: Array[Vector2i] = []
+	var step: Vector2i = target_pos
+	while step != start_pos:
+		rev_path.append(step)
+		step = parent_map[step]
+	rev_path.reverse()
+	return rev_path
+
+
 ## Finds the next single walk move ('u', 'd', 'l', 'r') to walk from start_pos to target_pos without pushing any crates.
 ## Uses a lightweight 1-agent BFS on floor tiles (< 0.05ms).
 static func find_player_walk_step(start_pos: Vector2i, target_pos: Vector2i, grid: GridLogic) -> String:

@@ -697,6 +697,201 @@ const TRANSLATIONS: Dictionary = {
 		"en": "Push 100 crates across all your warehouse shifts.",
 		"fr": "Poussez 100 caisses au total.",
 		"ar": "ادفع 100 صندوق عبر جولاتك في المستودع."
+	},
+	"MAIN_SUBTITLE": {
+		"en": "RETRO WAREHOUSE SOKOBAN",
+		"fr": "SOKOBAN D'ENTREPÔT RÉTRO",
+		"ar": "سوكوبان المستودع الكلاسيكي"
+	},
+	"MAIN_FOOTER": {
+		"en": "Pixel Sokoban: Warehouse Rush v1.0 • Android",
+		"fr": "Pixel Sokoban : Warehouse Rush v1.0 • Android",
+		"ar": "Pixel Sokoban: Warehouse Rush v1.0 • أندرويد"
+	},
+	"SETTINGS_MUSIC_TOGGLE": {
+		"en": "MUSIC: %s",
+		"fr": "MUSIQUE : %s",
+		"ar": "الموسيقى: %s"
+	},
+	"SETTINGS_TRACK_TITLE": {
+		"en": "CURRENT TRACK:",
+		"fr": "PISTE ACTUELLE :",
+		"ar": "المقطع الحالي:"
+	},
+	"SETTINGS_TAP_WALK": {
+		"en": "TAP TO WALK: %s",
+		"fr": "TACTILE MARCHE : %s",
+		"ar": "اللمس للمشي: %s"
+	},
+	"DAILY_SHIFT_PLAY": {
+		"en": "DAILY SHIFT • PLAY (+3 HINTS)",
+		"fr": "DÉFI DU JOUR • JOUER (+3 INDICES)",
+		"ar": "مهمة اليوم • ابدأ (+3 تلميحات)"
+	},
+	"DAILY_SHIFT_STREAK": {
+		"en": "DAILY SHIFT • %d STREAK (+3 HINTS)",
+		"fr": "DÉFI DU JOUR • SÉRIE %d (+3 INDICES)",
+		"ar": "مهمة اليوم • سلسلة %d (+3 تلميحات)"
+	},
+	"DAILY_SHIFT_CLEARED": {
+		"en": "DAILY SHIFT: CLEARED ✓ (STREAK: %d)",
+		"fr": "DÉFI DU JOUR : RÉUSSI ✓ (SÉRIE : %d)",
+		"ar": "مهمة اليوم: مكتملة ✓ (السلسلة: %d)"
+	},
+	"GAME_DAILY_SHIFT": {
+		"en": "DAILY SHIFT • STREAK: %d",
+		"fr": "DÉFI DU JOUR • SÉRIE : %d",
+		"ar": "مهمة اليوم • السلسلة: %d"
+	},
+	"TOAST_DAILY_CLEARED": {
+		"en": "DAILY SHIFT CLEARED! +3 HINTS • %d DAY STREAK",
+		"fr": "DÉFI DU JOUR RÉUSSI ! +3 INDICES • SÉRIE %d J",
+		"ar": "اكتملت مهمة اليوم! +3 تلميحات • سلسلة %d يوم"
+	},
+	"CHAPTER_BADGE": {
+		"en": "CH. %d",
+		"fr": "CH. %d",
+		"ar": "ف. %d"
+	},
+	"STAR_PROGRESS_PILL": {
+		"en": "%d / 225 Stars • Sector %d: %s",
+		"fr": "%d / 225 Étoiles • Secteur %d : %s",
+		"ar": "%d / 225 نجمة • القطاع %d: %s"
+	},
+	"STAR_PROGRESS_PILL_CROWN": {
+		"en": "%d / 225 Stars • %d 👑 • Sector %d: %s",
+		"fr": "%d / 225 Étoiles • %d 👑 • Secteur %d : %s",
+		"ar": "%d / 225 نجمة • %d 👑 • القطاع %d: %s"
+	},
+	"SECTOR_TAB_0": {
+		"en": "BAY",
+		"fr": "BAIE",
+		"ar": "شحن"
+	},
+	"SECTOR_TAB_1": {
+		"en": "COLD",
+		"fr": "FROID",
+		"ar": "تبريد"
+	},
+	"SECTOR_TAB_2": {
+		"en": "CYBER",
+		"fr": "CYBER",
+		"ar": "ذكي"
+	},
+	"SECTOR_TAB_3": {
+		"en": "VAULT",
+		"fr": "VOÛTE",
+		"ar": "كموم"
+	},
+	"CAMPAIGN_TITLE": {
+		"en": "LOGISTICS MANIFEST",
+		"fr": "MANIFESTE LOGISTIQUE",
+		"ar": "سجل الشحن"
+	},
+	"CAMPAIGN_BADGE": {
+		"en": "75 FREIGHT BAYS",
+		"fr": "75 QUAIS DE FRET",
+		"ar": "75 رصيف شحن"
+	},
+	"CAMPAIGN_COMPLETION": {
+		"en": "%d/75 Cleared • %d%%",
+		"fr": "%d/75 Terminés • %d%%",
+		"ar": "%d/75 مكتمل • %d%%"
+	},
+	"NEXT_VAULT_LABEL": {
+		"en": "NEXT VAULT: %s (%d★)",
+		"fr": "PROCHAIN COFFRE : %s (%d★)",
+		"ar": "الخزنة التالية: %s (%d★)"
+	},
+	"ALL_VAULTS_SECURED": {
+		"en": "ALL VAULT REWARDS SECURED ✓",
+		"fr": "TOUS LES COFFRES OUVERTS ✓",
+		"ar": "تم تأمين جميع مكافآت الخزائن ✓"
+	},
+	"VAULT_UNLOCKED_TITLE": {
+		"en": "★ STAR VAULT UNLOCKED! ★",
+		"fr": "★ COFFRE ÉTOILÉ DÉBLOQUÉ ! ★",
+		"ar": "★ تم فتح خزنة النجوم! ★"
+	},
+	"VAULT_NAME_FORMAT": {
+		"en": "%s (%d Stars)",
+		"fr": "%s (%d Étoiles)",
+		"ar": "%s (%d نجمة)"
+	},
+	"VAULT_DESC_HINTS": {
+		"en": "Congratulations! You earned +%d Free Solver Hints for your dedication!",
+		"fr": "Félicitations ! Vous gagnez +%d indices gratuits !",
+		"ar": "تهانينا! لقد ربحت +%d تلميحات مجانية!"
+	},
+	"VAULT_DESC_CRATE": {
+		"en": "Exclusive Crate Skin Unlocked! Visit the Supply Depot to equip your new gear!",
+		"fr": "Apparence de caisse débloquée ! Visitez le Dépôt Central pour l'équiper !",
+		"ar": "تم فتح مظهر صندوق حصري! تفضّل إلى مستودع الإمدادات لتجهيزه!"
+	},
+	"VAULT_DESC_OUTFIT": {
+		"en": "Exclusive Outfit Unlocked! Visit the Supply Depot to equip your new gear!",
+		"fr": "Tenue exclusive débloquée ! Visitez le Dépôt Central pour l'équiper !",
+		"ar": "تم فتح زي حصري! تفضّل إلى مستودع الإمدادات لتجهيزه!"
+	},
+	"BTN_CLAIM_REWARD": {
+		"en": "CLAIM REWARD",
+		"fr": "RÉCLAMER",
+		"ar": "استلام المكافأة"
+	},
+	"BTN_LATER": {
+		"en": "LATER",
+		"fr": "PLUS TARD",
+		"ar": "لاحقاً"
+	},
+	"ACHIEVEMENT_BANNER_HEADER": {
+		"en": "ACHIEVEMENT UNLOCKED",
+		"fr": "SUCCÈS DÉBLOQUÉ",
+		"ar": "تم فتح إنجاز"
+	},
+	"WIN_LEVEL_PLACARD": {
+		"en": "LEVEL %d  •  %s",
+		"fr": "NIVEAU %d  •  %s",
+		"ar": "المستوى %d  •  %s"
+	},
+	"END_STARS_SUMMARY": {
+		"en": "★ Total Stars: %d / 225 ★",
+		"fr": "★ Total Étoiles : %d / 225 ★",
+		"ar": "★ إجمالي النجوم: %d / 225 ★"
+	},
+	"TOAST_FINAL_NO_SKIP": {
+		"en": "Final level cannot be skipped!",
+		"fr": "Le dernier niveau ne peut pas être passé !",
+		"ar": "لا يمكن تخطي المستوى الأخير!"
+	},
+	"BTN_UNDO_PUSH": {
+		"en": "Rewind Push",
+		"fr": "Retour Poussée",
+		"ar": "تراجع دفعة"
+	},
+	"DEADLOCK_PILL_MSG": {
+		"en": "Crate trapped!",
+		"fr": "Caisse bloquée !",
+		"ar": "صندوق عالق!"
+	},
+	"QUICK_PICKER_TITLE": {
+		"en": "STAGE DISPATCH",
+		"fr": "ACCÈS RAPIDE",
+		"ar": "اختيار المرحلة"
+	},
+	"BTN_PREV_LEVEL": {
+		"en": "◀ PREV",
+		"fr": "◀ PRÉC.",
+		"ar": "◀ السابق"
+	},
+	"BTN_NEXT_LEVEL": {
+		"en": "NEXT ▶",
+		"fr": "SUIV. ▶",
+		"ar": "التالي ▶"
+	},
+	"STAR_VAULT_STASH": {
+		"en": "Supply Cache",
+		"fr": "Réserve",
+		"ar": "مخزون"
 	}
 }
 

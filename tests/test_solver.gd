@@ -20,6 +20,7 @@ func _init() -> void:
 
 	run_suite("All 10 Shipped Levels Verification", test_all_10_levels_solvable)
 	run_suite("Unsolvable & Deadlock Detection", test_unsolvable_deadlock)
+	run_suite("Walk Pathfinding Around Crates", test_walk_pathfinding)
 
 	print("\n==================================================")
 	print("Test Suites: %d passed, %d failed" % [_passed_suites, _failed_suites])
@@ -100,3 +101,20 @@ func test_unsolvable_deadlock() -> void:
 	var result = SokobanSolverScript.solve(trapped_text, 1000)
 	print("    Trapped level result: %s" % str(result))
 	assert_false(result.is_solvable, "Trapped corner crate is correctly pruned and reported unsolvable")
+
+
+func test_walk_pathfinding() -> void:
+	var lvl: String = """
+#######
+#.$   #
+# ### #
+#@   .#
+#######
+"""
+	var grid = GridLogicScript.new(lvl)
+	var path: Array[Vector2i] = SokobanSolverScript.find_player_walk_path(Vector2i(1, 3), Vector2i(5, 1), grid)
+	assert_false(path.is_empty(), "Shortest walk path found around obstacle & crate")
+	assert_equal(path.back(), Vector2i(5, 1), "Walk path ends on target tile (5, 1)")
+
+	var blocked: Array[Vector2i] = SokobanSolverScript.find_player_walk_path(Vector2i(1, 3), Vector2i(2, 1), grid)
+	assert_true(blocked.is_empty(), "Targeting a crate tile returns empty walk path")

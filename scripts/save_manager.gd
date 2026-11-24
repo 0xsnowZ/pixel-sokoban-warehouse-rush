@@ -28,6 +28,7 @@ var selected_bgm_track: int = 0 # 0 = Lo-Fi Warehouse Shift, 1 = Industrial Puls
 var haptics_enabled: bool = true
 var language: String = "en"
 var control_scheme: int = 0 # 0 = Swipe, 1 = D-Pad, 2 = Dual (Swipe + D-Pad)
+var tap_to_walk_enabled: bool = true # Tap distant walkable floor tiles to pathfind-walk
 
 # The Porter Locker (Cosmetics & Star Economy - Phase 3)
 var selected_worker_skin: String = "classic"
@@ -473,7 +474,8 @@ func to_dict() -> Dictionary:
 			"selected_bgm_track": selected_bgm_track,
 			"haptics_enabled": haptics_enabled,
 			"language": language,
-			"control_scheme": control_scheme
+			"control_scheme": control_scheme,
+			"tap_to_walk_enabled": tap_to_walk_enabled
 		},
 		"cosmetics": {
 			"worker_skin": selected_worker_skin,
@@ -507,6 +509,7 @@ func from_dict(data: Dictionary) -> void:
 	haptics_enabled = settings.get("haptics_enabled", true)
 	language = settings.get("language", "en")
 	control_scheme = int(settings.get("control_scheme", 0))
+	tap_to_walk_enabled = bool(settings.get("tap_to_walk_enabled", true))
 
 	var cosmetics: Dictionary = data.get("cosmetics", {})
 	selected_worker_skin = cosmetics.get("worker_skin", "classic")
@@ -627,6 +630,7 @@ func reset_all_progress(custom_path: String = "") -> void:
 	haptics_enabled = true
 	language = "en"
 	control_scheme = 0
+	tap_to_walk_enabled = true
 	selected_worker_skin = "classic"
 	selected_crate_skin = "classic_wood"
 	hints_remaining = 3

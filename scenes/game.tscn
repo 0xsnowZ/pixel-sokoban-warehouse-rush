@@ -96,26 +96,31 @@ size_flags_horizontal = 3
 
 [node name="StageBadge" type="PanelContainer" parent="TopBar/Margin/VBox/NavRow"]
 layout_mode = 2
+mouse_default_cursor_shape = 2
 theme_type_variation = &"StageBadgePanel"
 
 [node name="BadgeHBox" type="HBoxContainer" parent="TopBar/Margin/VBox/NavRow/StageBadge"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_constants/separation = 8
 
 [node name="ChapterBadge" type="Label" parent="TopBar/Margin/VBox/NavRow/StageBadge/BadgeHBox"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 13
 text = "CH. 1"
 
 [node name="Divider" type="Label" parent="TopBar/Margin/VBox/NavRow/StageBadge/BadgeHBox"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_colors/font_color = Color(0.55, 0.62, 0.72, 0.8)
 theme_override_font_sizes/font_size = 12
 text = "•"
 
 [node name="LevelLabel" type="Label" parent="TopBar/Margin/VBox/NavRow/StageBadge/BadgeHBox"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_colors/font_color = Color(0.98, 0.85, 0.28, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.85)
 theme_override_constants/shadow_offset_x = 1
@@ -123,14 +128,23 @@ theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 16
 text = "LEVEL 1 / 75"
 
+[node name="PickerChevron" type="Label" parent="TopBar/Margin/VBox/NavRow/StageBadge/BadgeHBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.75, 0.82, 0.92, 0.85)
+theme_override_font_sizes/font_size = 12
+text = "▾"
+
 [node name="StarGaugeDivider" type="Label" parent="TopBar/Margin/VBox/NavRow/StageBadge/BadgeHBox"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_colors/font_color = Color(0.55, 0.62, 0.72, 0.8)
 theme_override_font_sizes/font_size = 12
 text = "•"
 
 [node name="StarGauge" type="Label" parent="TopBar/Margin/VBox/NavRow/StageBadge/BadgeHBox"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_colors/font_color = Color(1, 0.84, 0.22, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.85)
 theme_override_constants/shadow_offset_x = 1
@@ -164,6 +178,7 @@ offset_top = 96.0
 offset_right = 170.0
 offset_bottom = 136.0
 grow_horizontal = 2
+mouse_filter = 2
 theme_type_variation = &"HUDMetricCard"
 
 [node name="Margin" type="MarginContainer" parent="HintToast"]

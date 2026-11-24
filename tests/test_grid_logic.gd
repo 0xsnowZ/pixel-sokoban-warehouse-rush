@@ -21,6 +21,7 @@ func _init() -> void:
 	run_suite("Level 3 (PRD Rules Verification & 3 Crates)", test_level_3_prd_rules_edge_cases_and_multi_crate)
 	run_suite("Sokoban Symbols Parsing & to_text Export", test_sokoban_symbols_parsing)
 	run_suite("Undo Mechanics & History Stack", test_undo_mechanics)
+	run_suite("Undo Last Push Rewind", test_undo_last_push_rewind)
 
 	print("\n==================================================")
 	print("Test Suites: %d passed, %d failed" % [_passed_suites, _failed_suites])
@@ -400,3 +401,35 @@ func test_undo_mechanics() -> void:
 	assert_true(grid.has_crate(Vector2i(2, 2)), "Crate restored to (2, 2)")
 	assert_false(grid.has_crate(Vector2i(2, 1)), "Destination tile (2, 1) is no longer a crate")
 	assert_false(grid.can_undo(), "can_undo() is false after rolling back all moves")
+
+
+func test_undo_last_push_rewind() -> void:
+	var lvl: String = """
+########
+#@ $  .#
+########
+"""
+	var grid = GridLogicScript.new(lvl)
+	assert_false(grid.can_undo_push(), "No push in history initially")
+	assert_equal(grid.undo_last_push(), 0, "undo_last_push returns 0 without prior push")
+
+	# Walk 1 step right, push twice ('r','r'), walk 'l','r' -> 2 pushes total
+	grid.execute_moves("rrrlr")
+	assert_true(grid.has_crate(Vector2i(5, 1)), "Crate now at (5, 1) after 2 pushes")
+	assert_true(grid.can_undo_push(), "can_undo_push() is true after pushing crate")
+
+	# First Rewind Push rewinds trailing 'r','l' + 2nd push (3 moves), leaving push #1 intact
+	var rewound: int = grid.undo_last_push()
+	assert_equal(rewound, 3, "undo_last_push rewound 2nd push plus trailing walk steps")
+	assert_true(grid.has_crate(Vector2i(4, 1)), "Crate restored to intermediate position (4, 1)")
+	assert_equal(grid.get_player_pos(), Vector2i(3, 1), "Player restored right behind (4, 1)")
+	assert_equal(grid.pushes_count, 1, "Push count restored to 1")
+	assert_true(grid.can_undo_push(), "First push remains undoable in history")
+
+	# Second Rewind Push rewinds push #1 back to initial crate position (3, 1)
+	var rewound2: int = grid.undo_last_push()
+	assert_equal(rewound2, 1, "Second undo_last_push rewound push #1")
+	assert_true(grid.has_crate(Vector2i(3, 1)), "Crate restored to initial position (3, 1)")
+	assert_equal(grid.get_player_pos(), Vector2i(2, 1), "Player restored to (2, 1)")
+	assert_equal(grid.pushes_count, 0, "Push count restored to 0")
+	assert_false(grid.can_undo_push(), "No push left in history after rewinding both pushes")

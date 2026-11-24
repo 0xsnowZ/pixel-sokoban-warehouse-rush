@@ -122,6 +122,7 @@ func test_localization_support() -> void:
 	assert_eq(end_screen.title_label.text, "CAMPAGNE TERMINÉE !", "FR Title label")
 	assert_true(end_screen.thanks_label.text.contains("Merci d'avoir joué"), "FR Thanks label")
 	assert_true(end_screen.more_levels_label.text.contains("Plus de niveaux"), "FR More levels label")
+	assert_true(end_screen.get_node("Margin/VBox/StatsPanel/PanelMargin/PanelVBox/StarsSummaryLabel").text.contains("Étoiles"), "FR Stars summary localized")
 
 	# Arabic
 	loc.set_language("ar")
@@ -129,6 +130,7 @@ func test_localization_support() -> void:
 	assert_eq(end_screen.title_label.text, "اكتملت الحملة بنجاح!", "AR Title label")
 	assert_true(end_screen.thanks_label.text.contains("شكراً لك"), "AR Thanks label")
 	assert_true(end_screen.more_levels_label.text.contains("المزيد من المستويات"), "AR More levels label")
+	assert_true(end_screen.get_node("Margin/VBox/StatsPanel/PanelMargin/PanelVBox/StarsSummaryLabel").text.contains("النجوم"), "AR Stars summary localized")
 
 	end_screen.free()
 	loc.free()

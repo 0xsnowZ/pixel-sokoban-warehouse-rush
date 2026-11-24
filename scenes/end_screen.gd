@@ -130,6 +130,9 @@ func _update_ui() -> void:
 		thanks_label.text = loc_mgr.tr_text("END_THANKS")
 		more_levels_label.text = loc_mgr.tr_text("END_MORE_LEVELS")
 		stats_label.text = loc_mgr.tr_text("END_STATS_SUMMARY", [total_solved, total_moves, total_pushes])
+		if has_node("Margin/VBox/StatsPanel/PanelMargin/PanelVBox/StarsSummaryLabel"):
+			var stars_lbl: Label = $Margin/VBox/StatsPanel/PanelMargin/PanelVBox/StarsSummaryLabel as Label
+			stars_lbl.text = loc_mgr.tr_text("END_STARS_SUMMARY", [total_stars])
 		level_select_btn.text = loc_mgr.tr_text("BTN_REPLAY_LEVELS")
 		menu_btn.text = loc_mgr.tr_text("BTN_MAIN_MENU")
 	else:
@@ -269,6 +272,10 @@ func _on_level_select_pressed() -> void:
 		audio_mgr.play_click()
 	if haptic_mgr:
 		haptic_mgr.vibrate_click()
+	if save_mgr != null:
+		save_mgr.set_meta("open_level_select", true)
+	if is_inside_tree() and get_tree() and get_tree().root:
+		get_tree().root.set_meta("open_level_select", true)
 	_transition_to_main_menu()
 
 
