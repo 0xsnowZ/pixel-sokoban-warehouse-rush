@@ -984,11 +984,9 @@ func test_phase2_visual_and_coaching_enhancements() -> void:
 	game.load_level(0)
 	game.calculate_layout(Vector2(540, 960))
 
-	# 1. BackdropBlur shader & ParMeter inside TopBar
+	# 1. BackdropBlur shader active & ParMeter removed per clean console preference
 	assert_true(game.has_node("BackdropBlur"), "BackdropBlur layer exists in Game scene")
-	assert_true(game.par_meter != null, "ParMeter control exists inside TopBar")
-	assert_true(game.par_meter.draw.is_connected(game._on_par_meter_draw), "ParMeter draw signal is connected")
-	game.par_meter.queue_redraw()
+	assert_false(game.has_node("TopBar/Margin/VBox/ParMeter"), "ParMeter bar is not present in TopBar")
 
 	# 2. Pre-release swipe preview before 42px trigger threshold
 	var start_px: Vector2 = game.grid_origin + Vector2(0.5, 0.5) * game.tile_size

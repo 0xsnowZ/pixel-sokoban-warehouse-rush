@@ -241,7 +241,6 @@ var deadlock_pill: PanelContainer = null
 @onready var level_label: Label = find_child("LevelLabel", true, false) as Label
 @onready var star_gauge: Label = find_child("StarGauge", true, false) as Label
 @onready var stats_label: Label = find_child("StatsLabel", true, false) as Label
-@onready var par_meter: Control = find_child("ParMeter", true, false) as Control
 @onready var prev_button: Button = $BottomBar/Margin/HBox/PrevButton if has_node("BottomBar/Margin/HBox/PrevButton") else null
 @onready var undo_button: Button = $BottomBar/Margin/HBox/UndoButton if has_node("BottomBar/Margin/HBox/UndoButton") else null
 @onready var hint_button: Button = $BottomBar/Margin/HBox/HintButton if has_node("BottomBar/Margin/HBox/HintButton") else null
@@ -612,8 +611,6 @@ func _ready() -> void:
 	# Industrial Operator Console Hardware Overlays
 	if top_bar != null and not top_bar.draw.is_connected(_on_top_bar_draw):
 		top_bar.draw.connect(_on_top_bar_draw)
-	if par_meter != null and not par_meter.draw.is_connected(_on_par_meter_draw):
-		par_meter.draw.connect(_on_par_meter_draw)
 	if bottom_bar != null and not bottom_bar.draw.is_connected(_on_bottom_bar_draw):
 		bottom_bar.draw.connect(_on_bottom_bar_draw)
 	if bottom_bar != null and not bottom_bar.resized.is_connected(_update_dpad_position):
@@ -996,9 +993,6 @@ func _update_ui(_new_lang: String = "") -> void:
 			pop_tw.tween_property(stats_label, "scale", Vector2.ONE, 0.16)
 	elif grid != null and grid.moves_count < _last_hud_moves:
 		_last_hud_moves = grid.moves_count
-
-	if par_meter != null:
-		par_meter.queue_redraw()
 
 
 func _on_player_moved(from_pos: Vector2i, to_pos: Vector2i) -> void:
@@ -3021,33 +3015,17 @@ func _draw_wall(rect: Rect2, pos: Vector2i = Vector2i.ZERO) -> void:
 	# 1. Base Wall Texture
 	draw_texture_rect(active_wall_tex, rect, false, wall_tint)
 
-	# 16-State Adjacency Bitmask (U=1, R=2, D=4, L=8)
+	# Adjacency checks (UP, DOWN, LEFT, RIGHT)
 	var wall_u: bool = grid != null and grid.is_wall(pos + Vector2i.UP)
 	var wall_d: bool = grid != null and grid.is_wall(pos + Vector2i.DOWN)
 	var wall_l: bool = grid != null and grid.is_wall(pos + Vector2i.LEFT)
 	var wall_r: bool = grid != null and grid.is_wall(pos + Vector2i.RIGHT)
-	var mask: int = (1 if wall_u else 0) | (2 if wall_r else 0) | (4 if wall_d else 0) | (8 if wall_l else 0)
 
-	# Seam Fusion across connected interior wall neighbors
-	var seam_col: Color = Color(0.20, 0.14, 0.12, 0.22)
-	match current_chapter_idx:
-		1: seam_col = Color(0.16, 0.26, 0.38, 0.26)
-		2: seam_col = Color(0.08, 0.10, 0.16, 0.30)
-		3: seam_col = Color(0.14, 0.08, 0.24, 0.28)
-	if wall_u:
-		draw_rect(Rect2(rect.position.x + 1.0, rect.position.y - 1.0, rect.size.x - 2.0, 2.0), seam_col)
-	if wall_l:
-		draw_rect(Rect2(rect.position.x - 1.0, rect.position.y + 1.0, 2.0, rect.size.y - 2.0), seam_col)
-
-	# 2. Continuous Wall Coping & Exterior Edges
+	# 2. Continuous Wall Coping: top highlight only on exposed upper edge
 	if not wall_u:
 		draw_line(rect.position, rect.position + Vector2(rect.size.x, 0.0), top_highlight, 1.2)
 	if not wall_d:
 		draw_line(rect.position + Vector2(0.0, rect.size.y - 1.0), rect.end - Vector2(0.0, 1.0), bottom_shadow, 1.0)
-	if not wall_l:
-		draw_line(rect.position + Vector2(0.5, 0.0), Vector2(rect.position.x + 0.5, rect.end.y), Color(top_highlight.r, top_highlight.g, top_highlight.b, top_highlight.a * 0.65), 1.0)
-	if not wall_r:
-		draw_line(Vector2(rect.end.x - 0.5, rect.position.y), rect.end - Vector2(0.5, 0.0), bottom_shadow, 1.0)
 
 	# 3. 2.5D Directional Front-Face Floor Shadows onto interior floor below
 	if grid != null and pos.y < grid.height - 1 and grid.is_interior_floor(pos + Vector2i.DOWN):
@@ -3063,57 +3041,18 @@ func _draw_wall(rect: Rect2, pos: Vector2i = Vector2i.ZERO) -> void:
 		var shadow_w: float = minf(tile_size * 0.12, 5.0)
 		draw_rect(Rect2(rect.end.x, rect.position.y, shadow_w, rect.size.y), Color(0.0, 0.0, 0.0, 0.16))
 
-	# 5. Chapter-Specific Architectural Auto-Tiled Conduits & Silhouettes
-	var w_center: Vector2 = rect.get_center()
-	var w_half_x: float = rect.size.x * 0.5
-	var w_half_y: float = rect.size.y * 0.5
-	var is_corner_tile: bool = (mask in [3, 6, 9, 12])
-	var neighbor_count: int = (1 if wall_u else 0) + (1 if wall_r else 0) + (1 if wall_d else 0) + (1 if wall_l else 0)
-
-	match current_chapter_idx:
-		1:
-			# Cold Storage: Cryogenic insulated bulkhead seams & frosted top glaze
-			var cryo_line: Color = Color(0.62, 0.90, 1.0, 0.22)
-			if wall_u: draw_line(w_center, w_center + Vector2(0.0, -w_half_y), cryo_line, 1.2)
-			if wall_d: draw_line(w_center, w_center + Vector2(0.0, w_half_y), cryo_line, 1.2)
-			if wall_l: draw_line(w_center, w_center + Vector2(-w_half_x, 0.0), cryo_line, 1.2)
-			if wall_r: draw_line(w_center, w_center + Vector2(w_half_x, 0.0), cryo_line, 1.2)
-			if not wall_u:
+	# 5. Chapter-Specific Architectural Accents on Exposed Coping
+	if not wall_u:
+		match current_chapter_idx:
+			1:
+				# Cold Storage: Crystalline frost glint along exposed top edge
 				draw_line(rect.position + Vector2(0.0, 1.0), rect.position + Vector2(rect.size.x, 1.0), Color(0.85, 0.95, 1.0, 0.35), 1.0)
-		2:
-			# Cyber Depot: Glowing circuit conduits connecting cardinal neighbors
-			var trace_col: Color = Color(0.0, 0.85, 1.0, 0.26)
-			if wall_u: draw_line(w_center, w_center + Vector2(0.0, -w_half_y), trace_col, 1.5)
-			if wall_d: draw_line(w_center, w_center + Vector2(0.0, w_half_y), trace_col, 1.5)
-			if wall_l: draw_line(w_center, w_center + Vector2(-w_half_x, 0.0), trace_col, 1.5)
-			if wall_r: draw_line(w_center, w_center + Vector2(w_half_x, 0.0), trace_col, 1.5)
-			if neighbor_count >= 2 and (is_corner_tile or neighbor_count >= 3):
-				draw_circle(w_center, 2.0, Color(1.0, 0.72, 0.18, 0.52))
-			if not wall_u:
+			2:
+				# Cyber Depot: Neon cyan laser-etched coping rim
 				draw_line(rect.position + Vector2(0.0, 1.0), rect.position + Vector2(rect.size.x, 1.0), Color(0.0, 0.85, 1.0, 0.30), 1.0)
-		3:
-			# Quantum Vault: Violet photonic traces + resonator diamond at bends/junctions
-			var q_col: Color = Color(0.78, 0.38, 1.0, 0.26)
-			if wall_u: draw_line(w_center, w_center + Vector2(0.0, -w_half_y), q_col, 1.5)
-			if wall_d: draw_line(w_center, w_center + Vector2(0.0, w_half_y), q_col, 1.5)
-			if wall_l: draw_line(w_center, w_center + Vector2(-w_half_x, 0.0), q_col, 1.5)
-			if wall_r: draw_line(w_center, w_center + Vector2(w_half_x, 0.0), q_col, 1.5)
-			if is_corner_tile or neighbor_count >= 3:
-				var d_rad: float = 2.6
-				var d_pts: PackedVector2Array = [
-					w_center + Vector2(0.0, -d_rad),
-					w_center + Vector2(d_rad, 0.0),
-					w_center + Vector2(0.0, d_rad),
-					w_center + Vector2(-d_rad, 0.0)
-				]
-				draw_colored_polygon(d_pts, Color(0.88, 0.55, 1.0, 0.45))
-			if not wall_u:
+			3:
+				# Quantum Vault: Photonic violet crystalline sheen
 				draw_line(rect.position + Vector2(0.0, 1.0), rect.position + Vector2(rect.size.x, 1.0), Color(0.88, 0.50, 1.0, 0.35), 1.0)
-		_:
-			# Cargo Bay: Subtle brass girder cap on corners
-			if is_corner_tile and not wall_u:
-				var pad_c: float = rect.size.x * 0.22
-				draw_rect(Rect2(rect.position + Vector2(pad_c, pad_c), rect.size - Vector2(pad_c * 2.0, pad_c * 2.0)), Color(0.78, 0.60, 0.22, 0.14), false, 1.0)
 
 	# 6. Exposed Outer Corner Structural Reinforcements
 	if not wall_u and (not wall_l or not wall_r):
@@ -3685,6 +3624,7 @@ func _draw_crate(rect: Rect2, on_goal: bool, logical_pos: Vector2i = Vector2i.ZE
 		var aura_spark: Color = ch["goal_aura"]
 		aura_spark.a = 0.50
 		draw_circle(c_center, 9.5 * (1.0 + star_pulse), aura_spark)
+		draw_circle(c_center, 4.0, Color(1.0, 1.0, 0.92, 0.95))
 
 		# 4 Radiant metallic lock-in corner rivets
 		var r_pad: float = draw_r.size.x * 0.14
@@ -3698,16 +3638,6 @@ func _draw_crate(rect: Rect2, on_goal: bool, logical_pos: Vector2i = Vector2i.ZE
 			draw_circle(corn, 2.8, Color(0.08, 0.10, 0.14, 0.90))
 			draw_circle(corn, 2.0, aura_spark)
 			draw_circle(corn - Vector2(0.5, 0.5), 0.9, Color(1.0, 1.0, 0.95, 0.98))
-
-		# Accessible Docked-Crate Checkmark Lock Emblem (colorblind-friendly distinct shape)
-		var badge_r: float = clampf(draw_r.size.x * 0.15, 4.5, 7.5)
-		draw_circle(c_center, badge_r + 1.2, Color(0.05, 0.08, 0.12, 0.90))
-		draw_circle(c_center, badge_r, Color(0.16, 0.76, 0.44, 0.95))
-		draw_arc(c_center, badge_r, 0.0, TAU, 16, Color(1.0, 0.95, 0.65, 0.92), 1.3, true)
-		var ck1: Vector2 = c_center + Vector2(-badge_r * 0.42, 0.0)
-		var ck2: Vector2 = c_center + Vector2(-badge_r * 0.10, badge_r * 0.38)
-		var ck3: Vector2 = c_center + Vector2(badge_r * 0.46, -badge_r * 0.36)
-		draw_polyline(PackedVector2Array([ck1, ck2, ck3]), Color(1.0, 1.0, 0.96, 0.98), 2.0, true)
 
 
 func _draw_player(rect: Rect2) -> void:
@@ -4368,48 +4298,6 @@ func _on_top_bar_draw() -> void:
 	# Industrial Corner Hex Screws
 	_draw_terminal_bolt(top_bar, Vector2(10.0, 10.0))
 	_draw_terminal_bolt(top_bar, Vector2(sz.x - 10.0, 10.0))
-
-
-func _on_par_meter_draw() -> void:
-	if par_meter == null or grid == null:
-		return
-	var sz: Vector2 = par_meter.size
-	if sz.x <= 8.0 or sz.y <= 2.0:
-		return
-	var targets: Dictionary = save_mgr.get_star_targets(current_level_index) if (save_mgr and save_mgr.has_method("get_star_targets")) else { "optimal": 10, "three_star": 12, "two_star": 15 }
-	var opt_m: int = maxi(1, int(targets.get("optimal", 10)))
-	var s3_m: int = maxi(opt_m, int(targets.get("three_star", targets.get("star_3", opt_m + 2))))
-	var s2_m: int = maxi(s3_m + 1, int(targets.get("two_star", targets.get("star_2", s3_m + 4))))
-	var scale_max: float = float(maxi(s2_m + int(ceil(s2_m * 0.25)), grid.moves_count + 1))
-
-	var bar_h: float = 4.0
-	var bar_y: float = (sz.y - bar_h) * 0.5
-	var track_rect: Rect2 = Rect2(0.0, bar_y, sz.x, bar_h)
-	par_meter.draw_rect(track_rect, Color(0.06, 0.08, 0.12, 0.92), true)
-
-	var ratio: float = clampf(float(grid.moves_count) / scale_max, 0.0, 1.0)
-	var fill_col: Color = Color(0.28, 0.92, 0.65, 0.95)
-	if grid.moves_count > s2_m:
-		fill_col = Color(0.92, 0.42, 0.26, 0.95)
-	elif grid.moves_count > s3_m:
-		fill_col = Color(0.98, 0.68, 0.22, 0.95)
-	elif grid.moves_count > opt_m:
-		fill_col = Color(1.0, 0.86, 0.26, 0.95)
-
-	if ratio > 0.0:
-		par_meter.draw_rect(Rect2(0.0, bar_y, sz.x * ratio, bar_h), fill_col, true)
-
-	# Threshold notch ticks for Optimal (cyan), 3-Star (gold), and 2-Star (amber)
-	var notches: Array[Array] = [
-		[opt_m, Color(0.38, 0.92, 1.0, 0.95)],
-		[s3_m, Color(1.0, 0.85, 0.28, 0.95)],
-		[s2_m, Color(0.95, 0.55, 0.22, 0.90)]
-	]
-	for n in notches:
-		var nx: float = clampf((float(n[0]) / scale_max) * sz.x, 2.0, sz.x - 2.0)
-		var ncol: Color = n[1]
-		par_meter.draw_line(Vector2(nx, 0.0), Vector2(nx, sz.y), ncol, 1.8)
-	par_meter.draw_rect(track_rect, Color(1.0, 1.0, 1.0, 0.10), false, 1.0)
 
 
 func _on_bottom_bar_draw() -> void:
