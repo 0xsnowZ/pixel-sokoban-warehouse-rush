@@ -212,6 +212,10 @@ var preview_swipe_dir: Vector2i = Vector2i.ZERO
 var tutorial_pulse_timer: float = 0.0
 var board_intro_scale: float = 1.0
 var board_intro_tween: Tween = null
+var _player_move_tween: Tween = null
+var _win_blur_tween: Tween = null
+var _win_modal_tween: Tween = null
+var _advancing_level: bool = false
 const SWIPE_PREVIEW_PIXELS: float = 18.0
 const SWIPE_THRESHOLD_PIXELS: float = 42.0
 const CONTINUOUS_DRAG_THRESHOLD_PIXELS: float = 80.0
@@ -666,9 +670,7 @@ func _on_application_paused() -> void:
 	_stop_held_move()
 	_stop_auto_walk()
 	_dpad_moved_on_down = false
-	is_touching = false
-	active_touch_index = -1
-	swipe_triggered_in_gesture = false
+	_reset_touch_state()
 	if save_mgr != null and save_mgr.has_method("save_data"):
 		save_mgr.save_data()
 
@@ -774,6 +776,7 @@ func load_level(index: int) -> void:
 		return
 
 	_layout_dirty = true
+	_advancing_level = false
 	is_animating = false
 	queued_move_dir = Vector2i.ZERO
 	_stop_held_move()
@@ -781,8 +784,14 @@ func load_level(index: int) -> void:
 	_dpad_moved_on_down = false
 	stride_arc_y = 0.0
 	player_scale = Vector2.ONE
+	if _player_move_tween and _player_move_tween.is_valid():
+		_player_move_tween.kill()
 	if landing_squash_tween and landing_squash_tween.is_valid():
 		landing_squash_tween.kill()
+	if _win_blur_tween and _win_blur_tween.is_valid():
+		_win_blur_tween.kill()
+	if _win_modal_tween and _win_modal_tween.is_valid():
+		_win_modal_tween.kill()
 	current_walk_frame = 0
 	walk_step_count = 0
 	clear_hint()
@@ -796,6 +805,10 @@ func load_level(index: int) -> void:
 		win_modal.hide()
 	if win_blur_overlay:
 		win_blur_overlay.hide()
+	if is_inside_tree() and get_viewport() != null:
+		var focused: Control = get_viewport().gui_get_focus_owner()
+		if focused != null:
+			focused.release_focus()
 	if ad_mgr:
 		ad_mgr.preload_interstitial()
 	if audio_mgr and audio_mgr.has_method("unduck_music"):
@@ -829,9 +842,7 @@ func load_level(index: int) -> void:
 		audio_mgr.set_dock_progress(init_docked, grid.goals.size(), true)
 
 	_refresh_deadlock_radar(false)
-	_set_swipe_preview_dir(Vector2i.ZERO)
-	is_touching = false
-	swipe_triggered_in_gesture = false
+	_reset_touch_state()
 	tutorial_pulse_timer = 0.0
 	if board_intro_tween and board_intro_tween.is_valid():
 		board_intro_tween.kill()
@@ -842,6 +853,7 @@ func load_level(index: int) -> void:
 	else:
 		board_intro_scale = 1.0
 	_update_ui()
+	calculate_layout()
 	queue_redraw()
 
 
@@ -1089,11 +1101,13 @@ func _refresh_deadlock_radar(is_push: bool = false) -> void:
 
 func _on_level_won() -> void:
 	is_level_won = true
+	_advancing_level = false
 	var win_gen: int = _level_load_gen
 	if audio_mgr and audio_mgr.has_method("set_dock_progress") and grid != null:
 		audio_mgr.set_dock_progress(grid.goals.size(), grid.goals.size(), false)
 	_stop_held_move()
 	_stop_auto_walk()
+	_reset_touch_state()
 	_dpad_moved_on_down = false
 	stride_arc_y = 0.0
 	player_scale = Vector2.ONE
@@ -1165,7 +1179,7 @@ func _on_level_won() -> void:
 	var time_formatted: String = "%02d:%02d" % [int(elapsed_sec / 60.0), elapsed_sec % 60]
 
 	var earned_stars: int = save_mgr.calculate_stars(current_level_index, grid.moves_count) if save_mgr else 1
-	var star_targets: Dictionary = save_mgr.get_star_targets(current_level_index) if (save_mgr and save_mgr.has_method("get_star_targets")) else { "optimal": 10, "three_star": 12, "two_star": 15 }
+	var star_targets: Dictionary = save_mgr.get_star_targets(current_level_index) if (save_mgr and save_mgr.has_method("get_star_targets")) else {"optimal": 10, "three_star": 12, "two_star": 15}
 	var optimal_moves: int = star_targets.get("optimal", 10)
 	var three_star_target: int = star_targets.get("three_star", optimal_moves + 2)
 
@@ -1256,16 +1270,20 @@ func _on_level_won() -> void:
 			s.pivot_offset = s_sz / 2.0
 
 	if win_blur_overlay:
+		if _win_blur_tween and _win_blur_tween.is_valid():
+			_win_blur_tween.kill()
 		win_blur_overlay.modulate.a = 0.0
 		win_blur_overlay.show()
-		var tw_blur: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		tw_blur.tween_property(win_blur_overlay, "modulate:a", 1.0, 0.25)
+		_win_blur_tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		_win_blur_tween.tween_property(win_blur_overlay, "modulate:a", 1.0, 0.25)
 
+	if _win_modal_tween and _win_modal_tween.is_valid():
+		_win_modal_tween.kill()
 	win_modal.pivot_offset = win_modal.size / 2.0
 	win_modal.scale = Vector2(0.88, 0.88)
 	win_modal.show()
-	var tw_modal: Tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw_modal.tween_property(win_modal, "scale", Vector2.ONE, 0.24)
+	_win_modal_tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_win_modal_tween.tween_property(win_modal, "scale", Vector2.ONE, 0.24)
 	_animate_stars_sequence(stars, earned_stars, gold_color)
 
 
@@ -1315,6 +1333,7 @@ func _animate_stars_sequence(stars: Array, earned: int, gold_color: Color) -> vo
 
 func _on_level_reset() -> void:
 	is_animating = false
+	_advancing_level = false
 	queued_move_dir = Vector2i.ZERO
 	current_walk_frame = 0
 	walk_step_count = 0
@@ -1323,10 +1342,13 @@ func _on_level_reset() -> void:
 	_dpad_moved_on_down = false
 	stride_arc_y = 0.0
 	player_scale = Vector2.ONE
+	if _player_move_tween and _player_move_tween.is_valid():
+		_player_move_tween.kill()
 	if landing_squash_tween and landing_squash_tween.is_valid():
 		landing_squash_tween.kill()
 	clear_hint()
 	is_level_won = false
+	_reset_touch_state()
 	player_celebration_hop = 0.0
 	victory_radiance_rings.clear()
 	star_burst_particles.clear()
@@ -1369,6 +1391,8 @@ func _animate_player(from_pos: Vector2i, to_pos: Vector2i) -> void:
 	elif was_push:
 		_spawn_push_friction_dust(from_pos, to_pos)
 
+	if _player_move_tween and _player_move_tween.is_valid():
+		_player_move_tween.kill()
 	if landing_squash_tween and landing_squash_tween.is_valid():
 		landing_squash_tween.kill()
 
@@ -1376,6 +1400,7 @@ func _animate_player(from_pos: Vector2i, to_pos: Vector2i) -> void:
 	var stretch_peak: float = 0.04 if was_push else 0.06
 
 	var tween: Tween = create_tween().set_trans(trans_mode).set_ease(Tween.EASE_OUT)
+	_player_move_tween = tween
 	visual_player_pos = Vector2(from_pos)
 	tween.tween_method(func(pos: Vector2):
 		visual_player_pos = pos
@@ -1615,9 +1640,11 @@ func _input(event: InputEvent) -> void:
 		_process_game_input(event)
 
 
-func _gui_input(event: InputEvent) -> void:
-	# Receives touch and drag events if captured by the root Game Control
-	_process_game_input(event)
+func _reset_touch_state() -> void:
+	is_touching = false
+	active_touch_index = -1
+	swipe_triggered_in_gesture = false
+	_set_swipe_preview_dir(Vector2i.ZERO)
 
 
 func _start_held_move(dir: Vector2i) -> void:
@@ -1638,13 +1665,18 @@ func _process_game_input(event: InputEvent) -> void:
 		_handle_mobile_back_request()
 		return
 
-	if is_level_won or (win_modal != null and win_modal.visible):
-		return
-	if restart_dialog != null and restart_dialog.visible:
-		return
-	if ad_reward_modal != null and ad_reward_modal.visible:
-		return
-	if stage_picker_modal != null and stage_picker_modal.visible:
+	var modal_blocking: bool = is_level_won or (win_modal != null and win_modal.visible) or (restart_dialog != null and restart_dialog.visible) or (ad_reward_modal != null and ad_reward_modal.visible) or (stage_picker_modal != null and stage_picker_modal.visible)
+	if modal_blocking:
+		# Always release active touch/key holds if win/modal opened mid-gesture
+		if event is InputEventScreenTouch and not event.pressed and (active_touch_index == -1 or event.index == active_touch_index):
+			_reset_touch_state()
+		elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
+			_reset_touch_state()
+		elif event is InputEventKey and not event.is_pressed():
+			is_undo_held = false
+			_stop_held_move()
+		elif event is InputEventJoypadButton and not event.pressed:
+			_stop_held_move()
 		return
 
 	# Keyboard navigation (Desktop / Testing) with Rapid Rewind on Hold & Corridor Auto-Repeat
@@ -1849,6 +1881,7 @@ func _on_restart_pressed() -> void:
 	# PRD Section 5: "After 5 or more moves, Restart asks for one confirmation tap."
 	var current_moves: int = grid.moves_count if grid != null else 0
 	if current_moves >= 5:
+		_reset_touch_state()
 		if loc_mgr:
 			restart_dialog.dialog_text = loc_mgr.tr_text("RESTART_CONFIRM", [current_moves])
 			var title_tr: String = loc_mgr.tr_text("RESTART_TITLE")
@@ -1859,10 +1892,12 @@ func _on_restart_pressed() -> void:
 		if audio_mgr and audio_mgr.has_method("duck_music"):
 			audio_mgr.duck_music(-10.0, 0.2)
 		if win_blur_overlay:
+			if _win_blur_tween and _win_blur_tween.is_valid():
+				_win_blur_tween.kill()
 			win_blur_overlay.modulate.a = 0.0
 			win_blur_overlay.show()
-			var tw_blur: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-			tw_blur.tween_property(win_blur_overlay, "modulate:a", 0.85, 0.2)
+			_win_blur_tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			_win_blur_tween.tween_property(win_blur_overlay, "modulate:a", 0.85, 0.2)
 		if restart_dialog.is_inside_tree():
 			restart_dialog.popup_centered()
 	else:
@@ -1872,6 +1907,10 @@ func _on_restart_pressed() -> void:
 func _do_restart() -> void:
 	_level_load_gen += 1
 	is_level_won = false
+	_advancing_level = false
+	_reset_touch_state()
+	if _player_move_tween and _player_move_tween.is_valid():
+		_player_move_tween.kill()
 	if win_blur_overlay and not (win_modal and win_modal.visible):
 		win_blur_overlay.hide()
 	if audio_mgr:
@@ -1973,10 +2012,10 @@ func _update_dpad_position() -> void:
 	if dpad_overlay.size.x > 0.0:
 		half_w = dpad_overlay.size.x / 2.0
 
-	dpad_overlay.offset_left = -half_w
+	dpad_overlay.offset_left = - half_w
 	dpad_overlay.offset_right = half_w
-	dpad_overlay.offset_bottom = -(bot_bar_h + clearance)
-	dpad_overlay.offset_top = -(bot_bar_h + clearance + dpad_h)
+	dpad_overlay.offset_bottom = - (bot_bar_h + clearance)
+	dpad_overlay.offset_top = - (bot_bar_h + clearance + dpad_h)
 	_update_deadlock_pill()
 
 
@@ -2353,9 +2392,12 @@ func _on_prev_level_pressed() -> void:
 
 
 func _on_next_level_pressed() -> void:
+	if _advancing_level:
+		return
 	if is_daily_challenge:
 		_on_menu_pressed()
 		return
+	_advancing_level = true
 	if audio_mgr:
 		audio_mgr.play_click()
 	if haptic_mgr:
@@ -2363,6 +2405,7 @@ func _on_next_level_pressed() -> void:
 
 	# If completing the final level (Level 75), navigate to the Campaign End Screen (PRD Section 6)
 	if current_level_index >= level_paths.size() - 1:
+		_advancing_level = false
 		_transition_to_scene(END_SCENE_PATH)
 		return
 
@@ -2381,11 +2424,14 @@ func _on_next_level_pressed() -> void:
 				while not ad_done[0] and is_inside_tree():
 					await get_tree().process_frame
 		if not is_inside_tree():
+			_advancing_level = false
 			return
 		load_level(next_idx)
+	_advancing_level = false
 
 
 func _on_win_retry_pressed() -> void:
+	_advancing_level = false
 	if audio_mgr:
 		audio_mgr.play_click()
 	if haptic_mgr:
@@ -2420,7 +2466,7 @@ func _spawn_celebration_particles() -> void:
 		Color(0.30, 0.75, 1.00), # Sky / Diamond
 		Color(1.0, 0.95, 0.85), # Warm Pearl
 		Color(1.0, 0.58, 0.18), # Amber
-		Color(0.88, 0.40, 1.00)  # Violet
+		Color(0.88, 0.40, 1.00) # Violet
 	]
 
 	var spawn_points: Array[Vector2] = []
@@ -2748,7 +2794,7 @@ func calculate_layout(custom_viewport_size: Vector2 = Vector2.ZERO) -> void:
 		else:
 			viewport_size = Vector2(540.0, 960.0)
 
-	var insets: Dictionary = safe_area_mgr.get_safe_insets(self) if safe_area_mgr else { "top": 0.0, "bottom": 0.0, "left": 0.0, "right": 0.0 }
+	var insets: Dictionary = safe_area_mgr.get_safe_insets(self) if safe_area_mgr else {"top": 0.0, "bottom": 0.0, "left": 0.0, "right": 0.0}
 	var safe_top: float = insets.get("top", 0.0)
 	var safe_bottom: float = insets.get("bottom", 0.0)
 	var safe_horiz: float = insets.get("left", 0.0) + insets.get("right", 0.0)
@@ -3744,7 +3790,7 @@ func _draw_player(rect: Rect2) -> void:
 	var idle_nuance_x: float = 0.0
 	if not is_animating and not is_level_won and player_idle_time >= 5.5 and player_idle_time <= 7.0:
 		var n_t: float = (player_idle_time - 5.5) / 1.5
-		idle_nuance_y = -sin(n_t * PI * 2.0) * 1.5
+		idle_nuance_y = - sin(n_t * PI * 2.0) * 1.5
 		idle_nuance_x = sin(n_t * PI * 4.0) * 0.8
 
 	# Heavy crate push stance lean & strain tremor: worker visibly strains and leans into crate
@@ -3778,7 +3824,7 @@ func _draw_player(rect: Rect2) -> void:
 	# Ground contact drop shadow (positioned directly under soles of boots on floor)
 	var x_offset: float = 0.0
 	if player_facing_dir == Vector2i.LEFT:
-		x_offset = -radius * 0.04
+		x_offset = - radius * 0.04
 	elif player_facing_dir == Vector2i.RIGHT:
 		x_offset = radius * 0.04
 	var shadow_center: Vector2 = Vector2(rect.get_center().x + x_offset, rect.position.y + rect.size.y * 0.94)
@@ -3880,9 +3926,6 @@ func _draw_player(rect: Rect2) -> void:
 		var star_col: Color = Color(1.0, 0.95, 0.35, 0.92)
 		_draw_star_shape(hopped_rect.position + Vector2(hopped_rect.size.x * 0.20, -8.0 + hop_bounce), 5.0, star_col)
 		_draw_star_shape(hopped_rect.position + Vector2(hopped_rect.size.x * 0.80, -11.0 - hop_bounce), 5.5, star_col)
-
-
-
 
 
 func _draw_hint_ghost(effective_origin: Vector2) -> void:
@@ -4212,7 +4255,7 @@ func _spawn_push_dust(from_pos: Vector2i, to_pos: Vector2i) -> void:
 		else:
 			offset = Vector2(rng.randf_range(-tile_size * 0.35, tile_size * 0.35), 0)
 
-		var back_vel: Vector2 = -Vector2(dir) * rng.randf_range(40.0, 85.0) + Vector2(rng.randf_range(-15.0, 15.0), rng.randf_range(-15.0, 15.0))
+		var back_vel: Vector2 = - Vector2(dir) * rng.randf_range(40.0, 85.0) + Vector2(rng.randf_range(-15.0, 15.0), rng.randf_range(-15.0, 15.0))
 		dust_particles.append({
 			"pos": spawn_edge_center + offset,
 			"vel": back_vel,
@@ -4252,7 +4295,7 @@ func _spawn_push_dust(from_pos: Vector2i, to_pos: Vector2i) -> void:
 		"cryo_vault":
 			# Drifting sub-zero frost mist
 			for i in range(4):
-				var c_vel: Vector2 = -Vector2(dir) * rng.randf_range(20.0, 45.0) + Vector2(0, rng.randf_range(-25.0, -5.0))
+				var c_vel: Vector2 = - Vector2(dir) * rng.randf_range(20.0, 45.0) + Vector2(0, rng.randf_range(-25.0, -5.0))
 				dust_particles.append({
 					"pos": crate_edge_center + Vector2(rng.randf_range(-10.0, 10.0), rng.randf_range(-10.0, 10.0)),
 					"vel": c_vel,
@@ -4516,6 +4559,7 @@ func _create_ad_reward_modal() -> PanelContainer:
 
 
 func _show_ad_reward_modal() -> void:
+	_reset_touch_state()
 	if ad_reward_modal == null:
 		ad_reward_modal = _create_ad_reward_modal()
 	if loc_mgr and loc_mgr.has_method("apply_rtl"):
@@ -4690,7 +4734,7 @@ func _update_hint_toast_position() -> void:
 			top_h = maxf(top_h, tb_bottom)
 	var vp_w: float = size.x if size.x > 0.0 else 540.0
 	var half_w: float = minf(170.0, (vp_w - safe_horiz - 24.0) * 0.5)
-	hint_toast.offset_left = -half_w
+	hint_toast.offset_left = - half_w
 	hint_toast.offset_right = half_w
 	hint_toast.offset_top = top_h + 8.0
 	hint_toast.offset_bottom = top_h + 48.0
@@ -4714,7 +4758,7 @@ func _update_achievement_banner_position() -> void:
 		top_h = maxf(top_h, hint_toast.offset_bottom)
 	var vp_w: float = size.x if size.x > 0.0 else 540.0
 	var half_w: float = minf(185.0, (vp_w - safe_horiz - 24.0) * 0.5)
-	achievement_banner.offset_left = -half_w
+	achievement_banner.offset_left = - half_w
 	achievement_banner.offset_right = half_w
 	achievement_banner.offset_top = top_h + 8.0
 	achievement_banner.offset_bottom = top_h + 62.0
@@ -4903,8 +4947,8 @@ func _update_deadlock_pill() -> void:
 		bot_h += 176.0
 	deadlock_pill.offset_left = -155.0
 	deadlock_pill.offset_right = 155.0
-	deadlock_pill.offset_bottom = -(bot_h + 10.0)
-	deadlock_pill.offset_top = -(bot_h + 52.0)
+	deadlock_pill.offset_bottom = - (bot_h + 10.0)
+	deadlock_pill.offset_top = - (bot_h + 52.0)
 	deadlock_pill.show()
 
 
@@ -4921,6 +4965,7 @@ func _on_stage_badge_gui_input(event: InputEvent) -> void:
 
 
 func _show_stage_picker() -> void:
+	_reset_touch_state()
 	if audio_mgr:
 		audio_mgr.play_click()
 	if haptic_mgr:

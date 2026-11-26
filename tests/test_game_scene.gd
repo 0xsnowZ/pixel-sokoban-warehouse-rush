@@ -1097,6 +1097,56 @@ func test_daily_shift_and_post_win_regression_guards() -> void:
 	game._on_undo_pressed()
 	assert_eq(game.grid.moves_count, moves_before_win, "Undo blocked when is_level_won is true")
 
+	# Guard Android touch recovery when level completes mid-swipe before finger lifts -> Next Level
+	save_mgr.unlocked_level = 1
+	game.load_level(0)
+	game.calculate_layout(Vector2(540, 960))
+	var touch_start := InputEventScreenTouch.new()
+	touch_start.index = 0
+	touch_start.pressed = true
+	touch_start.position = Vector2(270, 450)
+	game._input(touch_start)
+	assert_eq(game.active_touch_index, 0, "Screen touch sets active_touch_index = 0")
+	assert_true(game.is_touching, "Screen touch starts touch gesture")
+
+	# Simulate level win occurring mid-drag before finger lifts, then release during win block
+	game.is_level_won = true
+	var touch_end := InputEventScreenTouch.new()
+	touch_end.index = 0
+	touch_end.pressed = false
+	touch_end.position = Vector2(330, 450)
+	game._input(touch_end)
+	assert_eq(game.active_touch_index, -1, "Touch release during win state clears active_touch_index to -1")
+	assert_false(game.is_touching, "Touch release during win state clears is_touching")
+
+	# Even if win/transition bypassed release (e.g. direct load_level), active_touch_index must reset
+	game.active_touch_index = 0
+	game.is_touching = true
+	game.load_level(1)
+	assert_eq(game.active_touch_index, -1, "Next level load resets active_touch_index to -1")
+	assert_false(game.is_touching, "Next level load resets is_touching to false")
+	assert_false(game.is_level_won, "Next level load clears is_level_won")
+
+	# Verify touch swipe immediately works on Level 2 after advancing from Level 1
+	game.calculate_layout(Vector2(540, 960))
+	var lvl2_touch := InputEventScreenTouch.new()
+	lvl2_touch.index = 0
+	lvl2_touch.pressed = true
+	lvl2_touch.position = Vector2(270, 450)
+	game._input(lvl2_touch)
+	assert_true(game.is_touching and game.active_touch_index == 0, "Level 2 accepts new screen touch immediately after Next Level")
+	var lvl2_drag := InputEventScreenDrag.new()
+	lvl2_drag.index = 0
+	lvl2_drag.position = Vector2(270, 390) # UP swipe >= 42px
+	game._input(lvl2_drag)
+	assert_true(game.swipe_triggered_in_gesture, "Level 2 processes swipe gesture cleanly after win transition")
+	var lvl2_release := InputEventScreenTouch.new()
+	lvl2_release.index = 0
+	lvl2_release.pressed = false
+	lvl2_release.position = Vector2(270, 390)
+	game._input(lvl2_release)
+	assert_eq(game.active_touch_index, -1, "Level 2 touch release restores active_touch_index = -1")
+
 	if FileAccess.file_exists("user://test_game_daily_guard.json"):
 		DirAccess.remove_absolute("user://test_game_daily_guard.json")
 	game.queue_free()
