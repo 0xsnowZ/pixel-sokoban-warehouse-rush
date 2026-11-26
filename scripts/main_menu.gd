@@ -62,6 +62,11 @@ var tex_player_down_w2: Texture2D = preload("res://assets/player_down_walk2.png"
 var tex_crate: Texture2D = preload("res://assets/crate_normal.png")
 var tex_crate_goal: Texture2D = preload("res://assets/crate_goal.png")
 var tex_goal_pad: Texture2D = preload("res://assets/goal_pad.png")
+var _font_rubik_base: FontFile = preload("res://assets/fonts/Rubik-Variable.ttf")
+var _font_arabic_fallback: FontFile = preload("res://assets/fonts/NotoSansArabic-Bold.ttf")
+var _ui_fonts: Dictionary = {}
+var _vault_emblem_kind: String = "cube"
+var _vault_emblem_accent: Color = Color(0.92, 0.72, 0.34)
 
 var _preview_anim_time: float = 0.0
 
@@ -1767,24 +1772,26 @@ func _update_menu_state() -> void:
 				vault_ready_btn.name = "VaultReadyBtn"
 				vault_ready_btn.custom_minimum_size = Vector2(0, 42)
 				vault_ready_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				vault_ready_btn.add_theme_font_override("font", _get_modern_font(500))
 				vault_ready_btn.add_theme_font_size_override("font_size", 13)
 				var sb_v := StyleBoxFlat.new()
-				sb_v.bg_color = Color(0.22, 0.16, 0.05, 0.96)
-				sb_v.border_color = Color(1.0, 0.80, 0.24, 0.95)
-				sb_v.set_border_width_all(2)
-				sb_v.border_width_bottom = 3
-				sb_v.set_corner_radius_all(12)
-				sb_v.content_margin_left = 14.0
-				sb_v.content_margin_right = 14.0
+				sb_v.bg_color = Color(0.095, 0.112, 0.155, 0.96)
+				sb_v.border_color = Color(0.92, 0.74, 0.36, 0.38)
+				sb_v.set_border_width_all(1)
+				sb_v.set_corner_radius_all(14)
+				sb_v.content_margin_left = 16.0
+				sb_v.content_margin_right = 16.0
 				sb_v.content_margin_top = 8.0
 				sb_v.content_margin_bottom = 8.0
 				vault_ready_btn.add_theme_stylebox_override("normal", sb_v)
 				var sb_v_hov := sb_v.duplicate() as StyleBoxFlat
-				sb_v_hov.bg_color = Color(0.28, 0.21, 0.07, 1.0)
-				sb_v_hov.border_color = Color(1.0, 0.90, 0.45, 1.0)
+				sb_v_hov.bg_color = Color(0.125, 0.145, 0.198, 0.98)
+				sb_v_hov.border_color = Color(0.95, 0.80, 0.44, 0.65)
 				vault_ready_btn.add_theme_stylebox_override("hover", sb_v_hov)
 				vault_ready_btn.add_theme_stylebox_override("pressed", sb_v)
-				vault_ready_btn.add_theme_color_override("font_color", Color(1.0, 0.90, 0.45))
+				vault_ready_btn.add_theme_color_override("font_color", Color(0.94, 0.83, 0.56))
+				vault_ready_btn.add_theme_color_override("font_hover_color", Color(0.98, 0.90, 0.68))
+				vault_ready_btn.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.0))
 				vault_ready_btn.pressed.connect(_check_star_vault_milestones)
 				_attach_spring_physics(vault_ready_btn)
 				deck_v.add_child(vault_ready_btn)
@@ -1793,8 +1800,8 @@ func _update_menu_state() -> void:
 		if vault_ready_btn != null:
 			var first_v: Dictionary = unclaimed_main[0].get("vault", {})
 			var v_name_m: String = str(first_v.get("name", "Supply Cache"))
-			vault_ready_btn.text = loc_mgr.tr_text("VAULT_READY_BANNER", [v_name_m]) if loc_mgr else ("VAULT READY: %s  •  TAP TO CLAIM" % v_name_m)
-			_apply_button_icon(vault_ready_btn, tex_crate_goal, 20, 10)
+			vault_ready_btn.text = loc_mgr.tr_text("VAULT_READY_BANNER", [v_name_m]) if loc_mgr else ("Vault Ready · %s" % v_name_m)
+			_apply_button_icon(vault_ready_btn, icon_star_full, 16, 10)
 			vault_ready_btn.show()
 	elif vault_ready_btn != null:
 		vault_ready_btn.hide()
@@ -2443,12 +2450,178 @@ func _get_vault_accent_color(vault: Dictionary) -> Color:
 	var req_stars: int = int(vault.get("stars", 15))
 	var s_id: String = str(vault.get("skin_id", ""))
 	if req_stars >= 180 or s_id == "golden_porter":
-		return Color(1.0, 0.84, 0.24) # Royal Gold
+		return Color(0.96, 0.80, 0.36) # Champagne Gold
 	if req_stars >= 140:
-		return Color(0.76, 0.48, 1.0) # Quantum Amethyst
+		return Color(0.72, 0.56, 0.96) # Quantum Lavender
 	if req_stars == 40 or req_stars == 80:
-		return Color(0.28, 0.84, 1.0) # Cryo Cyan
-	return Color(0.98, 0.68, 0.22) # Warm Supply Bronze/Amber
+		return Color(0.38, 0.82, 0.96) # Cryo Glacier
+	return Color(0.92, 0.72, 0.34) # Satin Amber Bronze
+
+
+func _get_modern_font(weight: int) -> Font:
+	if _ui_fonts.has(weight):
+		return _ui_fonts[weight] as Font
+	var fv := FontVariation.new()
+	fv.base_font = _font_rubik_base
+	fv.variation_opentype = { 2003265652: weight } # OpenType 'wght'
+	if _font_arabic_fallback:
+		fv.fallbacks = [_font_arabic_fallback]
+	_ui_fonts[weight] = fv
+	return fv
+
+
+func _draw_vault_hero_emblem(canvas: Control) -> void:
+	if canvas == null:
+		return
+	var sz: Vector2 = canvas.size
+	if sz.x <= 4.0 or sz.y <= 4.0:
+		return
+	var c: Vector2 = Vector2(sz.x * 0.5, sz.y * 0.52)
+	var acc: Color = _vault_emblem_accent
+	var kind: String = _vault_emblem_kind
+
+	# Delicate overhead halo arc (subtle architectural accent without any boxed border)
+	canvas.draw_arc(c + Vector2(0.0, -2.0), 38.0, -PI * 0.82, -PI * 0.18, 36, Color(1.0, 1.0, 1.0, 0.10), 1.0, true)
+
+	match kind:
+		"crown":
+			# Soft contact shadow
+			canvas.draw_colored_polygon(PackedVector2Array([
+				c + Vector2(-24, 24), c + Vector2(24, 24), c + Vector2(18, 29), c + Vector2(-18, 29)
+			]), Color(0.0, 0.0, 0.0, 0.30))
+			var gold_hi: Color = Color(0.99, 0.90, 0.58)
+			var gold_mid: Color = Color(0.92, 0.72, 0.28)
+			var gold_shd: Color = Color(0.64, 0.45, 0.14)
+			var c_top := c + Vector2(0, -20)
+			var l_peak := c + Vector2(-24, -12)
+			var r_peak := c + Vector2(24, -12)
+			var l_val := c + Vector2(-11, -3)
+			var r_val := c + Vector2(11, -3)
+			var l_base := c + Vector2(-19, 13)
+			var r_base := c + Vector2(19, 13)
+			var mid_base := c + Vector2(0, 13)
+			# Lit left + center half
+			canvas.draw_colored_polygon(PackedVector2Array([l_peak, l_val, c_top, mid_base, l_base]), gold_hi.lerp(gold_mid, 0.45))
+			# Shaded right half
+			canvas.draw_colored_polygon(PackedVector2Array([c_top, r_val, r_peak, r_base, mid_base]), gold_mid.lerp(gold_shd, 0.48))
+			# Facet bevel highlight triangle on left side of center spire
+			canvas.draw_colored_polygon(PackedVector2Array([c_top, mid_base, l_val]), gold_hi)
+			# Architectural base plinth band
+			canvas.draw_colored_polygon(PackedVector2Array([l_base + Vector2(0, 2), r_base + Vector2(0, 2), r_base + Vector2(-1, 8), l_base + Vector2(1, 8)]), gold_shd.darkened(0.22))
+			# Center jewel diamond
+			var j_c := c + Vector2(0, 2)
+			canvas.draw_colored_polygon(PackedVector2Array([
+				j_c + Vector2(0, -6), j_c + Vector2(4.5, 0), j_c + Vector2(0, 6), j_c + Vector2(-4.5, 0)
+			]), Color(0.32, 0.85, 1.0))
+			# Crisp specular rim along left slope
+			canvas.draw_line(l_peak, l_val, Color(1.0, 1.0, 1.0, 0.45), 1.3, true)
+			canvas.draw_line(l_val, c_top, Color(1.0, 1.0, 1.0, 0.65), 1.4, true)
+		"prism":
+			# Floating faceted octahedron artifact for high-tier solver caches
+			canvas.draw_colored_polygon(PackedVector2Array([
+				c + Vector2(0, 22), c + Vector2(20, 27), c + Vector2(0, 32), c + Vector2(-20, 27)
+			]), Color(0.0, 0.0, 0.0, 0.28))
+			var p_top := c + Vector2(0, -28)
+			var p_bot := c + Vector2(0, 20)
+			var p_left := c + Vector2(-21, -4)
+			var p_mid := c + Vector2(0, 3)
+			var p_right := c + Vector2(21, -4)
+			canvas.draw_colored_polygon(PackedVector2Array([p_top, p_mid, p_left]), Color(0.96, 0.96, 1.0).lerp(acc, 0.45))
+			canvas.draw_colored_polygon(PackedVector2Array([p_top, p_right, p_mid]), acc.lerp(Color(0.24, 0.20, 0.36), 0.30))
+			canvas.draw_colored_polygon(PackedVector2Array([p_left, p_mid, p_bot]), acc.darkened(0.18))
+			canvas.draw_colored_polygon(PackedVector2Array([p_mid, p_right, p_bot]), Color(0.08, 0.09, 0.14).lerp(acc, 0.25))
+			canvas.draw_line(p_top, p_mid, Color(1.0, 1.0, 1.0, 0.60), 1.4, true)
+			canvas.draw_line(p_left, p_mid, Color(1.0, 1.0, 1.0, 0.35), 1.2, true)
+			canvas.draw_line(p_mid, p_bot, Color(1.0, 1.0, 1.0, 0.32), 1.2, true)
+		"trophy":
+			# Minimalist faceted architectural apex chalice
+			canvas.draw_colored_polygon(PackedVector2Array([
+				c + Vector2(-18, 25), c + Vector2(18, 25), c + Vector2(13, 29), c + Vector2(-13, 29)
+			]), Color(0.0, 0.0, 0.0, 0.30))
+			var cup_tl := c + Vector2(-18, -16)
+			var cup_tr := c + Vector2(18, -16)
+			var cup_tm := c + Vector2(0, -16)
+			var cup_bl := c + Vector2(-9, 8)
+			var cup_br := c + Vector2(9, 8)
+			var cup_bm := c + Vector2(0, 11)
+			canvas.draw_colored_polygon(PackedVector2Array([cup_tl, cup_tm, cup_bm, cup_bl]), Color(0.99, 0.92, 0.62).lerp(acc, 0.40))
+			canvas.draw_colored_polygon(PackedVector2Array([cup_tm, cup_tr, cup_br, cup_bm]), acc.darkened(0.24))
+			# Stem + pedestal
+			canvas.draw_colored_polygon(PackedVector2Array([c + Vector2(-3, 9), c + Vector2(3, 9), c + Vector2(4, 19), c + Vector2(-4, 19)]), acc.darkened(0.32))
+			canvas.draw_colored_polygon(PackedVector2Array([c + Vector2(-13, 19), c + Vector2(13, 19), c + Vector2(15, 25), c + Vector2(-15, 25)]), Color(0.18, 0.21, 0.28))
+			canvas.draw_line(cup_tl, cup_tr, Color(1.0, 1.0, 1.0, 0.55), 1.3, true)
+			canvas.draw_line(cup_tm, cup_bm, Color(1.0, 1.0, 1.0, 0.35), 1.2, true)
+		"outfit":
+			# Sleek isometric locker case with diagonal safety/foreman inlay
+			canvas.draw_colored_polygon(PackedVector2Array([
+				c + Vector2(0, 18), c + Vector2(28, 30), c + Vector2(0, 36), c + Vector2(-28, 30)
+			]), Color(0.0, 0.0, 0.0, 0.32))
+			var t_pt := c + Vector2(0, -25)
+			var l_pt := c + Vector2(-24, -12)
+			var r_pt := c + Vector2(24, -12)
+			var m_pt := c + Vector2(0, 1)
+			var lb_pt := c + Vector2(-24, 15)
+			var rb_pt := c + Vector2(24, 15)
+			var b_pt := c + Vector2(0, 28)
+			canvas.draw_colored_polygon(PackedVector2Array([t_pt, r_pt, m_pt, l_pt]), Color(0.95, 0.96, 0.99).lerp(acc, 0.40))
+			canvas.draw_colored_polygon(PackedVector2Array([l_pt, m_pt, b_pt, lb_pt]), acc.lerp(Color(0.16, 0.19, 0.26), 0.35))
+			canvas.draw_colored_polygon(PackedVector2Array([m_pt, r_pt, rb_pt, b_pt]), Color(0.09, 0.11, 0.15).lerp(acc, 0.22))
+			# High-vis stripe across left facade
+			canvas.draw_colored_polygon(PackedVector2Array([
+				l_pt + Vector2(0, 10), m_pt + Vector2(0, 10), m_pt + Vector2(0, 16), l_pt + Vector2(0, 16)
+			]), Color(1.0, 1.0, 1.0, 0.72))
+			canvas.draw_line(t_pt, l_pt, Color(1.0, 1.0, 1.0, 0.45), 1.3, true)
+			canvas.draw_line(l_pt, m_pt, Color(1.0, 1.0, 1.0, 0.55), 1.3, true)
+			canvas.draw_line(m_pt, r_pt, Color(1.0, 1.0, 1.0, 0.35), 1.2, true)
+			canvas.draw_line(m_pt, b_pt, Color(1.0, 1.0, 1.0, 0.30), 1.2, true)
+		_:
+			# Precision isometric sculptural vault cube (default for supply caches & crate skins)
+			canvas.draw_colored_polygon(PackedVector2Array([
+				c + Vector2(0, 19), c + Vector2(30, 31), c + Vector2(0, 38), c + Vector2(-30, 31)
+			]), Color(0.0, 0.0, 0.0, 0.34))
+			var pt_top := c + Vector2(0, -26)
+			var pt_left := c + Vector2(-26, -12)
+			var pt_right := c + Vector2(26, -12)
+			var pt_mid := c + Vector2(0, 2)
+			var pt_left_bot := c + Vector2(-26, 15)
+			var pt_right_bot := c + Vector2(26, 15)
+			var pt_bot := c + Vector2(0, 29)
+			# Top sunlit matte surface
+			canvas.draw_colored_polygon(PackedVector2Array([pt_top, pt_right, pt_mid, pt_left]), Color(0.97, 0.97, 0.99).lerp(acc, 0.44))
+			# Left satin face
+			canvas.draw_colored_polygon(PackedVector2Array([pt_left, pt_mid, pt_bot, pt_left_bot]), acc.lerp(Color(0.16, 0.19, 0.26), 0.36))
+			# Right shadow architectural face
+			canvas.draw_colored_polygon(PackedVector2Array([pt_mid, pt_right, pt_right_bot, pt_bot]), Color(0.08, 0.095, 0.14).lerp(acc, 0.22))
+			# Top inlaid recessed diamond + luminous core (strictly inset inside top facet)
+			var top_c := c + Vector2(0, -12)
+			canvas.draw_colored_polygon(PackedVector2Array([
+				top_c + Vector2(0, -6.5), top_c + Vector2(12.5, 0), top_c + Vector2(0, 6.5), top_c + Vector2(-12.5, 0)
+			]), Color(0.08, 0.10, 0.14, 0.78))
+			canvas.draw_colored_polygon(PackedVector2Array([
+				top_c + Vector2(0, -3.2), top_c + Vector2(6.0, 0), top_c + Vector2(0, 3.2), top_c + Vector2(-6.0, 0)
+			]), acc.lightened(0.45))
+			# Minimal vertical front architectural seam + subtle clasp cleanly below top ridge
+			canvas.draw_colored_polygon(PackedVector2Array([
+				pt_mid + Vector2(-3.0, 4.5), pt_mid + Vector2(0.0, 6.0), pt_mid + Vector2(0.0, 12.5), pt_mid + Vector2(-3.0, 11.0)
+			]), Color(0.95, 0.96, 0.98, 0.65))
+			canvas.draw_colored_polygon(PackedVector2Array([
+				pt_mid + Vector2(0.0, 6.0), pt_mid + Vector2(3.0, 4.5), pt_mid + Vector2(3.0, 11.0), pt_mid + Vector2(0.0, 12.5)
+			]), Color(0.55, 0.60, 0.70, 0.60))
+			# Subtle anti-aliased specular ridge highlights
+			canvas.draw_line(pt_top, pt_left, Color(1.0, 1.0, 1.0, 0.28), 1.0, true)
+			canvas.draw_line(pt_left, pt_mid, Color(1.0, 1.0, 1.0, 0.42), 1.0, true)
+			canvas.draw_line(pt_mid, pt_right, Color(1.0, 1.0, 1.0, 0.28), 1.0, true)
+			canvas.draw_line(pt_mid, pt_bot, Color(1.0, 1.0, 1.0, 0.20), 1.0, true)
+
+
+func _draw_reward_pill_glyph(canvas: Control) -> void:
+	if canvas == null:
+		return
+	var c: Vector2 = canvas.size * 0.5
+	var col: Color = _vault_emblem_accent.lightened(0.32)
+	canvas.draw_colored_polygon(PackedVector2Array([
+		c + Vector2(0, -5.5), c + Vector2(5.0, 0), c + Vector2(0, 5.5), c + Vector2(-5.0, 0)
+	]), col)
 
 
 func _show_vault_claimed_toast(v_name: String, accent: Color) -> void:
@@ -2553,11 +2726,14 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 	var title_lbl: Label = star_vault_modal.find_child("VaultTitleLabel", true, false) as Label
 	var milestone_lbl: Label = star_vault_modal.find_child("MilestoneTagLabel", true, false) as Label
 	var medallion: PanelContainer = star_vault_modal.find_child("MedallionFrame", true, false) as PanelContainer
+	var spot_rect: TextureRect = star_vault_modal.find_child("HeroSpotlight", true, false) as TextureRect
+	var emblem_canvas: Control = star_vault_modal.find_child("VaultEmblemCanvas", true, false) as Control
 	var icon_lbl: Label = star_vault_modal.find_child("VaultIconLabel", true, false) as Label
 	var icon_rect: TextureRect = star_vault_modal.find_child("VaultIconRect", true, false) as TextureRect
 	var name_lbl: Label = star_vault_modal.find_child("VaultNameLabel", true, false) as Label
 	var reward_pill: PanelContainer = star_vault_modal.find_child("RewardPill", true, false) as PanelContainer
 	var reward_icon: TextureRect = star_vault_modal.find_child("RewardPillIcon", true, false) as TextureRect
+	var reward_glyph: Control = star_vault_modal.find_child("RewardGlyphCanvas", true, false) as Control
 	var reward_lbl: Label = star_vault_modal.find_child("RewardPillLabel", true, false) as Label
 	var desc_lbl: Label = star_vault_modal.find_child("VaultDescLabel", true, false) as Label
 	var prog_curr_lbl: Label = star_vault_modal.find_child("ProgressCurrentLbl", true, false) as Label
@@ -2566,21 +2742,21 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 	var claim_btn: Button = star_vault_modal.find_child("ClaimVaultBtn", true, false) as Button
 	var close_v_btn: Button = star_vault_modal.find_child("CloseVaultBtn", true, false) as Button
 
-	# Single matte modern architectural card + soft circular emblem glow (no nested border boxes)
+	# Architectural Warm-Obsidian Sheet with neutral frosted specular rim (zero neon wireframe borders)
 	if vault_card:
 		var vp_sz: Vector2 = get_viewport_rect().size if (is_inside_tree() and get_viewport() != null) else (size if size != Vector2.ZERO else Vector2(540.0, 960.0))
 		var insets: Dictionary = safe_area_mgr.get_safe_insets(self) if safe_area_mgr else {"top": 0.0, "bottom": 0.0, "left": 0.0, "right": 0.0}
 		var avail_w: float = maxf(260.0, vp_sz.x - insets.get("left", 0.0) - insets.get("right", 0.0) - 44.0)
-		vault_card.custom_minimum_size = Vector2(clampf(avail_w, 280.0, 344.0), 0.0)
+		vault_card.custom_minimum_size = Vector2(clampf(avail_w, 284.0, 330.0), 0.0)
 
 		var sb_card := StyleBoxFlat.new()
-		sb_card.bg_color = Color(0.058, 0.082, 0.140, 0.98)
-		sb_card.border_color = Color(accent.r, accent.g, accent.b, 0.42)
+		sb_card.bg_color = Color(0.075, 0.088, 0.116, 0.985)
+		sb_card.border_color = Color(1.0, 1.0, 1.0, 0.095)
 		sb_card.set_border_width_all(1)
-		sb_card.set_corner_radius_all(22)
-		sb_card.shadow_color = Color(0.0, 0.0, 0.0, 0.70)
-		sb_card.shadow_size = 28
-		sb_card.shadow_offset = Vector2(0, 10)
+		sb_card.set_corner_radius_all(28)
+		sb_card.shadow_color = Color(0.0, 0.0, 0.0, 0.82)
+		sb_card.shadow_size = 42
+		sb_card.shadow_offset = Vector2(0, 18)
 		vault_card.add_theme_stylebox_override("panel", sb_card)
 
 	if header_banner:
@@ -2590,41 +2766,69 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 		title_lbl.text = loc_mgr.tr_text("VAULT_UNLOCKED_TITLE") if loc_mgr else "MILESTONE VAULT UNLOCKED"
 
 	if milestone_lbl:
-		milestone_lbl.text = loc_mgr.tr_text("VAULT_MILESTONE_REACHED", [v_stars]) if loc_mgr else ("%d ★  VAULT UNLOCKED" % v_stars)
-		milestone_lbl.add_theme_color_override("font_color", Color(accent.r, accent.g, accent.b, 0.92))
+		milestone_lbl.text = loc_mgr.tr_text("VAULT_MILESTONE_REACHED", [v_stars]) if loc_mgr else ("MILESTONE  ·  %d ★" % v_stars)
+		milestone_lbl.add_theme_font_override("font", _get_modern_font(500))
+		milestone_lbl.add_theme_color_override("font_color", Color(accent.r, accent.g, accent.b, 0.88))
+		milestone_lbl.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.0))
 
 	if medallion:
-		var sb_med := StyleBoxFlat.new()
-		sb_med.bg_color = Color(accent.r, accent.g, accent.b, 0.11)
-		sb_med.border_color = Color(accent.r, accent.g, accent.b, 0.25)
-		sb_med.set_border_width_all(1)
-		sb_med.set_corner_radius_all(42)
-		medallion.add_theme_stylebox_override("panel", sb_med)
+		medallion.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 
+	_vault_emblem_accent = accent
+	if v_stars >= 210:
+		_vault_emblem_kind = "trophy"
+	elif skin_id_v == "golden_porter":
+		_vault_emblem_kind = "crown"
+	elif v_stars >= 140 and r_type == "hints":
+		_vault_emblem_kind = "prism"
+	elif r_type != "hints" and not is_crate_skin:
+		_vault_emblem_kind = "outfit"
+	else:
+		_vault_emblem_kind = "cube"
+
+	if spot_rect:
+		var g_tex := GradientTexture2D.new()
+		g_tex.width = 160
+		g_tex.height = 128
+		g_tex.fill = GradientTexture2D.FILL_RADIAL
+		g_tex.fill_from = Vector2(0.5, 0.52)
+		g_tex.fill_to = Vector2(0.5, 0.02)
+		var grad := Gradient.new()
+		grad.colors = PackedColorArray([
+			Color(accent.r, accent.g, accent.b, 0.22),
+			Color(accent.r, accent.g, accent.b, 0.07),
+			Color(accent.r, accent.g, accent.b, 0.0)
+		])
+		grad.offsets = PackedFloat32Array([0.0, 0.50, 1.0])
+		g_tex.gradient = grad
+		spot_rect.texture = g_tex
+
+	if emblem_canvas:
+		emblem_canvas.queue_redraw()
 	if icon_rect:
-		if v_stars >= 210 or skin_id_v == "golden_porter":
-			icon_rect.texture = icon_crown
-		elif r_type == "hints":
-			icon_rect.texture = tex_crate_goal
-		else:
-			icon_rect.texture = icon_locker
+		icon_rect.visible = false
 	if icon_lbl:
 		icon_lbl.text = ""
 		icon_lbl.visible = false
 
 	if name_lbl:
 		name_lbl.text = loc_mgr.tr_text("VAULT_NAME_FORMAT", [v_name]) if loc_mgr else v_name
+		name_lbl.add_theme_font_override("font", _get_modern_font(600))
+		name_lbl.add_theme_color_override("font_color", Color(0.955, 0.965, 0.985))
+		name_lbl.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.0))
 
 	if reward_pill:
-		reward_pill.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+		var sb_rp := StyleBoxFlat.new()
+		sb_rp.bg_color = Color(1.0, 1.0, 1.0, 0.048)
+		sb_rp.border_color = Color(1.0, 1.0, 1.0, 0.085)
+		sb_rp.set_border_width_all(1)
+		sb_rp.set_corner_radius_all(999)
+		reward_pill.add_theme_stylebox_override("panel", sb_rp)
 
 	if reward_icon:
-		if r_type == "hints":
-			reward_icon.texture = icon_hint
-		elif skin_id_v == "golden_porter":
-			reward_icon.texture = icon_crown
-		else:
-			reward_icon.texture = icon_locker
+		reward_icon.visible = false
+	if reward_glyph:
+		reward_glyph.queue_redraw()
 
 	if reward_lbl:
 		if r_type == "hints":
@@ -2633,7 +2837,9 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 			reward_lbl.text = loc_mgr.tr_text("VAULT_REWARD_CRATE") if loc_mgr else "Crate Skin Unlocked"
 		else:
 			reward_lbl.text = loc_mgr.tr_text("VAULT_REWARD_OUTFIT") if loc_mgr else "Worker Outfit Unlocked"
-		reward_lbl.add_theme_color_override("font_color", accent.lightened(0.28))
+		reward_lbl.add_theme_font_override("font", _get_modern_font(500))
+		reward_lbl.add_theme_color_override("font_color", accent.lightened(0.32))
+		reward_lbl.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.0))
 
 	if desc_lbl:
 		var desc_str: String = ""
@@ -2641,8 +2847,11 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 			desc_str = (loc_mgr.tr_text("VAULT_DESC_CRATE") if is_crate_skin else loc_mgr.tr_text("VAULT_DESC_OUTFIT")) if loc_mgr else "Equippable in Supply Depot"
 		desc_lbl.text = desc_str
 		desc_lbl.visible = not desc_str.is_empty()
+		desc_lbl.add_theme_font_override("font", _get_modern_font(400))
+		desc_lbl.add_theme_color_override("font_color", Color(0.54, 0.60, 0.70))
+		desc_lbl.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.0))
 
-	# Clean ultra-slim milestone progress track
+	# Quiet minimalist milestone ladder
 	var total_stars_now: int = save_mgr.get_total_stars() if (save_mgr and save_mgr.has_method("get_total_stars")) else v_stars
 	var next_target: int = v_stars
 	if save_mgr and save_mgr.has_method("get_all_star_vaults"):
@@ -2653,43 +2862,56 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 				break
 	if prog_curr_lbl:
 		prog_curr_lbl.text = "%d ★" % total_stars_now
+		prog_curr_lbl.add_theme_font_override("font", _get_modern_font(500))
+		prog_curr_lbl.add_theme_color_override("font_color", Color(0.76, 0.81, 0.89))
+		prog_curr_lbl.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.0))
 	if prog_next_lbl:
 		if next_target > v_stars:
 			prog_next_lbl.text = loc_mgr.tr_text("VAULT_NEXT_TARGET", [next_target]) if loc_mgr else ("Next %d ★" % next_target)
 		else:
-			prog_next_lbl.text = loc_mgr.tr_text("VAULT_FINAL_TIER") if loc_mgr else "Final Milestone!"
+			prog_next_lbl.text = loc_mgr.tr_text("VAULT_FINAL_TIER") if loc_mgr else "Max Milestone"
+		prog_next_lbl.add_theme_font_override("font", _get_modern_font(500))
+		prog_next_lbl.add_theme_color_override("font_color", Color(0.45, 0.51, 0.62))
+		prog_next_lbl.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.0))
 	if prog_bar:
 		prog_bar.max_value = float(maxi(next_target, v_stars))
 		prog_bar.value = float(mini(total_stars_now, maxi(next_target, v_stars)))
 		var sb_fill := StyleBoxFlat.new()
-		sb_fill.bg_color = accent
-		sb_fill.set_corner_radius_all(3)
+		sb_fill.bg_color = accent.lightened(0.08)
+		sb_fill.set_corner_radius_all(2)
 		prog_bar.add_theme_stylebox_override("fill", sb_fill)
 
 	if claim_btn:
 		claim_btn.icon = null
 		if r_type == "hints":
-			claim_btn.text = loc_mgr.tr_text("BTN_CLAIM_HINTS", [r_amount]) if loc_mgr else ("CLAIM +%d HINTS" % r_amount)
+			claim_btn.text = loc_mgr.tr_text("BTN_CLAIM_HINTS", [r_amount]) if loc_mgr else ("Claim +%d Hints" % r_amount)
 		else:
-			claim_btn.text = loc_mgr.tr_text("BTN_CLAIM_EQUIP") if loc_mgr else "CLAIM & EQUIP"
+			claim_btn.text = loc_mgr.tr_text("BTN_CLAIM_EQUIP") if loc_mgr else "Claim & Equip"
+		claim_btn.add_theme_font_override("font", _get_modern_font(600))
+		claim_btn.add_theme_font_size_override("font_size", 14)
 		var sb_cta := StyleBoxFlat.new()
-		sb_cta.bg_color = accent.darkened(0.06)
+		sb_cta.bg_color = Color(0.955, 0.965, 0.980)
 		sb_cta.set_corner_radius_all(14)
-		sb_cta.content_margin_top = 12.0
-		sb_cta.content_margin_bottom = 12.0
+		sb_cta.content_margin_top = 13.0
+		sb_cta.content_margin_bottom = 13.0
 		claim_btn.add_theme_stylebox_override("normal", sb_cta)
 		var sb_cta_hov := sb_cta.duplicate() as StyleBoxFlat
-		sb_cta_hov.bg_color = accent
+		sb_cta_hov.bg_color = Color(1.0, 1.0, 1.0)
 		claim_btn.add_theme_stylebox_override("hover", sb_cta_hov)
 		var sb_cta_prs := sb_cta.duplicate() as StyleBoxFlat
-		sb_cta_prs.bg_color = accent.darkened(0.18)
+		sb_cta_prs.bg_color = Color(0.84, 0.87, 0.92)
 		claim_btn.add_theme_stylebox_override("pressed", sb_cta_prs)
-		claim_btn.add_theme_color_override("font_color", Color(0.05, 0.06, 0.09))
-		claim_btn.add_theme_color_override("font_hover_color", Color(0.03, 0.04, 0.06))
-		claim_btn.add_theme_color_override("font_pressed_color", Color(0.05, 0.06, 0.09))
+		claim_btn.add_theme_color_override("font_color", Color(0.067, 0.078, 0.110))
+		claim_btn.add_theme_color_override("font_hover_color", Color(0.04, 0.05, 0.08))
+		claim_btn.add_theme_color_override("font_pressed_color", Color(0.067, 0.078, 0.110))
 		claim_btn.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.0))
 	if close_v_btn:
 		close_v_btn.text = loc_mgr.tr_text("BTN_LATER") if loc_mgr else "Later"
+		close_v_btn.add_theme_font_override("font", _get_modern_font(500))
+		close_v_btn.add_theme_font_size_override("font_size", 13)
+		close_v_btn.add_theme_color_override("font_color", Color(0.46, 0.52, 0.63))
+		close_v_btn.add_theme_color_override("font_hover_color", Color(0.78, 0.83, 0.92))
+		close_v_btn.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.0))
 	if loc_mgr and loc_mgr.has_method("apply_rtl"):
 		loc_mgr.apply_rtl(star_vault_modal)
 
@@ -2766,20 +2988,19 @@ func _create_star_vault_modal() -> PanelContainer:
 	card.name = "VaultCard"
 	var vp_sz: Vector2 = get_viewport_rect().size if (is_inside_tree() and get_viewport() != null) else (size if size != Vector2.ZERO else Vector2(540.0, 960.0))
 	var insets: Dictionary = safe_area_mgr.get_safe_insets(self) if safe_area_mgr else {"top": 0.0, "bottom": 0.0, "left": 0.0, "right": 0.0}
-	var avail_w: float = maxf(260.0, vp_sz.x - insets.get("left", 0.0) - insets.get("right", 0.0) - 32.0)
-	card.custom_minimum_size = Vector2(clampf(avail_w, 290.0, 384.0), 0.0)
-	card.theme_type_variation = &"ConsoleCard"
+	var avail_w: float = maxf(260.0, vp_sz.x - insets.get("left", 0.0) - insets.get("right", 0.0) - 44.0)
+	card.custom_minimum_size = Vector2(clampf(avail_w, 284.0, 330.0), 0.0)
 	center.add_child(card)
 
 	var margin: MarginContainer = MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 26)
+	margin.add_theme_constant_override("margin_left", 24)
 	margin.add_theme_constant_override("margin_top", 24)
-	margin.add_theme_constant_override("margin_right", 26)
-	margin.add_theme_constant_override("margin_bottom", 18)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_bottom", 16)
 	card.add_child(margin)
 
 	var vbox: VBoxContainer = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 16)
+	vbox.add_theme_constant_override("separation", 18)
 	margin.add_child(vbox)
 
 	# 1. Top Header Banner Plaque
@@ -2828,13 +3049,13 @@ func _create_star_vault_modal() -> PanelContainer:
 
 	var show_margin := MarginContainer.new()
 	show_margin.add_theme_constant_override("margin_left", 0)
-	show_margin.add_theme_constant_override("margin_top", 2)
+	show_margin.add_theme_constant_override("margin_top", 0)
 	show_margin.add_theme_constant_override("margin_right", 0)
-	show_margin.add_theme_constant_override("margin_bottom", 4)
+	show_margin.add_theme_constant_override("margin_bottom", 2)
 	showcase.add_child(show_margin)
 
 	var show_vbox := VBoxContainer.new()
-	show_vbox.add_theme_constant_override("separation", 10)
+	show_vbox.add_theme_constant_override("separation", 8)
 	show_margin.add_child(show_vbox)
 
 	var milestone_lbl := Label.new()
@@ -2845,12 +3066,27 @@ func _create_star_vault_modal() -> PanelContainer:
 
 	var medallion := PanelContainer.new()
 	medallion.name = "MedallionFrame"
-	medallion.custom_minimum_size = Vector2(84, 84)
+	medallion.custom_minimum_size = Vector2(148, 86)
 	medallion.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	show_vbox.add_child(medallion)
 
 	var med_center := CenterContainer.new()
 	medallion.add_child(med_center)
+
+	var spot_rect := TextureRect.new()
+	spot_rect.name = "HeroSpotlight"
+	spot_rect.custom_minimum_size = Vector2(156, 98)
+	spot_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	spot_rect.stretch_mode = TextureRect.STRETCH_SCALE
+	spot_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	med_center.add_child(spot_rect)
+
+	var emblem_canvas := Control.new()
+	emblem_canvas.name = "VaultEmblemCanvas"
+	emblem_canvas.custom_minimum_size = Vector2(116, 90)
+	emblem_canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	emblem_canvas.draw.connect(_draw_vault_hero_emblem.bind(emblem_canvas))
+	med_center.add_child(emblem_canvas)
 
 	var icon_lbl: Label = Label.new()
 	icon_lbl.name = "VaultIconLabel"
@@ -2859,7 +3095,8 @@ func _create_star_vault_modal() -> PanelContainer:
 
 	var icon_rect: TextureRect = TextureRect.new()
 	icon_rect.name = "VaultIconRect"
-	icon_rect.custom_minimum_size = Vector2(54, 54)
+	icon_rect.visible = false
+	icon_rect.custom_minimum_size = Vector2(48, 48)
 	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	med_center.add_child(icon_rect)
@@ -2867,8 +3104,8 @@ func _create_star_vault_modal() -> PanelContainer:
 	var name_lbl: Label = Label.new()
 	name_lbl.name = "VaultNameLabel"
 	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_lbl.add_theme_font_size_override("font_size", 20)
-	name_lbl.add_theme_color_override("font_color", Color(0.98, 0.99, 1.0))
+	name_lbl.add_theme_font_size_override("font_size", 21)
+	name_lbl.add_theme_color_override("font_color", Color(0.96, 0.97, 0.99))
 	show_vbox.add_child(name_lbl)
 
 	var reward_pill := PanelContainer.new()
@@ -2877,10 +3114,10 @@ func _create_star_vault_modal() -> PanelContainer:
 	show_vbox.add_child(reward_pill)
 
 	var rp_mg := MarginContainer.new()
-	rp_mg.add_theme_constant_override("margin_left", 14)
-	rp_mg.add_theme_constant_override("margin_top", 6)
-	rp_mg.add_theme_constant_override("margin_right", 14)
-	rp_mg.add_theme_constant_override("margin_bottom", 6)
+	rp_mg.add_theme_constant_override("margin_left", 13)
+	rp_mg.add_theme_constant_override("margin_top", 5)
+	rp_mg.add_theme_constant_override("margin_right", 15)
+	rp_mg.add_theme_constant_override("margin_bottom", 5)
 	reward_pill.add_child(rp_mg)
 
 	var rp_hb := HBoxContainer.new()
@@ -2890,14 +3127,23 @@ func _create_star_vault_modal() -> PanelContainer:
 
 	var rp_icon := TextureRect.new()
 	rp_icon.name = "RewardPillIcon"
-	rp_icon.custom_minimum_size = Vector2(18, 18)
+	rp_icon.visible = false
+	rp_icon.custom_minimum_size = Vector2(14, 14)
 	rp_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	rp_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	rp_hb.add_child(rp_icon)
 
+	var rp_glyph := Control.new()
+	rp_glyph.name = "RewardGlyphCanvas"
+	rp_glyph.custom_minimum_size = Vector2(12, 12)
+	rp_glyph.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	rp_glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rp_glyph.draw.connect(_draw_reward_pill_glyph.bind(rp_glyph))
+	rp_hb.add_child(rp_glyph)
+
 	var rp_lbl := Label.new()
 	rp_lbl.name = "RewardPillLabel"
-	rp_lbl.add_theme_font_size_override("font_size", 14)
+	rp_lbl.add_theme_font_size_override("font_size", 13)
 	rp_hb.add_child(rp_lbl)
 
 	var desc_lbl: Label = Label.new()
@@ -2905,12 +3151,12 @@ func _create_star_vault_modal() -> PanelContainer:
 	desc_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	desc_lbl.add_theme_font_size_override("font_size", 12)
-	desc_lbl.add_theme_color_override("font_color", Color(0.62, 0.72, 0.84))
+	desc_lbl.add_theme_color_override("font_color", Color(0.54, 0.60, 0.70))
 	show_vbox.add_child(desc_lbl)
 
-	# 3. Milestone Progression Ladder
+	# 3. Quiet Minimal Milestone Progression Track
 	var prog_vbox := VBoxContainer.new()
-	prog_vbox.add_theme_constant_override("separation", 4)
+	prog_vbox.add_theme_constant_override("separation", 6)
 	vbox.add_child(prog_vbox)
 
 	var prog_hdr := HBoxContainer.new()
@@ -2919,7 +3165,7 @@ func _create_star_vault_modal() -> PanelContainer:
 	var prog_curr := Label.new()
 	prog_curr.name = "ProgressCurrentLbl"
 	prog_curr.add_theme_font_size_override("font_size", 11)
-	prog_curr.add_theme_color_override("font_color", Color(0.95, 0.84, 0.38))
+	prog_curr.add_theme_color_override("font_color", Color(0.76, 0.81, 0.89))
 	prog_hdr.add_child(prog_curr)
 
 	var prog_spacer := Control.new()
@@ -2929,43 +3175,44 @@ func _create_star_vault_modal() -> PanelContainer:
 	var prog_next := Label.new()
 	prog_next.name = "ProgressNextLbl"
 	prog_next.add_theme_font_size_override("font_size", 11)
-	prog_next.add_theme_color_override("font_color", Color(0.60, 0.70, 0.84))
+	prog_next.add_theme_color_override("font_color", Color(0.45, 0.51, 0.62))
 	prog_hdr.add_child(prog_next)
 
 	var prog_bar := ProgressBar.new()
 	prog_bar.name = "VaultProgressBar"
-	prog_bar.custom_minimum_size = Vector2(0, 5)
+	prog_bar.custom_minimum_size = Vector2(0, 3)
 	prog_bar.show_percentage = false
 	var sb_track := StyleBoxFlat.new()
-	sb_track.bg_color = Color(1.0, 1.0, 1.0, 0.08)
-	sb_track.set_corner_radius_all(3)
+	sb_track.bg_color = Color(1.0, 1.0, 1.0, 0.085)
+	sb_track.set_corner_radius_all(2)
 	prog_bar.add_theme_stylebox_override("background", sb_track)
 	prog_vbox.add_child(prog_bar)
 
-	# 4. Crisp Action Footer
+	# 4. Crisp Editorial Action Footer
 	var btn_vbox: VBoxContainer = VBoxContainer.new()
-	btn_vbox.add_theme_constant_override("separation", 4)
+	btn_vbox.add_theme_constant_override("separation", 6)
 	vbox.add_child(btn_vbox)
 
 	var claim_btn: Button = Button.new()
 	claim_btn.name = "ClaimVaultBtn"
-	claim_btn.text = "CLAIM REWARD"
-	claim_btn.custom_minimum_size = Vector2(0, 48)
-	claim_btn.theme_type_variation = &"PrimaryButton"
-	claim_btn.add_theme_font_size_override("font_size", 15)
+	claim_btn.text = "Claim Reward"
+	claim_btn.custom_minimum_size = Vector2(0, 46)
+	claim_btn.add_theme_font_size_override("font_size", 14)
+	claim_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	_attach_spring_physics(claim_btn)
 	btn_vbox.add_child(claim_btn)
 
 	var close_btn: Button = Button.new()
 	close_btn.name = "CloseVaultBtn"
-	close_btn.text = "Claim Later"
-	close_btn.custom_minimum_size = Vector2(0, 30)
-	close_btn.add_theme_font_size_override("font_size", 12)
-	close_btn.add_theme_color_override("font_color", Color(0.55, 0.64, 0.76))
-	close_btn.add_theme_color_override("font_hover_color", Color(0.85, 0.90, 0.98))
+	close_btn.text = "Later"
+	close_btn.custom_minimum_size = Vector2(0, 34)
+	close_btn.add_theme_font_size_override("font_size", 13)
+	close_btn.add_theme_color_override("font_color", Color(0.46, 0.52, 0.63))
+	close_btn.add_theme_color_override("font_hover_color", Color(0.78, 0.83, 0.92))
 	close_btn.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
 	close_btn.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
 	close_btn.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
+	close_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	close_btn.pressed.connect(_hide_star_vault_modal)
 	btn_vbox.add_child(close_btn)
 

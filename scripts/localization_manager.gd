@@ -839,13 +839,13 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "استلام المكافأة"
 	},
 	"BTN_CLAIM_HINTS": {
-		"en": "CLAIM +%d HINTS",
-		"fr": "RÉCLAMER +%d INDICES",
+		"en": "Claim +%d Hints",
+		"fr": "Réclamer +%d indices",
 		"ar": "استلام +%d تلميحات"
 	},
 	"BTN_CLAIM_EQUIP": {
-		"en": "CLAIM & EQUIP",
-		"fr": "RÉCLAMER & ÉQUIPER",
+		"en": "Claim & Equip",
+		"fr": "Réclamer et équiper",
 		"ar": "استلام وتجهيز"
 	},
 	"BTN_LATER": {
@@ -869,9 +869,9 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "زي عامل جديد"
 	},
 	"VAULT_MILESTONE_REACHED": {
-		"en": "%d ★  VAULT UNLOCKED",
-		"fr": "%d ★  COFFRE DÉBLOQUÉ",
-		"ar": "%d ★  تم فتح الخزنة"
+		"en": "MILESTONE  ·  %d ★",
+		"fr": "PALIER  ·  %d ★",
+		"ar": "إنجاز  ·  %d ★"
 	},
 	"VAULT_NEXT_TARGET": {
 		"en": "Next %d ★",
@@ -879,14 +879,14 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "التالي %d ★"
 	},
 	"VAULT_FINAL_TIER": {
-		"en": "Final Milestone!",
-		"fr": "Palier final !",
-		"ar": "الإنجاز النهائي!"
+		"en": "Max Milestone",
+		"fr": "Palier final",
+		"ar": "أعلى إنجاز"
 	},
 	"VAULT_READY_BANNER": {
-		"en": "VAULT READY: %s  •  TAP TO CLAIM",
-		"fr": "COFFRE PRÊT : %s  •  TOUCHER POUR RÉCLAMER",
-		"ar": "خزنة جاهزة: %s  •  المس للاستلام"
+		"en": "Vault Ready · %s",
+		"fr": "Coffre prêt · %s",
+		"ar": "خزنة جاهزة · %s"
 	},
 	"VAULT_CLAIMED_TOAST": {
 		"en": "Claimed: %s!",
