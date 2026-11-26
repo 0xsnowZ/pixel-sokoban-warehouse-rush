@@ -28,6 +28,7 @@ func _init() -> void:
 	run_suite("Corrupt & Missing File Resilience", test_corrupt_and_missing_file)
 	run_suite("Breakout Hit Engine: Star Vaults, Daily Challenge & Level Skip", test_breakout_hit_engine)
 	run_suite("Phase 2 Onboarding & Deadlock Coaching Flags", test_phase2_coaching_flags)
+	run_suite("Regression Guards: Multi-Day Streak, Bounds & Undo Push", test_regression_guards)
 
 	_cleanup_test_file()
 
@@ -464,4 +465,37 @@ func test_phase2_coaching_flags() -> void:
 	mgr_reload.reset_all_progress(TEST_SAVE_PATH)
 	assert_false(mgr_reload.has_completed_tutorial, "reset_all_progress clears has_completed_tutorial")
 	assert_false(mgr_reload.has_seen_deadlock_tip, "reset_all_progress clears has_seen_deadlock_tip")
+	mgr.free()
+	mgr_reload.free()
+	_cleanup_test_file()
+
+
+func test_regression_guards() -> void:
+	_cleanup_test_file()
+	var mgr = SaveManagerScript.new()
+	mgr.reset_all_progress(TEST_SAVE_PATH)
+
+	# 1. Multi-day gap resets streak even if previous logged day was completed
+	mgr.daily_challenge_date = "2020-01-01"
+	mgr.daily_challenge_completed = true
+	mgr.daily_challenge_streak = 7
+	var gap_info: Dictionary = mgr.get_daily_challenge_info()
+	assert_equal(gap_info["streak"], 0, "Multi-day gap resets completed streak to 0")
+	assert_false(gap_info["is_completed"], "New day clears completed flag")
+
+	# 2. Unlock level and skip cap at 74
+	mgr.unlock_level(99)
+	assert_equal(mgr.unlocked_level, 74, "unlocked_level capped at 74 (max index)")
+	mgr.skip_level(74)
+	assert_equal(mgr.last_played_level, 74, "skip_level caps last_played_level at 74")
+
+	# 3. Crate push undo sync
+	mgr.total_crates_pushed = 5
+	mgr.undo_crate_push()
+	assert_equal(mgr.total_crates_pushed, 4, "undo_crate_push decrements counter cleanly")
+	mgr.total_crates_pushed = 0
+	mgr.undo_crate_push()
+	assert_equal(mgr.total_crates_pushed, 0, "undo_crate_push never goes below 0")
+
+	mgr.free()
 	_cleanup_test_file()

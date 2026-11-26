@@ -43,6 +43,9 @@ var player_facing_dir: Vector2i = Vector2i.DOWN
 var win_particles: Array[Dictionary] = []
 var is_level_won: bool = false
 var is_daily_challenge: bool = false
+var _daily_challenge_level: int = -1
+var _level_load_gen: int = 0
+var _hint_toast_tween: Tween = null
 var player_celebration_hop: float = 0.0
 var victory_radiance_rings: Array[Dictionary] = []
 var star_burst_particles: Array[Dictionary] = []
@@ -457,6 +460,11 @@ func _ready() -> void:
 	if save_mgr != null and save_mgr.has_meta("is_daily_challenge") and bool(save_mgr.get_meta("is_daily_challenge")):
 		is_daily_challenge = true
 		save_mgr.set_meta("is_daily_challenge", false)
+		if save_mgr.has_meta("daily_challenge_level"):
+			_daily_challenge_level = int(save_mgr.get_meta("daily_challenge_level"))
+			save_mgr.set_meta("daily_challenge_level", -1)
+		elif save_mgr.has_method("get_daily_challenge_info"):
+			_daily_challenge_level = int(save_mgr.get_daily_challenge_info().get("level_index", 5))
 
 	if audio_mgr == null and is_inside_tree() and get_tree().root.has_node("AudioManager"):
 		audio_mgr = get_tree().root.get_node("AudioManager")
@@ -475,7 +483,8 @@ func _ready() -> void:
 	if safe_area_mgr == null and is_inside_tree() and get_tree().root.has_node("SafeAreaManager"):
 		safe_area_mgr = get_tree().root.get_node("SafeAreaManager")
 	if safe_area_mgr:
-		safe_area_mgr.safe_area_changed.connect(_on_safe_area_changed)
+		if not safe_area_mgr.safe_area_changed.is_connected(_on_safe_area_changed):
+			safe_area_mgr.safe_area_changed.connect(_on_safe_area_changed)
 		_apply_safe_area()
 
 	if achievement_mgr == null and is_inside_tree() and get_tree().root.has_node("AchievementManager"):
@@ -578,10 +587,12 @@ func _ready() -> void:
 			restart_dialog.title_text = title_tr
 
 	var initial_level: int = 0
-	if save_mgr and save_mgr.last_played_level >= 0 and save_mgr.last_played_level < level_paths.size():
+	if is_daily_challenge and _daily_challenge_level >= 0 and _daily_challenge_level < level_paths.size():
+		initial_level = _daily_challenge_level
+	elif save_mgr and save_mgr.last_played_level >= 0 and save_mgr.last_played_level < level_paths.size():
 		initial_level = save_mgr.last_played_level
 	load_level(initial_level)
-	if get_viewport():
+	if get_viewport() and not get_viewport().size_changed.is_connected(_on_viewport_size_changed):
 		get_viewport().size_changed.connect(_on_viewport_size_changed)
 
 	# Tactile arcade button physics
@@ -642,7 +653,7 @@ func _handle_mobile_back_request() -> void:
 		_on_restart_dialog_canceled()
 		if get_viewport(): get_viewport().set_input_as_handled()
 	else:
-		_on_restart_pressed()
+		_on_menu_pressed()
 		if get_viewport(): get_viewport().set_input_as_handled()
 
 
@@ -731,8 +742,9 @@ func announce_chapter(ch_idx: int) -> void:
 
 func load_level(index: int) -> void:
 	var target_index: int = clampi(index, 0, level_paths.size() - 1)
-	if save_mgr and not save_mgr.is_level_unlocked(target_index):
+	if not is_daily_challenge and save_mgr and not save_mgr.is_level_unlocked(target_index):
 		return
+	_level_load_gen += 1
 
 	var prev_ch: int = current_chapter_idx
 	current_level_index = target_index
@@ -750,7 +762,7 @@ func load_level(index: int) -> void:
 		announce_chapter(current_chapter_idx)
 	_last_loaded_chapter = current_chapter_idx
 
-	if save_mgr:
+	if save_mgr and not is_daily_challenge:
 		save_mgr.last_played_level = current_level_index
 
 	var path: String = level_paths[current_level_index]
@@ -910,9 +922,11 @@ func _update_ui(_new_lang: String = "") -> void:
 
 	if loc_mgr:
 		if loc_mgr.has_method("apply_rtl"):
-			for rtl_ctrl in [win_modal, restart_dialog, ad_reward_modal, hint_toast, achievement_banner, deadlock_pill]:
+			for rtl_ctrl in [top_bar, bottom_bar, win_modal, restart_dialog, ad_reward_modal, hint_toast, achievement_banner, deadlock_pill]:
 				if rtl_ctrl is Control:
 					loc_mgr.apply_rtl(rtl_ctrl)
+		if dpad_overlay != null:
+			dpad_overlay.layout_direction = Control.LAYOUT_DIRECTION_LTR
 		if is_daily_challenge:
 			var daily_info: Dictionary = save_mgr.get_daily_challenge_info() if save_mgr else {}
 			var streak_val: int = daily_info.get("streak", 0)
@@ -977,8 +991,8 @@ func _update_ui(_new_lang: String = "") -> void:
 	if hint_button != null:
 		hint_button.disabled = (grid == null or grid.is_won())
 	if prev_button != null:
-		prev_button.disabled = (current_level_index == 0)
-	var can_advance: bool = (current_level_index < level_paths.size() - 1)
+		prev_button.disabled = is_daily_challenge or (current_level_index == 0)
+	var can_advance: bool = (not is_daily_challenge) and (current_level_index < level_paths.size() - 1)
 	if save_mgr:
 		can_advance = can_advance and save_mgr.is_level_unlocked(current_level_index + 1)
 	if next_button != null:
@@ -1073,9 +1087,11 @@ func _refresh_deadlock_radar(is_push: bool = false) -> void:
 
 func _on_level_won() -> void:
 	is_level_won = true
+	var win_gen: int = _level_load_gen
 	if audio_mgr and audio_mgr.has_method("set_dock_progress") and grid != null:
 		audio_mgr.set_dock_progress(grid.goals.size(), grid.goals.size(), false)
 	_stop_held_move()
+	_stop_auto_walk()
 	_dpad_moved_on_down = false
 	stride_arc_y = 0.0
 	player_scale = Vector2.ONE
@@ -1085,6 +1101,8 @@ func _on_level_won() -> void:
 	# 1. Authentic Hit-Stop Freeze-Frame (Micro-pause right as final crate snaps into goal)
 	if is_inside_tree():
 		await get_tree().create_timer(0.075).timeout
+		if not is_inside_tree() or not is_level_won or win_gen != _level_load_gen:
+			return
 
 	# 2. Explosive screen shake and radiance rings
 	add_trauma(0.60)
@@ -1121,21 +1139,25 @@ func _on_level_won() -> void:
 	if save_mgr:
 		if "has_completed_tutorial" in save_mgr and not save_mgr.has_completed_tutorial:
 			save_mgr.has_completed_tutorial = true
-		save_mgr.record_level_completion(current_level_index, grid.moves_count, grid.pushes_count)
 		if is_daily_challenge:
 			var d_res: Dictionary = save_mgr.record_daily_challenge_completed()
 			var cur_streak: int = d_res.get("streak", 1)
 			var daily_msg: String = loc_mgr.tr_text("TOAST_DAILY_CLEARED", [cur_streak]) if loc_mgr else ("DAILY SHIFT CLEARED! +3 HINTS • %d DAY STREAK" % cur_streak)
 			_show_hint_toast(daily_msg, Color(1.0, 0.85, 0.25))
+		else:
+			save_mgr.record_level_completion(current_level_index, grid.moves_count, grid.pushes_count)
 	_check_achievements()
-	if ad_mgr:
+	if ad_mgr and not is_daily_challenge:
 		ad_mgr.record_level_completed(current_level_index)
 
 	_spawn_celebration_particles()
 	_update_ui()
 
 	# Delay win popup slightly so player sees the celebration burst and crate snap to goal
-	await get_tree().create_timer(0.35).timeout
+	if is_inside_tree():
+		await get_tree().create_timer(0.35).timeout
+		if not is_inside_tree() or not is_level_won or win_gen != _level_load_gen:
+			return
 	var elapsed_ms: int = Time.get_ticks_msec() - level_start_time
 	var elapsed_sec: int = maxi(int(elapsed_ms / 1000.0), 1)
 	var time_formatted: String = "%02d:%02d" % [int(elapsed_sec / 60.0), elapsed_sec % 60]
@@ -1216,6 +1238,9 @@ func _on_level_won() -> void:
 				win_stats.text = "👑 PERFECT PAR: %d MOVES" % grid.moves_count
 			else:
 				win_stats.text = "Target: ≤ %d moves" % three_star_target
+
+	if next_level_button != null:
+		next_level_button.visible = not is_daily_challenge
 
 	# Prepare stars in unlit state
 	var stars: Array = [star_1, star_2, star_3]
@@ -1469,6 +1494,8 @@ func _animate_crate(from_pos: Vector2i, to_pos: Vector2i) -> void:
 func try_move(dir: Vector2i, from_auto_walk: bool = false) -> void:
 	if not from_auto_walk:
 		_stop_auto_walk()
+	if is_level_won:
+		return
 	player_facing_dir = dir
 	clear_hint()
 	if win_modal != null and win_modal.visible:
@@ -1609,7 +1636,7 @@ func _process_game_input(event: InputEvent) -> void:
 		_handle_mobile_back_request()
 		return
 
-	if win_modal != null and win_modal.visible:
+	if is_level_won or (win_modal != null and win_modal.visible):
 		return
 	if restart_dialog != null and restart_dialog.visible:
 		return
@@ -1815,7 +1842,7 @@ func _handle_swipe(delta: Vector2) -> void:
 
 
 func _on_restart_pressed() -> void:
-	if win_modal != null and win_modal.visible:
+	if is_level_won or (win_modal != null and win_modal.visible):
 		return
 	# PRD Section 5: "After 5 or more moves, Restart asks for one confirmation tap."
 	var current_moves: int = grid.moves_count if grid != null else 0
@@ -1841,6 +1868,8 @@ func _on_restart_pressed() -> void:
 
 
 func _do_restart() -> void:
+	_level_load_gen += 1
+	is_level_won = false
 	if win_blur_overlay and not (win_modal and win_modal.visible):
 		win_blur_overlay.hide()
 	if audio_mgr:
@@ -2047,7 +2076,7 @@ func _on_undo_button_up() -> void:
 
 
 func _on_undo_pressed() -> void:
-	if win_modal != null and win_modal.visible:
+	if is_level_won or (win_modal != null and win_modal.visible):
 		return
 	_stop_auto_walk()
 	is_animating = false
@@ -2065,7 +2094,7 @@ func _on_undo_pressed() -> void:
 
 
 func _on_undo_push_pressed() -> void:
-	if win_modal != null and win_modal.visible:
+	if is_level_won or (win_modal != null and win_modal.visible):
 		return
 	_stop_auto_walk()
 	is_animating = false
@@ -2082,7 +2111,9 @@ func _on_undo_push_pressed() -> void:
 		grid.undo_last_push()
 
 
-func _on_move_undone(p_pos: Vector2i, _had_crate: bool, _crate_from: Vector2i, _crate_to: Vector2i) -> void:
+func _on_move_undone(p_pos: Vector2i, had_crate: bool, _crate_from: Vector2i, _crate_to: Vector2i) -> void:
+	if had_crate and save_mgr != null and save_mgr.has_method("undo_crate_push"):
+		save_mgr.undo_crate_push()
 	is_animating = false
 	queued_move_dir = Vector2i.ZERO
 	_stop_held_move()
@@ -2219,7 +2250,18 @@ func _on_hint_pressed() -> void:
 		queue_redraw()
 		return
 
-	# Deduct 1 hint from inventory only when solution step was found
+	var parsed_hint_dir: Vector2i = Vector2i.ZERO
+	match move_char:
+		"u": parsed_hint_dir = Vector2i.UP
+		"d": parsed_hint_dir = Vector2i.DOWN
+		"l": parsed_hint_dir = Vector2i.LEFT
+		"r": parsed_hint_dir = Vector2i.RIGHT
+		_: parsed_hint_dir = Vector2i.ZERO
+
+	if parsed_hint_dir == Vector2i.ZERO:
+		return
+
+	# Deduct 1 hint from inventory only after a valid hint step is confirmed
 	if save_mgr != null:
 		save_mgr.use_hint()
 		_update_hint_button_text()
@@ -2227,15 +2269,7 @@ func _on_hint_pressed() -> void:
 	# Solvable next step / push plan
 	if audio_mgr:
 		audio_mgr.play_hint()
-	match move_char:
-		"u": active_hint_dir = Vector2i.UP
-		"d": active_hint_dir = Vector2i.DOWN
-		"l": active_hint_dir = Vector2i.LEFT
-		"r": active_hint_dir = Vector2i.RIGHT
-		_: active_hint_dir = Vector2i.ZERO
-
-	if active_hint_dir == Vector2i.ZERO:
-		return
+	active_hint_dir = parsed_hint_dir
 
 	hint_player_target = grid.player_pos + active_hint_dir
 	hint_has_crate = grid.has_crate(hint_player_target)
@@ -2272,17 +2306,20 @@ func _on_hint_pressed() -> void:
 func _show_hint_toast(msg: String, color: Color = Color(1.0, 0.95, 0.6)) -> void:
 	if hint_toast == null or hint_toast_label == null:
 		return
+	if _hint_toast_tween != null and _hint_toast_tween.is_valid():
+		_hint_toast_tween.kill()
+		_hint_toast_tween = null
 	_update_hint_toast_position()
 	hint_toast_label.text = msg
 	hint_toast_label.modulate = color
 	hint_toast.modulate.a = 0.0
 	hint_toast.show()
 	_update_achievement_banner_position()
-	var tw: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tw.tween_property(hint_toast, "modulate:a", 1.0, 0.18)
-	tw.tween_interval(2.2)
-	tw.tween_property(hint_toast, "modulate:a", 0.0, 0.35)
-	tw.tween_callback(func():
+	_hint_toast_tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_hint_toast_tween.tween_property(hint_toast, "modulate:a", 1.0, 0.18)
+	_hint_toast_tween.tween_interval(2.2)
+	_hint_toast_tween.tween_property(hint_toast, "modulate:a", 0.0, 0.35)
+	_hint_toast_tween.tween_callback(func():
 		if hint_toast:
 			hint_toast.hide()
 	)
@@ -2303,6 +2340,8 @@ func clear_hint() -> void:
 
 
 func _on_prev_level_pressed() -> void:
+	if is_daily_challenge:
+		return
 	if audio_mgr:
 		audio_mgr.play_click()
 	if haptic_mgr:
@@ -2312,6 +2351,9 @@ func _on_prev_level_pressed() -> void:
 
 
 func _on_next_level_pressed() -> void:
+	if is_daily_challenge:
+		_on_menu_pressed()
+		return
 	if audio_mgr:
 		audio_mgr.play_click()
 	if haptic_mgr:
@@ -2336,6 +2378,8 @@ func _on_next_level_pressed() -> void:
 				safety_timer.timeout.connect(on_closed, CONNECT_ONE_SHOT)
 				while not ad_done[0] and is_inside_tree():
 					await get_tree().process_frame
+		if not is_inside_tree():
+			return
 		load_level(next_idx)
 
 
@@ -2490,7 +2534,7 @@ func _process(delta: float) -> void:
 	var needs_redraw: bool = is_animating
 
 	# Option A: Continuous corridor walking when direction key or D-Pad is held
-	if held_move_dir != Vector2i.ZERO and (win_modal == null or not win_modal.visible) and (restart_dialog == null or not restart_dialog.visible) and (ad_reward_modal == null or not ad_reward_modal.visible):
+	if not is_level_won and held_move_dir != Vector2i.ZERO and (win_modal == null or not win_modal.visible) and (restart_dialog == null or not restart_dialog.visible) and (ad_reward_modal == null or not ad_reward_modal.visible):
 		held_move_time += delta
 		if held_move_time >= 0.22: # 220ms initial hold threshold
 			held_move_step_timer += delta
@@ -2499,7 +2543,7 @@ func _process(delta: float) -> void:
 				try_move(held_move_dir)
 
 	# Option A: Continuous Rapid Rewind when Undo is held down
-	if is_undo_held and (win_modal == null or not win_modal.visible):
+	if not is_level_won and is_undo_held and (win_modal == null or not win_modal.visible):
 		undo_hold_time += delta
 		if undo_hold_time >= 0.30: # 300ms hold threshold
 			undo_step_timer += delta
@@ -4415,7 +4459,7 @@ func _show_ad_reward_modal() -> void:
 		loc_mgr.apply_rtl(ad_reward_modal)
 	var skip_btn: Button = ad_reward_modal.find_child("SkipLevelBtn", true, false) as Button
 	if skip_btn != null:
-		skip_btn.visible = (current_level_index < level_paths.size() - 1)
+		skip_btn.visible = (not is_daily_challenge) and (current_level_index < level_paths.size() - 1)
 	ad_reward_modal.show()
 	ad_reward_modal.modulate.a = 0.0
 	var tw: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
@@ -4439,6 +4483,9 @@ func _on_watch_ad_pressed() -> void:
 
 
 func _on_skip_level_pressed() -> void:
+	if is_daily_challenge:
+		_hide_ad_reward_modal()
+		return
 	if audio_mgr:
 		audio_mgr.play_click()
 	_hide_ad_reward_modal()
@@ -4799,7 +4846,7 @@ func _update_deadlock_pill() -> void:
 
 
 func _on_stage_badge_gui_input(event: InputEvent) -> void:
-	if (win_modal and win_modal.visible) or (restart_dialog and restart_dialog.visible) or (ad_reward_modal and ad_reward_modal.visible):
+	if is_daily_challenge or is_level_won or (win_modal and win_modal.visible) or (restart_dialog and restart_dialog.visible) or (ad_reward_modal and ad_reward_modal.visible):
 		return
 	var clicked: bool = false
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:

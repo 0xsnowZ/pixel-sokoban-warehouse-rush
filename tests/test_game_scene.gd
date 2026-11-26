@@ -39,6 +39,7 @@ func _init() -> void:
 	test_locomotion_juice_and_corridor_auto_repeat()
 	test_phase1_ux_enhancements()
 	test_phase2_visual_and_coaching_enhancements()
+	test_daily_shift_and_post_win_regression_guards()
 
 	print("\n" + "=".repeat(54))
 	print("Game Scene Results: %d passed, %d failed" % [passes, fails])
@@ -1058,6 +1059,46 @@ func test_phase2_visual_and_coaching_enhancements() -> void:
 		game.queue_redraw()
 	assert_true(true, "All 4 chapter wall auto-tiling & mote render paths queue cleanly")
 
+	game.queue_free()
+	loc.queue_free()
+	save_mgr.queue_free()
+
+
+func test_daily_shift_and_post_win_regression_guards() -> void:
+	print("--- Running Suite: Daily Shift Isolation & Post-Win Input Guards ---")
+	var loc: Node = LocalizationManagerScript.new()
+	var save_mgr: Node = SaveManagerScript.new()
+	save_mgr.reset_all_progress("user://test_game_daily_guard.json")
+	save_mgr.unlocked_level = 0
+	save_mgr.last_played_level = 0
+	save_mgr.set_meta("is_daily_challenge", true)
+	save_mgr.set_meta("daily_challenge_level", 20)
+
+	var game: Control = create_test_game(loc, save_mgr)
+	assert_true(game.is_daily_challenge, "Daily challenge flag activated from SaveManager meta")
+	assert_eq(game.current_level_index, 20, "Locked Daily Shift level (idx 20) loaded even when unlocked_level is 0")
+	assert_true(game.grid != null and game.grid.width > 0, "Daily Shift grid populated cleanly")
+	assert_eq(save_mgr.last_played_level, 0, "Daily Shift load preserves campaign last_played_level = 0")
+
+	# Calling _ready() again must not crash or fail on double signals
+	game._ready()
+	assert_true(loc.language_changed.is_connected(game._update_ui) and save_mgr.hints_changed.is_connected(game._on_hints_changed) and game.get_parent() == root, "Repeated _ready() guards duplicate signal connects cleanly")
+
+	# Guard post-win input/undo when is_level_won is true during celebration window
+	game.is_daily_challenge = false
+	game.load_level(0)
+	game.is_animating = false
+	game.try_move(Vector2i.RIGHT)
+	game.is_animating = false
+	var moves_before_win: int = game.grid.moves_count
+	game.is_level_won = true
+	game.try_move(Vector2i.LEFT)
+	assert_eq(game.grid.moves_count, moves_before_win, "try_move blocked when is_level_won is true")
+	game._on_undo_pressed()
+	assert_eq(game.grid.moves_count, moves_before_win, "Undo blocked when is_level_won is true")
+
+	if FileAccess.file_exists("user://test_game_daily_guard.json"):
+		DirAccess.remove_absolute("user://test_game_daily_guard.json")
 	game.queue_free()
 	loc.queue_free()
 	save_mgr.queue_free()

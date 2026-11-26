@@ -69,7 +69,8 @@ func _ready() -> void:
 	if safe_area_mgr == null and is_inside_tree() and get_tree().root.has_node("SafeAreaManager"):
 		safe_area_mgr = get_tree().root.get_node("SafeAreaManager")
 	if safe_area_mgr:
-		safe_area_mgr.safe_area_changed.connect(_on_safe_area_changed)
+		if not safe_area_mgr.safe_area_changed.is_connected(_on_safe_area_changed):
+			safe_area_mgr.safe_area_changed.connect(_on_safe_area_changed)
 		_apply_safe_area()
 
 	if not level_select_btn.pressed.is_connected(_on_level_select_pressed):
@@ -88,10 +89,10 @@ func _ready() -> void:
 	_attach_spring_physics(level_select_btn)
 	_attach_spring_physics(menu_btn)
 
-	if has_node("Margin/VBox/TrophyIcon"):
+	if has_node("Margin/VBox/TrophyIcon") and DisplayServer.get_name() != "headless":
 		var trophy: Control = $Margin/VBox/TrophyIcon as Control
 		trophy.pivot_offset = trophy.custom_minimum_size / 2.0 if trophy.size == Vector2.ZERO else trophy.size / 2.0
-		var tw: Tween = create_tween().set_loops()
+		var tw: Tween = trophy.create_tween().set_loops()
 		tw.tween_property(trophy, "scale", Vector2(1.08, 1.08), 1.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		tw.tween_property(trophy, "scale", Vector2.ONE, 1.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 

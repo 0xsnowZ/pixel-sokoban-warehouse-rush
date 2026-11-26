@@ -922,6 +922,16 @@ func _ready() -> void:
 	set_language(current_language)
 
 
+func _exit_tree() -> void:
+	if _arabic_fallback_ready:
+		const BASE_FONT_PATH: String = "res://assets/fonts/OpenSans-Bold.ttf"
+		if ResourceLoader.has_cached(BASE_FONT_PATH):
+			var base_font: FontFile = ResourceLoader.load(BASE_FONT_PATH) as FontFile
+			if base_font != null and not base_font.fallbacks.is_empty():
+				base_font.fallbacks = [] as Array[Font]
+		_arabic_fallback_ready = false
+
+
 ## Ensures bundled NotoSansArabic-Bold is registered as a fallback on OpenSans-Bold
 ## so Arabic glyphs render reliably even without OS system Arabic fonts.
 func _ensure_arabic_font_fallback() -> void:

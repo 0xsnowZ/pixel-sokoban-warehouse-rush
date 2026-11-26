@@ -445,6 +445,12 @@ func test_breakout_hit_menu_features() -> void:
 	claim_btn.pressed.emit()
 	assert_false(menu.star_vault_modal.visible, "Star Vault modal hidden after claiming")
 
+	# Back action dismisses Star Vault Modal cleanly
+	menu._show_star_vault_modal(0, vault_data)
+	assert_true(menu.star_vault_modal.visible, "Star Vault modal reopened for Back dismiss check")
+	assert_true(menu._handle_menu_back_request(), "Menu back handler consumes Star Vault modal")
+	assert_false(menu.star_vault_modal.visible, "Star Vault modal dismissed via back handler")
+
 	menu.queue_free()
 
 

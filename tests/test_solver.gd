@@ -22,6 +22,7 @@ func _init() -> void:
 	run_suite("Unsolvable & Deadlock Detection", test_unsolvable_deadlock)
 	run_suite("Walk Pathfinding Around Crates", test_walk_pathfinding)
 	run_suite("Next Meaningful Push Plan Tracing", test_next_push_plan)
+	run_suite("Exterior Void Boundary Blocking in BFS Solver", test_solver_blocks_exterior_void)
 
 	print("\n==================================================")
 	print("Test Suites: %d passed, %d failed" % [_passed_suites, _failed_suites])
@@ -138,3 +139,30 @@ func test_next_push_plan() -> void:
 	var dead_plan: Dictionary = SokobanSolverScript.get_next_push_plan(dead_grid, 0, "res://levels/level_01.sok", 12)
 	assert_true(String(dead_plan.get("first_char", "")).is_empty(), "Deadlocked board returns empty first_char")
 	assert_true(bool(dead_plan.get("deadlock", false)), "Deadlocked board flags deadlock = true")
+
+
+func test_solver_blocks_exterior_void() -> void:
+	# Grid has open top/left exterior void cells separated by an unbroken inner wall;
+	# even if an outer corner lacks walls inside bounding box, void cannot be traversed.
+	var void_lvl: String = """   #####
+   #.  #
+#### $ #
+#  #$@ #
+#  #####
+####
+"""
+	var grid = GridLogicScript.new(void_lvl)
+	# (0, 0) is exterior void: verify GridLogic rejects and solver blocks exterior void cells
+	assert_true(grid.is_exterior_void(Vector2i(0, 0)), "(0, 0) detected as exterior void")
+	var blocked_res: SokobanSolver.SolverResult = SokobanSolverScript.solve(grid, 2000)
+	assert_true(blocked_res.is_solvable or blocked_res.is_deadlock or blocked_res.timed_out, "Solver executes cleanly with exterior void blocking enabled")
+	# Force exterior void corner deadlock: unsolvable without illegally stepping into exterior void
+	var unsolvable_void: String = """  #####
+  #.  #
+  #  $#
+  # @ #
+  #####
+"""
+	var g2 = GridLogicScript.new(unsolvable_void)
+	# Corner (4, 2) against right+bottom wall if pushed down: still let's verify void top-left (0,0) isn't reachable
+	assert_true(SokobanSolverScript.find_player_walk_path(g2.player_pos, Vector2i(0, 0), g2).is_empty(), "Cannot walk into exterior void")

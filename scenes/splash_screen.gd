@@ -31,7 +31,8 @@ func _ready() -> void:
 	_init_dust_motes()
 
 	if is_inside_tree() and get_viewport() != null:
-		get_viewport().size_changed.connect(_on_viewport_size_changed)
+		if not get_viewport().size_changed.is_connected(_on_viewport_size_changed):
+			get_viewport().size_changed.connect(_on_viewport_size_changed)
 
 	var safe_mgr: Node = null
 	if is_inside_tree() and get_tree() and get_tree().root:

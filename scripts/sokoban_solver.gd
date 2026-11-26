@@ -420,6 +420,13 @@ static func solve(level_text_or_grid: Variant, max_states: int = 50000) -> Solve
 	var goals: Dictionary = grid.goals
 	var w: int = grid.width
 	var h: int = grid.height
+	var blocked_tiles: Dictionary = walls.duplicate()
+	if not grid.interior_floor.is_empty():
+		for yy in range(h):
+			for xx in range(w):
+				var tpos: Vector2i = Vector2i(xx, yy)
+				if not walls.has(tpos) and grid.is_exterior_void(tpos):
+					blocked_tiles[tpos] = true
 
 	var queue: Array[Dictionary] = []
 	var visited: Dictionary = {}
@@ -468,17 +475,17 @@ static func solve(level_text_or_grid: Variant, max_states: int = 50000) -> Solve
 			var ch: String = d["ch"]
 			var np: Vector2i = p + dir
 
-			if is_blocked_tile(np, walls, w, h):
+			if is_blocked_tile(np, blocked_tiles, w, h):
 				continue
 
 			var is_push: bool = cr_map.has(np)
 			if is_push:
 				var nnp: Vector2i = np + dir
-				if is_blocked_tile(nnp, walls, w, h) or cr_map.has(nnp):
+				if is_blocked_tile(nnp, blocked_tiles, w, h) or cr_map.has(nnp):
 					continue
-				if is_corner_deadlock(nnp, walls, goals, w, h):
+				if is_corner_deadlock(nnp, blocked_tiles, goals, w, h):
 					continue
-				if is_2x2_deadlock(nnp, walls, goals, cr_map, np, w, h):
+				if is_2x2_deadlock(nnp, blocked_tiles, goals, cr_map, np, w, h):
 					continue
 
 				var ncr: Array[Vector2i] = cr.duplicate()

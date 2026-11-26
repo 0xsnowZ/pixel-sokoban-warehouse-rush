@@ -105,6 +105,8 @@ var achievement_mgr: Node = null
 
 var current_locker_tab: String = "outfits"
 var current_level_pulse_tw: Tween = null
+var _logo_tw: Tween = null
+var _subtitle_tw: Tween = null
 var daily_shift_btn: Button = null
 var star_vault_modal: PanelContainer = null
 var _touch_scroll_controllers: Array = []
@@ -231,7 +233,8 @@ func _ready() -> void:
 
 	if is_inside_tree() and get_tree().root.has_node("SafeAreaManager"):
 		safe_area_mgr = get_tree().root.get_node("SafeAreaManager")
-		safe_area_mgr.safe_area_changed.connect(_on_safe_area_changed)
+		if not safe_area_mgr.safe_area_changed.is_connected(_on_safe_area_changed):
+			safe_area_mgr.safe_area_changed.connect(_on_safe_area_changed)
 		_apply_safe_area()
 
 	if not continue_btn.pressed.is_connected(_on_continue_pressed):
@@ -324,18 +327,7 @@ func _ready() -> void:
 	_build_level_grid()
 
 	# Ambient breathing animation on logo and subtitle
-	var logo: TextureRect = find_child("LogoRect", true, false) as TextureRect
-	if logo != null:
-		logo.pivot_offset = Vector2(150, 84)
-		var tw: Tween = create_tween().set_loops()
-		tw.tween_property(logo, "scale", Vector2(1.03, 1.03), 1.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		tw.tween_property(logo, "scale", Vector2(1.0, 1.0), 1.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-
-	var subtitle: Label = find_child("GameSubtitle", true, false) as Label
-	if subtitle != null:
-		var sub_tw: Tween = create_tween().set_loops()
-		sub_tw.tween_property(subtitle, "modulate:a", 0.72, 1.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		sub_tw.tween_property(subtitle, "modulate:a", 1.0, 1.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_start_ambient_logo_tweens()
 
 	# Tactile arcade button physics
 	for b in [continue_btn, play_btn, level_select_btn, locker_btn, achievements_btn, settings_btn, sound_btn, haptics_btn, tap_walk_btn, language_btn, credits_btn, back_btn, close_credits_btn, close_settings_btn, close_locker_btn, close_achievements_btn, outfits_tab_btn, crates_tab_btn, music_toggle_btn, track_cycle_btn, control_mode_btn, star_progress_btn, quick_lang_btn]:
@@ -357,23 +349,72 @@ func _ready() -> void:
 	ResourceLoader.load_threaded_request(GAME_SCENE_PATH)
 
 
+func _exit_tree() -> void:
+	_stop_ambient_logo_tweens()
+	if current_level_pulse_tw != null and current_level_pulse_tw.is_valid():
+		current_level_pulse_tw.kill()
+		current_level_pulse_tw = null
+
+
+func _start_ambient_logo_tweens() -> void:
+	_stop_ambient_logo_tweens()
+	if DisplayServer.get_name() == "headless":
+		return
+	var logo: TextureRect = find_child("LogoRect", true, false) as TextureRect
+	if logo != null and logo.is_inside_tree():
+		logo.pivot_offset = Vector2(150, 84)
+		_logo_tw = logo.create_tween().set_loops()
+		_logo_tw.tween_property(logo, "scale", Vector2(1.03, 1.03), 1.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_logo_tw.tween_property(logo, "scale", Vector2(1.0, 1.0), 1.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+	var subtitle: Label = find_child("GameSubtitle", true, false) as Label
+	if subtitle != null and subtitle.is_inside_tree():
+		_subtitle_tw = subtitle.create_tween().set_loops()
+		_subtitle_tw.tween_property(subtitle, "modulate:a", 0.72, 1.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_subtitle_tw.tween_property(subtitle, "modulate:a", 1.0, 1.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+
+func _stop_ambient_logo_tweens() -> void:
+	if _logo_tw != null and _logo_tw.is_valid():
+		_logo_tw.kill()
+	_logo_tw = null
+	if _subtitle_tw != null and _subtitle_tw.is_valid():
+		_subtitle_tw.kill()
+	_subtitle_tw = null
+
+
+func _handle_menu_back_request() -> bool:
+	if star_vault_modal != null and star_vault_modal.visible:
+		_hide_star_vault_modal()
+		return true
+	elif credits_modal != null and credits_modal.visible:
+		_hide_credits()
+		return true
+	elif settings_modal != null and settings_modal.visible:
+		_hide_settings()
+		return true
+	elif locker_modal != null and locker_modal.visible:
+		_hide_locker()
+		return true
+	elif achievements_modal != null and achievements_modal.visible:
+		_hide_achievements()
+		return true
+	elif level_select_view != null and level_select_view.visible:
+		_show_main_view()
+		return true
+	return false
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.keycode == KEY_ESCAPE and event.is_pressed() and not event.is_echo():
+		if _handle_menu_back_request() and get_viewport():
+			get_viewport().set_input_as_handled()
+
+
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
-		if credits_modal != null and credits_modal.visible:
-			_hide_credits()
-			if get_viewport(): get_viewport().set_input_as_handled()
-		elif settings_modal != null and settings_modal.visible:
-			_hide_settings()
-			if get_viewport(): get_viewport().set_input_as_handled()
-		elif locker_modal != null and locker_modal.visible:
-			_hide_locker()
-			if get_viewport(): get_viewport().set_input_as_handled()
-		elif achievements_modal != null and achievements_modal.visible:
-			_hide_achievements()
-			if get_viewport(): get_viewport().set_input_as_handled()
-		elif level_select_view != null and level_select_view.visible:
-			_show_main_view()
-			if get_viewport(): get_viewport().set_input_as_handled()
+		if _handle_menu_back_request() and get_viewport():
+			get_viewport().set_input_as_handled()
 	elif what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
 		if save_mgr != null and save_mgr.has_method("save_data"):
 			save_mgr.save_data()
@@ -397,7 +438,7 @@ func _apply_safe_area() -> void:
 		if has_node("MainView/TopBarMargin"):
 			var main_top_bar: MarginContainer = get_node("MainView/TopBarMargin") as MarginContainer
 			if main_top_bar != null:
-				safe_area_mgr.apply_safe_area_margins(main_top_bar, 20, 20, 20, 0, true, false)
+				safe_area_mgr.apply_safe_area_margins(main_top_bar, 16, 18, 16, 8, true, false)
 		if has_node("MainView/BottomMargin"):
 			var main_bottom: MarginContainer = get_node("MainView/BottomMargin") as MarginContainer
 			if main_bottom != null:
@@ -409,6 +450,13 @@ func _on_safe_area_changed(_insets: Dictionary) -> void:
 	for m in [settings_modal, locker_modal, achievements_modal, credits_modal]:
 		if m != null and m.visible:
 			_clamp_modal_to_safe_area(m)
+	if star_vault_modal != null and star_vault_modal.visible:
+		var card_ctrl: Control = star_vault_modal.find_child("VaultCard", true, false) as Control
+		if card_ctrl != null:
+			var vp_sz: Vector2 = get_viewport_rect().size if (is_inside_tree() and get_viewport() != null) else (size if size != Vector2.ZERO else Vector2(540.0, 960.0))
+			var insets: Dictionary = safe_area_mgr.get_safe_insets(self) if safe_area_mgr else {"top": 0.0, "bottom": 0.0, "left": 0.0, "right": 0.0}
+			var avail_w: float = maxf(260.0, vp_sz.x - insets.get("left", 0.0) - insets.get("right", 0.0) - 32.0)
+			card_ctrl.custom_minimum_size.x = minf(360.0, avail_w)
 
 
 func _sanitize_main_view_top_bar() -> void:
@@ -461,12 +509,14 @@ func _show_main_view() -> void:
 	main_view.show()
 	_sanitize_main_view_top_bar()
 	_update_menu_state()
+	_start_ambient_logo_tweens()
 	_check_star_vault_milestones()
 
 
 func _show_level_select() -> void:
 	if audio_mgr:
 		audio_mgr.play_click()
+	_stop_ambient_logo_tweens()
 	main_view.hide()
 	level_select_view.show()
 	credits_modal.hide()
@@ -507,15 +557,22 @@ func _hide_modal_backdrop() -> void:
 			(locker_modal and locker_modal.visible) or
 			(settings_modal and settings_modal.visible) or
 			(achievements_modal and achievements_modal.visible) or
-			(credits_modal and credits_modal.visible)
+			(credits_modal and credits_modal.visible) or
+			(star_vault_modal and star_vault_modal.visible)
 		):
 			modal_blur_overlay.hide()
 	)
 
 
 func _on_modal_backdrop_gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		if locker_modal and locker_modal.visible:
+	var pressed_tap: bool = (
+		(event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT) or
+		(event is InputEventScreenTouch and event.pressed)
+	)
+	if pressed_tap:
+		if star_vault_modal and star_vault_modal.visible:
+			_hide_star_vault_modal()
+		elif locker_modal and locker_modal.visible:
 			_hide_locker()
 		elif settings_modal and settings_modal.visible:
 			_hide_settings()
@@ -977,12 +1034,6 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 	btn_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	act_btn.add_child(btn_center)
 
-	var btn_icon: TextureRect = TextureRect.new()
-	btn_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	btn_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	btn_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	btn_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-
 	var btn_lbl: Label = Label.new()
 	btn_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -1001,6 +1052,11 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 		act_btn.add_theme_stylebox_override("pressed", sb_eq)
 		act_btn.add_theme_stylebox_override("disabled", sb_eq)
 
+		var btn_icon: TextureRect = TextureRect.new()
+		btn_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		btn_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		btn_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		btn_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		btn_icon.custom_minimum_size = Vector2(16, 16)
 		btn_icon.texture = icon_check
 		btn_icon.modulate = Color(0.95, 1.0, 0.95, 1.0)
@@ -1049,6 +1105,11 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 		act_btn.add_theme_stylebox_override("pressed", sb_lock)
 		act_btn.add_theme_stylebox_override("disabled", sb_lock)
 
+		var btn_icon: TextureRect = TextureRect.new()
+		btn_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		btn_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		btn_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		btn_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		btn_icon.custom_minimum_size = Vector2(16, 16)
 		btn_icon.texture = icon_lock
 		btn_icon.modulate = Color(0.95, 0.95, 1.0, 0.95)
@@ -2160,9 +2221,11 @@ func _refresh_level_grid_buttons() -> void:
 		active_frontier_btn.pivot_offset = p_sz / 2.0
 		if current_level_pulse_tw and current_level_pulse_tw.is_valid():
 			current_level_pulse_tw.kill()
-		current_level_pulse_tw = create_tween().set_loops()
-		current_level_pulse_tw.tween_property(active_frontier_btn, "scale", Vector2(1.05, 1.05), 0.75).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		current_level_pulse_tw.tween_property(active_frontier_btn, "scale", Vector2.ONE, 0.75).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		current_level_pulse_tw = null
+		if level_select_view != null and level_select_view.visible and DisplayServer.get_name() != "headless":
+			current_level_pulse_tw = active_frontier_btn.create_tween().set_loops()
+			current_level_pulse_tw.tween_property(active_frontier_btn, "scale", Vector2(1.05, 1.05), 0.75).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+			current_level_pulse_tw.tween_property(active_frontier_btn, "scale", Vector2.ONE, 0.75).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		_scroll_to_button(active_frontier_btn)
 
 
@@ -2285,7 +2348,7 @@ func _on_daily_shift_pressed() -> void:
 	if save_mgr != null and save_mgr.has_method("get_daily_challenge_info"):
 		var d_info: Dictionary = save_mgr.get_daily_challenge_info()
 		save_mgr.set_meta("is_daily_challenge", true)
-		save_mgr.last_played_level = d_info["level_index"]
+		save_mgr.set_meta("daily_challenge_level", int(d_info["level_index"]))
 	_transition_to_game()
 
 
@@ -2399,7 +2462,11 @@ func _create_star_vault_modal() -> PanelContainer:
 	modal.add_child(center)
 
 	var card: PanelContainer = PanelContainer.new()
-	card.custom_minimum_size = Vector2(360, 260)
+	card.name = "VaultCard"
+	var vp_sz: Vector2 = get_viewport_rect().size if (is_inside_tree() and get_viewport() != null) else (size if size != Vector2.ZERO else Vector2(540.0, 960.0))
+	var insets: Dictionary = safe_area_mgr.get_safe_insets(self) if safe_area_mgr else {"top": 0.0, "bottom": 0.0, "left": 0.0, "right": 0.0}
+	var avail_w: float = maxf(260.0, vp_sz.x - insets.get("left", 0.0) - insets.get("right", 0.0) - 32.0)
+	card.custom_minimum_size = Vector2(minf(360.0, avail_w), 260)
 	card.theme_type_variation = &"ConsoleCard"
 	center.add_child(card)
 
@@ -2585,8 +2652,9 @@ class TouchScrollController extends Node:
 			var tr: SceneTree = scroll_cnt.get_tree()
 			if tr != null:
 				tr.create_timer(0.12).timeout.connect(func():
-					is_scrolling = false
-				)
+					if is_instance_valid(self):
+						is_scrolling = false
+				, CONNECT_ONE_SHOT)
 			else:
 				is_scrolling = false
 		else:

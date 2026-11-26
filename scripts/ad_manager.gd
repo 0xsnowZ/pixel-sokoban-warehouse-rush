@@ -104,6 +104,14 @@ func _wire_plugin_signals() -> void:
 		"user_earned_rewarded", "on_user_earned_rewarded", "rewarded_earned", "_on_rewarded_video_ad_completed"
 	], _on_plugin_rewarded_earned)
 
+	_connect_signal_variant([
+		"interstitial_ad_failed_to_load", "on_interstitial_ad_failed_to_load", "interstitial_failed_to_load"
+	], _on_plugin_interstitial_failed_to_load)
+
+	_connect_signal_variant([
+		"rewarded_ad_failed_to_load", "on_rewarded_ad_failed_to_load", "rewarded_failed_to_load"
+	], _on_plugin_rewarded_failed_to_load)
+
 
 func _connect_signal_variant(variants: Array[String], callback: Callable) -> void:
 	if _plugin_singleton == null:
@@ -120,6 +128,13 @@ func _on_plugin_interstitial_loaded() -> void:
 	interstitial_loaded.emit()
 
 
+func _on_plugin_interstitial_failed_to_load(error_code: Variant = 0) -> void:
+	is_interstitial_loaded = false
+	is_showing_ad = false
+	var code: int = int(error_code) if (error_code is int or error_code is float) else -1
+	interstitial_failed_to_load.emit(code)
+
+
 func _on_plugin_interstitial_opened() -> void:
 	is_showing_ad = true
 	interstitial_opened.emit()
@@ -134,6 +149,13 @@ func _on_plugin_interstitial_closed() -> void:
 func _on_plugin_rewarded_loaded() -> void:
 	is_rewarded_loaded = true
 	rewarded_loaded.emit()
+
+
+func _on_plugin_rewarded_failed_to_load(error_code: Variant = 0) -> void:
+	is_rewarded_loaded = false
+	is_showing_rewarded = false
+	var code: int = int(error_code) if (error_code is int or error_code is float) else -1
+	rewarded_failed_to_load.emit(code)
 
 
 func _on_plugin_rewarded_opened() -> void:

@@ -80,8 +80,10 @@ func is_level_unlocked(level_index: int) -> bool:
 
 ## Unlocks up to target_level_index if it is higher than current unlocked_level.
 func unlock_level(target_level_index: int) -> bool:
-	if target_level_index > unlocked_level:
-		unlocked_level = target_level_index
+	var max_idx: int = OPTIMAL_MOVES.size() - 1
+	var clamped_target: int = mini(target_level_index, max_idx)
+	if clamped_target > unlocked_level:
+		unlocked_level = clamped_target
 		level_unlocked.emit(unlocked_level)
 		return true
 	return false
@@ -681,6 +683,11 @@ func record_crate_push() -> void:
 	total_crates_pushed += 1
 
 
+func undo_crate_push() -> void:
+	if total_crates_pushed > 0:
+		total_crates_pushed -= 1
+
+
 func is_achievement_unlocked(id: String) -> bool:
 	return unlocked_achievements.has(id)
 
@@ -765,13 +772,41 @@ func get_today_date_str() -> String:
 	return "%04d-%02d-%02d" % [d.year, d.month, d.day]
 
 
+func _date_str_to_noon_unix(date_str: String) -> int:
+	var parts: PackedStringArray = date_str.split("-")
+	if parts.size() != 3:
+		return -1
+	var y: int = parts[0].to_int()
+	var m: int = parts[1].to_int()
+	var d: int = parts[2].to_int()
+	if y <= 0 or m < 1 or m > 12 or d < 1 or d > 31:
+		return -1
+	return Time.get_unix_time_from_datetime_dict({
+		"year": y,
+		"month": m,
+		"day": d,
+		"hour": 12,
+		"minute": 0,
+		"second": 0
+	})
+
+
+func _is_consecutive_day(prev_date_str: String, curr_date_str: String) -> bool:
+	var prev_unix: int = _date_str_to_noon_unix(prev_date_str)
+	var curr_unix: int = _date_str_to_noon_unix(curr_date_str)
+	if prev_unix < 0 or curr_unix < 0:
+		return false
+	var diff_days: int = int(round(float(curr_unix - prev_unix) / 86400.0))
+	return diff_days == 1
+
+
 func get_daily_challenge_info() -> Dictionary:
 	var today: String = get_today_date_str()
 	if daily_challenge_date != today:
-		# New calendar day detected
-		if not daily_challenge_date.is_empty() and not daily_challenge_completed:
-			# Missed yesterday's challenge -> reset streak
-			daily_challenge_streak = 0
+		# New calendar day detected: streak survives only if previous shift was yesterday AND completed
+		if not daily_challenge_date.is_empty():
+			if not daily_challenge_completed or not _is_consecutive_day(daily_challenge_date, today):
+				daily_challenge_streak = 0
 		daily_challenge_date = today
 		daily_challenge_completed = false
 		save_data()
@@ -808,7 +843,8 @@ func record_daily_challenge_completed() -> Dictionary:
 
 ## Unlocks the next level and advances progress when player uses a Level Skip lifeline.
 func skip_level(level_index: int) -> bool:
-	var target: int = level_index + 1
+	var max_idx: int = OPTIMAL_MOVES.size() - 1
+	var target: int = mini(level_index + 1, max_idx)
 	unlock_level(target)
 	last_played_level = target
 	save_data()
