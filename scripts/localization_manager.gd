@@ -754,14 +754,14 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "ف. %d"
 	},
 	"STAR_PROGRESS_PILL": {
-		"en": "%d / 225 Stars • Sector %d: %s",
-		"fr": "%d / 225 Étoiles • Secteur %d : %s",
-		"ar": "%d / 225 نجمة • القطاع %d: %s"
+		"en": "%d/225  •  %s",
+		"fr": "%d/225  •  %s",
+		"ar": "%d/225  •  %s"
 	},
 	"STAR_PROGRESS_PILL_CROWN": {
-		"en": "%d / 225 Stars • %d 👑 • Sector %d: %s",
-		"fr": "%d / 225 Étoiles • %d 👑 • Secteur %d : %s",
-		"ar": "%d / 225 نجمة • %d 👑 • القطاع %d: %s"
+		"en": "%d/225 • %d 👑 • %s",
+		"fr": "%d/225 • %d 👑 • %s",
+		"ar": "%d/225 • %d 👑 • %s"
 	},
 	"SECTOR_TAB_0": {
 		"en": "BAY",
@@ -799,9 +799,9 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "%d/75 مكتمل • %d%%"
 	},
 	"NEXT_VAULT_LABEL": {
-		"en": "NEXT VAULT: %s (%d★)",
-		"fr": "PROCHAIN COFFRE : %s (%d★)",
-		"ar": "الخزنة التالية: %s (%d★)"
+		"en": "Next Vault: %s · %d★",
+		"fr": "Prochain coffre : %s · %d★",
+		"ar": "الخزنة التالية: %s · %d★"
 	},
 	"ALL_VAULTS_SECURED": {
 		"en": "ALL VAULT REWARDS SECURED ✓",

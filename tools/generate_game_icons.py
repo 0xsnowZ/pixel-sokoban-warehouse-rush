@@ -103,50 +103,74 @@ def make_home() -> None:
     render_svg_icon(body, "icon_home.png", viewbox="-64 -48 704 608")
 
 
+def save_pil_icon(img: Image.Image, out_name: str, size: int = 64) -> None:
+    res = img.resize((size, size), Image.Resampling.LANCZOS)
+    path = os.path.join(OUT_DIR, out_name)
+    res.save(path, format="PNG")
+    print(f"Generated {path} ({size}x{size} PIL)")
+
+
 def make_music_on() -> None:
-    body = """
-  <g filter="url(#shadow)">
-    <!-- Beamed Double Eighth Notes -->
-    <path d="M 176 352 L 176 96 L 432 56 L 432 312" fill="none" stroke="#0F172A" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/>
-    <ellipse cx="132" cy="368" rx="74" ry="56" transform="rotate(-18 132 368)" fill="#0F172A"/>
-    <ellipse cx="388" cy="328" rx="74" ry="56" transform="rotate(-18 388 328)" fill="#0F172A"/>
+    canvas_size = 256
+    im = Image.new("RGBA", (canvas_size, canvas_size), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
 
-    <path d="M 176 352 L 176 96 L 432 56 L 432 312" fill="none" stroke="url(#goldVert)" stroke-width="38" stroke-linecap="round" stroke-linejoin="round"/>
-    <polygon points="157,74 451,28 451,106 157,152" fill="url(#goldVert)" stroke="#0F172A" stroke-width="20" stroke-linejoin="round"/>
-    <line x1="176" y1="88" x2="432" y2="48" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" opacity="0.85"/>
+    # Shadow
+    d.ellipse([58, 170, 108, 214], fill=(0, 0, 0, 90))
+    d.ellipse([154, 140, 204, 184], fill=(0, 0, 0, 90))
 
-    <ellipse cx="132" cy="368" rx="60" ry="44" transform="rotate(-18 132 368)" fill="url(#goldGrad)" stroke="#0F172A" stroke-width="14"/>
-    <ellipse cx="118" cy="356" rx="22" ry="12" transform="rotate(-18 118 356)" fill="#FFFFFF" opacity="0.72"/>
+    col_gold = (250, 195, 40, 255)
+    col_hilite = (255, 245, 190, 255)
+    col_dark = (175, 110, 10, 255)
 
-    <ellipse cx="388" cy="328" rx="60" ry="44" transform="rotate(-18 388 328)" fill="url(#goldGrad)" stroke="#0F172A" stroke-width="14"/>
-    <ellipse cx="374" cy="316" rx="22" ry="12" transform="rotate(-18 374 316)" fill="#FFFFFF" opacity="0.72"/>
+    # Noteheads
+    d.ellipse([54, 162, 104, 206], fill=col_gold, outline=col_dark, width=5)
+    d.ellipse([64, 170, 84, 190], fill=col_hilite)
+    d.ellipse([150, 132, 200, 176], fill=col_gold, outline=col_dark, width=5)
+    d.ellipse([160, 140, 180, 160], fill=col_hilite)
 
-    <!-- Specular Sparkle -->
-    <polygon points="96,42 106,66 130,76 106,86 96,110 86,86 62,76 86,66" fill="#FEF08A" stroke="#0F172A" stroke-width="8"/>
-  </g>"""
-    render_svg_icon(body, "icon_music_on.png")
+    # Stems
+    d.rectangle([94, 60, 106, 184], fill=col_gold)
+    d.line([(95, 60), (95, 184)], fill=col_hilite, width=3)
+    d.rectangle([190, 42, 202, 154], fill=col_gold)
+    d.line([(191, 42), (191, 154)], fill=col_hilite, width=3)
+
+    # Top Beam
+    pts = [(94, 60), (202, 42), (202, 74), (94, 92)]
+    d.polygon(pts, fill=col_gold)
+    d.line([(94, 60), (202, 42)], fill=col_hilite, width=5)
+    d.line([(94, 92), (202, 74)], fill=col_dark, width=4)
+
+    # Sparkle glint
+    d.line([(128, 30), (128, 42)], fill=(255, 255, 255, 230), width=3)
+    d.line([(122, 36), (134, 36)], fill=(255, 255, 255, 230), width=3)
+
+    save_pil_icon(im, "icon_music_on.png")
 
 
 def make_music_off() -> None:
-    body = """
-  <g filter="url(#shadow)">
-    <!-- Brushed Steel Muted Notes -->
-    <g opacity="0.88">
-      <path d="M 176 352 L 176 96 L 432 56 L 432 312" fill="none" stroke="#0F172A" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/>
-      <ellipse cx="132" cy="368" rx="74" ry="56" transform="rotate(-18 132 368)" fill="#0F172A"/>
-      <ellipse cx="388" cy="328" rx="74" ry="56" transform="rotate(-18 388 328)" fill="#0F172A"/>
-      <path d="M 176 352 L 176 96 L 432 56 L 432 312" fill="none" stroke="url(#steelGrad)" stroke-width="38" stroke-linecap="round" stroke-linejoin="round"/>
-      <polygon points="157,74 451,28 451,106 157,152" fill="url(#steelGrad)" stroke="#0F172A" stroke-width="20" stroke-linejoin="round"/>
-      <ellipse cx="132" cy="368" rx="60" ry="44" transform="rotate(-18 132 368)" fill="url(#steelGrad)" stroke="#0F172A" stroke-width="14"/>
-      <ellipse cx="388" cy="328" rx="60" ry="44" transform="rotate(-18 388 328)" fill="url(#steelGrad)" stroke="#0F172A" stroke-width="14"/>
-    </g>
+    canvas_size = 256
+    im = Image.new("RGBA", (canvas_size, canvas_size), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
 
-    <!-- Bold Outlined Crimson Slash -->
-    <line x1="60" y1="60" x2="452" y2="452" stroke="#0F172A" stroke-width="68" stroke-linecap="round"/>
-    <line x1="60" y1="60" x2="452" y2="452" stroke="url(#crimsonGrad)" stroke-width="40" stroke-linecap="round"/>
-    <line x1="68" y1="54" x2="444" y2="430" stroke="#FECACA" stroke-width="8" stroke-linecap="round" opacity="0.85"/>
-  </g>"""
-    render_svg_icon(body, "icon_music_off.png")
+    col_slate = (110, 125, 145, 255)
+    col_dark = (55, 68, 85, 255)
+
+    # Noteheads
+    d.ellipse([54, 162, 104, 206], fill=col_slate, outline=col_dark, width=5)
+    d.ellipse([150, 132, 200, 176], fill=col_slate, outline=col_dark, width=5)
+    # Stems
+    d.rectangle([94, 60, 106, 184], fill=col_slate)
+    d.rectangle([190, 42, 202, 154], fill=col_slate)
+    # Beam
+    d.polygon([(94, 60), (202, 42), (202, 74), (94, 92)], fill=col_slate)
+
+    # Red Slash Bar
+    d.line([(38, 38), (218, 218)], fill=(0, 0, 0, 140), width=24)
+    d.line([(40, 40), (216, 216)], fill=(235, 55, 60, 255), width=18)
+    d.line([(42, 38), (218, 214)], fill=(255, 140, 140, 255), width=4)
+
+    save_pil_icon(im, "icon_music_off.png")
 
 
 def make_control_swipe() -> None:

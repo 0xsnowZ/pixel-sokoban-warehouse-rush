@@ -46,6 +46,7 @@ var icon_control_gamepad: Texture2D = preload("res://assets/icons/icon_control_g
 var _sector_styles_completed: Array[StyleBoxFlat] = []
 var _sector_styles_hover: Array[StyleBoxFlat] = []
 var _sector_styles_pressed: Array[StyleBoxFlat] = []
+var _sector_styles_locked: Array[StyleBoxFlat] = []
 var _frontier_style: StyleBoxFlat = null
 var _locked_style: StyleBoxFlat = null
 var _sector_font_colors: Array[Color] = [
@@ -306,7 +307,7 @@ func _ready() -> void:
 	if locker_btn:
 		_setup_center_box_button(locker_btn, locker_btn_icon, icon_locker, locker_btn_label)
 	if star_progress_btn:
-		_apply_button_icon(star_progress_btn, icon_star_full, 20, 8)
+		_style_star_progress_pill()
 	if level_select_btn:
 		if level_select_btn_icon != null and level_select_btn_label != null:
 			_setup_center_box_button(level_select_btn, level_select_btn_icon, icon_levels, level_select_btn_label)
@@ -316,8 +317,7 @@ func _ready() -> void:
 	_init_sector_styles()
 	_setup_sector_tabs()
 	if back_btn:
-		_apply_button_icon(back_btn, icon_back, 18, 8)
-		back_btn.text = "RETURN"
+		_style_back_pill_button()
 
 	_show_main_view()
 	_update_menu_state()
@@ -537,11 +537,11 @@ func _clamp_modal_to_safe_area(modal: Control) -> void:
 	var target_w: float = minf(absf(modal.offset_right - modal.offset_left), avail_w)
 	var target_h: float = minf(absf(modal.offset_bottom - modal.offset_top), avail_h)
 	if target_w > 0.0:
-		modal.offset_left = -target_w * 0.5
+		modal.offset_left = - target_w * 0.5
 		modal.offset_right = target_w * 0.5
 	if target_h > 0.0:
 		var y_bias: float = (insets.get("top", 0.0) - insets.get("bottom", 0.0)) * 0.5
-		modal.offset_top = -target_h * 0.5 + y_bias
+		modal.offset_top = - target_h * 0.5 + y_bias
 		modal.offset_bottom = target_h * 0.5 + y_bias
 
 
@@ -1133,6 +1133,94 @@ func _refresh_achievements_ui() -> void:
 		achievements_items_vbox.add_child(card)
 
 
+func _make_fixed_icon(tex: Texture2D, target_px: int) -> Texture2D:
+	if tex == null:
+		return null
+	var img: Image = tex.get_image()
+	if img == null:
+		return tex
+	var copy_img: Image = img.duplicate()
+	copy_img.resize(target_px, target_px, Image.INTERPOLATE_LANCZOS)
+	return ImageTexture.create_from_image(copy_img)
+
+
+func _style_star_progress_pill() -> void:
+	if star_progress_btn == null:
+		return
+	star_progress_btn.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	star_progress_btn.clip_text = false
+	star_progress_btn.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+	star_progress_btn.custom_minimum_size = Vector2(0, 42)
+	star_progress_btn.icon = _make_fixed_icon(icon_star_full, 18)
+	star_progress_btn.expand_icon = false
+	star_progress_btn.add_theme_constant_override("h_separation", 8)
+
+	var pill_norm: StyleBoxFlat = StyleBoxFlat.new()
+	pill_norm.bg_color = Color(0.065, 0.095, 0.155, 0.90)
+	pill_norm.border_color = Color(0.96, 0.78, 0.30, 0.45)
+	pill_norm.border_width_left = 1
+	pill_norm.border_width_top = 1
+	pill_norm.border_width_right = 1
+	pill_norm.border_width_bottom = 2
+	pill_norm.set_corner_radius_all(21)
+	pill_norm.content_margin_left = 12.0
+	pill_norm.content_margin_right = 16.0
+	pill_norm.content_margin_top = 6.0
+	pill_norm.content_margin_bottom = 7.0
+	pill_norm.shadow_color = Color(0, 0, 0, 0.40)
+	pill_norm.shadow_size = 8
+	pill_norm.shadow_offset = Vector2(0, 3)
+
+	var pill_hov: StyleBoxFlat = pill_norm.duplicate()
+	pill_hov.bg_color = Color(0.11, 0.15, 0.24, 0.96)
+	pill_hov.border_color = Color(0.98, 0.84, 0.38, 0.92)
+	pill_hov.shadow_color = Color(0.96, 0.78, 0.28, 0.28)
+	pill_hov.shadow_size = 10
+
+	var pill_prs: StyleBoxFlat = pill_norm.duplicate()
+	pill_prs.bg_color = Color(0.05, 0.07, 0.12, 0.98)
+	pill_prs.border_width_bottom = 1
+
+	star_progress_btn.add_theme_stylebox_override("normal", pill_norm)
+	star_progress_btn.add_theme_stylebox_override("hover", pill_hov)
+	star_progress_btn.add_theme_stylebox_override("pressed", pill_prs)
+
+
+func _style_back_pill_button() -> void:
+	if back_btn == null:
+		return
+	back_btn.icon = _make_fixed_icon(icon_back, 15)
+	back_btn.expand_icon = false
+	back_btn.add_theme_constant_override("h_separation", 6)
+	back_btn.text = "Back"
+	back_btn.custom_minimum_size = Vector2(84, 38)
+
+	var b_norm: StyleBoxFlat = StyleBoxFlat.new()
+	b_norm.bg_color = Color(0.08, 0.11, 0.175, 0.90)
+	b_norm.border_color = Color(0.32, 0.44, 0.62, 0.48)
+	b_norm.border_width_left = 1
+	b_norm.border_width_top = 1
+	b_norm.border_width_right = 1
+	b_norm.border_width_bottom = 2
+	b_norm.set_corner_radius_all(19)
+	b_norm.content_margin_left = 12.0
+	b_norm.content_margin_right = 14.0
+	b_norm.content_margin_top = 5.0
+	b_norm.content_margin_bottom = 6.0
+
+	var b_hov: StyleBoxFlat = b_norm.duplicate()
+	b_hov.bg_color = Color(0.14, 0.19, 0.29, 0.96)
+	b_hov.border_color = Color(0.96, 0.80, 0.32, 0.88)
+
+	var b_prs: StyleBoxFlat = b_norm.duplicate()
+	b_prs.bg_color = Color(0.06, 0.085, 0.14, 0.96)
+	b_prs.border_width_bottom = 1
+
+	back_btn.add_theme_stylebox_override("normal", b_norm)
+	back_btn.add_theme_stylebox_override("hover", b_hov)
+	back_btn.add_theme_stylebox_override("pressed", b_prs)
+
+
 func _setup_center_box_button(btn: Button, icon_rect: TextureRect, tex: Texture2D, lbl: Label) -> void:
 	if btn == null:
 		return
@@ -1547,12 +1635,12 @@ func _update_menu_state() -> void:
 			ch_title = save_mgr.get_chapter_info(sector_idx).get("name", "Cargo Bay")
 		if loc_mgr:
 			if total_crowns > 0:
-				star_progress_btn.text = loc_mgr.tr_text("STAR_PROGRESS_PILL_CROWN", [total_stars, total_crowns, sector_idx + 1, ch_title])
+				star_progress_btn.text = loc_mgr.tr_text("STAR_PROGRESS_PILL_CROWN", [total_stars, total_crowns, ch_title])
 			else:
-				star_progress_btn.text = loc_mgr.tr_text("STAR_PROGRESS_PILL", [total_stars, sector_idx + 1, ch_title])
+				star_progress_btn.text = loc_mgr.tr_text("STAR_PROGRESS_PILL", [total_stars, ch_title])
 		else:
 			var crown_str: String = " • %d 👑" % total_crowns if total_crowns > 0 else ""
-			star_progress_btn.text = "%d / 225 Stars%s • Sector %d: %s" % [total_stars, crown_str, sector_idx + 1, ch_title]
+			star_progress_btn.text = "%d/225%s  •  %s" % [total_stars, crown_str, ch_title]
 	if quick_lang_btn:
 		var lang_code: String = loc_mgr.current_language.to_upper() if loc_mgr else "EN"
 		quick_lang_btn.text = lang_code
@@ -1679,9 +1767,9 @@ func _build_level_grid() -> void:
 
 	for i in range(TOTAL_LEVELS_COUNT):
 		var btn: Button = Button.new()
-		btn.custom_minimum_size = Vector2(64, 64)
+		btn.custom_minimum_size = Vector2(58, 66)
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.add_theme_font_size_override("font_size", 14)
+		btn.add_theme_font_size_override("font_size", 15)
 		btn.set_meta("level_index", i)
 		btn.pressed.connect(_on_level_button_pressed.bind(i))
 		_attach_spring_physics(btn)
@@ -1695,16 +1783,16 @@ func _init_sector_styles() -> void:
 		return
 
 	var sector_bg_colors: Array[Color] = [
-		Color(0.11, 0.14, 0.19, 1.0), # S1: Cargo Bay
-		Color(0.08, 0.14, 0.22, 1.0), # S2: Cold Storage
-		Color(0.14, 0.13, 0.18, 1.0), # S3: Cyber Depot
-		Color(0.13, 0.09, 0.22, 1.0)  # S4: Quantum Vault
+		Color(0.11, 0.14, 0.19, 0.94), # S1: Cargo Bay
+		Color(0.08, 0.14, 0.22, 0.94), # S2: Cold Storage
+		Color(0.14, 0.13, 0.19, 0.94), # S3: Cyber Depot
+		Color(0.13, 0.09, 0.22, 0.94)  # S4: Quantum Vault
 	]
 	var sector_border_colors: Array[Color] = [
-		Color(0.88, 0.68, 0.22, 1.0), # Brass / Amber
-		Color(0.28, 0.78, 0.96, 1.0), # Cryo Cyan
-		Color(0.98, 0.75, 0.18, 1.0), # Laser Gold
-		Color(0.78, 0.45, 0.96, 1.0)  # Quantum Violet
+		Color(0.90, 0.70, 0.24, 0.95), # Brass / Amber
+		Color(0.30, 0.80, 0.96, 0.95), # Cryo Cyan
+		Color(0.98, 0.76, 0.20, 0.95), # Laser Gold
+		Color(0.78, 0.48, 0.98, 0.95)  # Quantum Violet
 	]
 
 	for i in range(4):
@@ -1714,96 +1802,87 @@ func _init_sector_styles() -> void:
 		var norm: StyleBoxFlat = StyleBoxFlat.new()
 		norm.bg_color = base_bg
 		norm.border_color = border_col
-		norm.border_width_left = 2
-		norm.border_width_top = 2
-		norm.border_width_right = 2
-		norm.border_width_bottom = 4
-		norm.corner_radius_top_left = 8
-		norm.corner_radius_top_right = 8
-		norm.corner_radius_bottom_right = 8
-		norm.corner_radius_bottom_left = 8
-		norm.shadow_color = Color(border_col.r, border_col.g, border_col.b, 0.22)
-		norm.shadow_size = 3
+		norm.border_width_left = 1
+		norm.border_width_top = 1
+		norm.border_width_right = 1
+		norm.border_width_bottom = 3
+		norm.set_corner_radius_all(12)
+		norm.shadow_color = Color(border_col.r, border_col.g, border_col.b, 0.18)
+		norm.shadow_size = 5
 		norm.shadow_offset = Vector2(0, 2)
 		norm.content_margin_left = 4.0
-		norm.content_margin_top = 5.0
+		norm.content_margin_top = 6.0
 		norm.content_margin_right = 4.0
-		norm.content_margin_bottom = 5.0
+		norm.content_margin_bottom = 6.0
 		_sector_styles_completed.append(norm)
 
 		var hov: StyleBoxFlat = norm.duplicate()
-		hov.bg_color = base_bg.lightened(0.12)
-		hov.shadow_color = Color(border_col.r, border_col.g, border_col.b, 0.35)
-		hov.shadow_size = 5
+		hov.bg_color = base_bg.lightened(0.10)
+		hov.shadow_color = Color(border_col.r, border_col.g, border_col.b, 0.34)
+		hov.shadow_size = 7
 		_sector_styles_hover.append(hov)
 
 		var prs: StyleBoxFlat = norm.duplicate()
-		prs.bg_color = base_bg.darkened(0.15)
-		prs.border_width_top = 4
-		prs.border_width_bottom = 2
+		prs.bg_color = base_bg.darkened(0.14)
+		prs.border_width_top = 2
+		prs.border_width_bottom = 1
 		prs.shadow_size = 1
 		_sector_styles_pressed.append(prs)
 
+		var lck: StyleBoxFlat = StyleBoxFlat.new()
+		lck.bg_color = Color(0.085, 0.11, 0.165, 0.88).lerp(base_bg, 0.25)
+		lck.border_color = Color(border_col.r, border_col.g, border_col.b, 0.26)
+		lck.border_width_left = 1
+		lck.border_width_top = 1
+		lck.border_width_right = 1
+		lck.border_width_bottom = 2
+		lck.set_corner_radius_all(12)
+		lck.content_margin_left = 4.0
+		lck.content_margin_top = 8.0
+		lck.content_margin_right = 4.0
+		lck.content_margin_bottom = 8.0
+		_sector_styles_locked.append(lck)
+
 	# Frontier unlocked style
 	_frontier_style = StyleBoxFlat.new()
-	_frontier_style.bg_color = Color(0.24, 0.18, 0.08, 1.0)
-	_frontier_style.border_color = Color(1.0, 0.85, 0.22, 1.0)
+	_frontier_style.bg_color = Color(0.24, 0.17, 0.06, 0.98)
+	_frontier_style.border_color = Color(1.0, 0.84, 0.28, 1.0)
 	_frontier_style.border_width_left = 2
 	_frontier_style.border_width_top = 2
 	_frontier_style.border_width_right = 2
-	_frontier_style.border_width_bottom = 4
-	_frontier_style.corner_radius_top_left = 8
-	_frontier_style.corner_radius_top_right = 8
-	_frontier_style.corner_radius_bottom_right = 8
-	_frontier_style.corner_radius_bottom_left = 8
-	_frontier_style.shadow_color = Color(1.0, 0.85, 0.22, 0.40)
-	_frontier_style.shadow_size = 6
-	_frontier_style.shadow_offset = Vector2(0, 2)
+	_frontier_style.border_width_bottom = 3
+	_frontier_style.set_corner_radius_all(12)
+	_frontier_style.shadow_color = Color(1.0, 0.80, 0.22, 0.42)
+	_frontier_style.shadow_size = 10
+	_frontier_style.shadow_offset = Vector2(0, 3)
 	_frontier_style.content_margin_left = 4.0
-	_frontier_style.content_margin_top = 5.0
+	_frontier_style.content_margin_top = 6.0
 	_frontier_style.content_margin_right = 4.0
-	_frontier_style.content_margin_bottom = 5.0
+	_frontier_style.content_margin_bottom = 6.0
 
-	# Locked style
-	_locked_style = StyleBoxFlat.new()
-	_locked_style.bg_color = Color(0.08, 0.10, 0.14, 1.0)
-	_locked_style.border_color = Color(0.18, 0.22, 0.28, 0.85)
-	_locked_style.border_width_left = 1
-	_locked_style.border_width_top = 1
-	_locked_style.border_width_right = 1
-	_locked_style.border_width_bottom = 3
-	_locked_style.corner_radius_top_left = 8
-	_locked_style.corner_radius_top_right = 8
-	_locked_style.corner_radius_bottom_right = 8
-	_locked_style.corner_radius_bottom_left = 8
-	_locked_style.content_margin_left = 4.0
-	_locked_style.content_margin_top = 5.0
-	_locked_style.content_margin_right = 4.0
-	_locked_style.content_margin_bottom = 5.0
+	# Locked fallback style
+	_locked_style = _sector_styles_locked[0]
 
 
 func _setup_sector_tabs() -> void:
 	var tab_icons: Array[Texture2D] = [icon_sector_1, icon_sector_2, icon_sector_3, icon_sector_4]
 	var tab_colors: Array[Color] = [
-		Color(0.88, 0.68, 0.22),
-		Color(0.28, 0.78, 0.96),
-		Color(0.98, 0.75, 0.18),
-		Color(0.78, 0.45, 0.96)
+		Color(0.90, 0.70, 0.24),
+		Color(0.30, 0.80, 0.96),
+		Color(0.98, 0.76, 0.20),
+		Color(0.78, 0.48, 0.98)
 	]
 
 	var vault_card: PanelContainer = find_child("VaultMilestoneCard", true, false) as PanelContainer
 	if vault_card != null:
 		var sb: StyleBoxFlat = StyleBoxFlat.new()
-		sb.bg_color = Color(0.06, 0.08, 0.12, 0.90)
-		sb.border_color = Color(0.85, 0.65, 0.20, 0.65)
+		sb.bg_color = Color(0.96, 0.78, 0.28, 0.08)
+		sb.border_color = Color(0.96, 0.78, 0.28, 0.22)
 		sb.border_width_left = 1
 		sb.border_width_top = 1
 		sb.border_width_right = 1
 		sb.border_width_bottom = 1
-		sb.corner_radius_top_left = 6
-		sb.corner_radius_top_right = 6
-		sb.corner_radius_bottom_right = 6
-		sb.corner_radius_bottom_left = 6
+		sb.set_corner_radius_all(10)
 		vault_card.add_theme_stylebox_override("panel", sb)
 
 	for i in range(4):
@@ -1817,28 +1896,29 @@ func _setup_sector_tabs() -> void:
 
 		var col: Color = tab_colors[i]
 		var tab_norm: StyleBoxFlat = StyleBoxFlat.new()
-		tab_norm.bg_color = Color(0.08, 0.10, 0.15, 0.95)
-		tab_norm.border_color = Color(col.r, col.g, col.b, 0.55)
+		tab_norm.bg_color = Color(0.075, 0.10, 0.155, 0.90)
+		tab_norm.border_color = Color(col.r, col.g, col.b, 0.45)
 		tab_norm.border_width_left = 1
 		tab_norm.border_width_top = 1
 		tab_norm.border_width_right = 1
-		tab_norm.border_width_bottom = 2
-		tab_norm.corner_radius_top_left = 8
-		tab_norm.corner_radius_top_right = 8
-		tab_norm.corner_radius_bottom_right = 8
-		tab_norm.corner_radius_bottom_left = 8
+		tab_norm.border_width_bottom = 3
+		tab_norm.set_corner_radius_all(12)
+		tab_norm.shadow_color = Color(0, 0, 0, 0.28)
+		tab_norm.shadow_size = 4
+		tab_norm.shadow_offset = Vector2(0, 2)
 		tab_btn.add_theme_stylebox_override("normal", tab_norm)
 
 		var tab_hov: StyleBoxFlat = tab_norm.duplicate()
-		tab_hov.bg_color = Color(0.12, 0.15, 0.22, 1.0)
+		tab_hov.bg_color = Color(0.115, 0.15, 0.23, 0.98)
 		tab_hov.border_color = col
-		tab_hov.shadow_color = Color(col.r, col.g, col.b, 0.3)
-		tab_hov.shadow_size = 4
+		tab_hov.shadow_color = Color(col.r, col.g, col.b, 0.30)
+		tab_hov.shadow_size = 7
 		tab_btn.add_theme_stylebox_override("hover", tab_hov)
 
 		var tab_prs: StyleBoxFlat = tab_norm.duplicate()
-		tab_prs.bg_color = Color(0.06, 0.08, 0.12, 1.0)
+		tab_prs.bg_color = Color(0.06, 0.08, 0.125, 1.0)
 		tab_prs.border_color = col
+		tab_prs.border_width_bottom = 2
 		tab_btn.add_theme_stylebox_override("pressed", tab_prs)
 
 		if not tab_btn.pressed.is_connected(_on_sector_tab_pressed.bind(i)):
@@ -1943,7 +2023,7 @@ func _refresh_level_grid_buttons() -> void:
 
 	if vault_card != null and vault_lbl != null:
 		if next_vault_name != "":
-			vault_lbl.text = loc_mgr.tr_text("NEXT_VAULT_LABEL", [next_vault_name.to_upper(), next_vault_stars]) if loc_mgr else ("NEXT VAULT: %s (%d★)" % [next_vault_name.to_upper(), next_vault_stars])
+			vault_lbl.text = loc_mgr.tr_text("NEXT_VAULT_LABEL", [next_vault_name, next_vault_stars]) if loc_mgr else ("Next Vault: %s · %d★" % [next_vault_name, next_vault_stars])
 			if vault_icon_rect != null:
 				vault_icon_rect.texture = icon_trophy
 		else:
@@ -2027,6 +2107,7 @@ func _refresh_level_grid_buttons() -> void:
 			child.text = "%d\n%s" % [lvl_idx + 1, star_str]
 			child.icon = null
 			child.disabled = false
+			child.add_theme_font_size_override("font_size", 14)
 			child.theme_type_variation = &"LevelBtnCompleted"
 			child.modulate = Color.WHITE
 			if ch_idx < _sector_styles_completed.size():
@@ -2038,6 +2119,7 @@ func _refresh_level_grid_buttons() -> void:
 			child.text = "%d" % [lvl_idx + 1]
 			child.icon = null
 			child.disabled = false
+			child.add_theme_font_size_override("font_size", 18)
 			child.theme_type_variation = &"LevelBtnCurrent"
 			child.modulate = Color.WHITE
 			if _frontier_style != null:
@@ -2049,14 +2131,15 @@ func _refresh_level_grid_buttons() -> void:
 		else:
 			if is_available:
 				child.text = "%d" % [lvl_idx + 1]
-				child.add_theme_font_size_override("font_size", 13)
+				child.add_theme_font_size_override("font_size", 15)
 				child.icon = icon_lock
 				child.expand_icon = true
 				child.add_theme_constant_override("icon_max_width", 14)
-				child.add_theme_constant_override("h_separation", 4)
-				child.icon_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-				child.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
-				child.add_theme_color_override("icon_disabled_color", Color(1.0, 1.0, 1.0, 0.72))
+				child.add_theme_constant_override("h_separation", 2)
+				child.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+				child.vertical_icon_alignment = VERTICAL_ALIGNMENT_BOTTOM
+				child.add_theme_color_override("icon_disabled_color", Color(0.84, 0.90, 0.98, 0.45))
+				child.add_theme_color_override("font_disabled_color", Color(0.74, 0.80, 0.90, 0.72))
 				if not is_mobile_or_touch:
 					child.tooltip_text = "Level %d • %s (Locked)" % [lvl_idx + 1, ch_title_str]
 				else:
@@ -2067,9 +2150,10 @@ func _refresh_level_grid_buttons() -> void:
 			child.disabled = true
 			child.theme_type_variation = &"LevelBtnLocked"
 			child.modulate = Color.WHITE
-			if _locked_style != null:
-				child.add_theme_stylebox_override("disabled", _locked_style)
-				child.add_theme_stylebox_override("normal", _locked_style)
+			var sec_locked_sb: StyleBoxFlat = _sector_styles_locked[ch_idx] if ch_idx < _sector_styles_locked.size() else _locked_style
+			if sec_locked_sb != null:
+				child.add_theme_stylebox_override("disabled", sec_locked_sb)
+				child.add_theme_stylebox_override("normal", sec_locked_sb)
 
 	if active_frontier_btn != null and active_frontier_btn.is_inside_tree():
 		var p_sz: Vector2 = active_frontier_btn.custom_minimum_size if active_frontier_btn.size == Vector2.ZERO else active_frontier_btn.size
