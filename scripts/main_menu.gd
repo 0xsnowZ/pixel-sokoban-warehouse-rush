@@ -29,6 +29,18 @@ var icon_sector_2: Texture2D = preload("res://assets/icons/icon_sector_2.png")
 var icon_sector_3: Texture2D = preload("res://assets/icons/icon_sector_3.png")
 var icon_sector_4: Texture2D = preload("res://assets/icons/icon_sector_4.png")
 var icon_undo: Texture2D = preload("res://assets/icons/icon_undo.png")
+var icon_back: Texture2D = preload("res://assets/icons/icon_back.png")
+var icon_levels: Texture2D = preload("res://assets/icons/icon_levels.png")
+var icon_crown: Texture2D = preload("res://assets/icons/icon_crown.png")
+var icon_music_on: Texture2D = preload("res://assets/icons/icon_music_on.png")
+var icon_music_off: Texture2D = preload("res://assets/icons/icon_music_off.png")
+var icon_sfx: Texture2D = preload("res://assets/icons/icon_sfx.png")
+var icon_haptics: Texture2D = preload("res://assets/icons/icon_haptics.png")
+var icon_globe: Texture2D = preload("res://assets/icons/icon_globe.png")
+var icon_info: Texture2D = preload("res://assets/icons/icon_info.png")
+var icon_control_swipe: Texture2D = preload("res://assets/icons/icon_control_swipe.png")
+var icon_control_dpad: Texture2D = preload("res://assets/icons/icon_control_dpad.png")
+var icon_control_gamepad: Texture2D = preload("res://assets/icons/icon_control_gamepad.png")
 
 # Thematic Sector Dispatch Styling & Cached StyleBoxes
 var _sector_styles_completed: Array[StyleBoxFlat] = []
@@ -77,6 +89,8 @@ var achievement_mgr: Node = null
 @onready var locker_btn: Button = _find_button("LockerBtn", "MainView/BottomMargin/ActionDeck/DualDeck/LockerBtn")
 @onready var locker_btn_label: Label = find_child("LockerBtn", true, false).find_child("Label", true, false) as Label if find_child("LockerBtn", true, false) else null
 @onready var locker_btn_icon: TextureRect = find_child("LockerBtn", true, false).find_child("Icon", true, false) as TextureRect if find_child("LockerBtn", true, false) else null
+@onready var level_select_btn_label: Label = find_child("LevelSelectBtn", true, false).find_child("Label", true, false) as Label if find_child("LevelSelectBtn", true, false) else null
+@onready var level_select_btn_icon: TextureRect = find_child("LevelSelectBtn", true, false).find_child("Icon", true, false) as TextureRect if find_child("LevelSelectBtn", true, false) else null
 @onready var locker_modal: PanelContainer = find_child("LockerModal", true, false) as PanelContainer
 @onready var outfits_tab_btn: Button = _find_button("OutfitsTabBtn", "LockerModal/Margin/VBox/TabsHBox/OutfitsTabBtn")
 @onready var crates_tab_btn: Button = _find_button("CratesTabBtn", "LockerModal/Margin/VBox/TabsHBox/CratesTabBtn")
@@ -165,6 +179,9 @@ func _initialize_nodes() -> void:
 		if locker_btn != null:
 			locker_btn_label = locker_btn.find_child("Label", true, false) as Label
 			locker_btn_icon = locker_btn.find_child("Icon", true, false) as TextureRect
+		if level_select_btn != null:
+			level_select_btn_label = level_select_btn.find_child("Label", true, false) as Label
+			level_select_btn_icon = level_select_btn.find_child("Icon", true, false) as TextureRect
 		outfits_tab_btn = _find_button("OutfitsTabBtn", "LockerModal/Margin/VBox/TabsHBox/OutfitsTabBtn")
 		crates_tab_btn = _find_button("CratesTabBtn", "LockerModal/Margin/VBox/TabsHBox/CratesTabBtn")
 		close_locker_btn = _find_button("CloseLockerBtn", "LockerModal/Margin/VBox/CloseLockerBtn")
@@ -287,33 +304,19 @@ func _ready() -> void:
 		settings_btn.text = ""
 		settings_btn.add_theme_constant_override("icon_max_width", 24)
 	if locker_btn:
-		locker_btn.icon = null
-		locker_btn.text = ""
-		locker_btn.tooltip_text = ""
-		if locker_btn_icon != null:
-			locker_btn_icon.texture = icon_locker
-		if locker_btn_label != null:
-			locker_btn.mouse_entered.connect(func(): locker_btn_label.add_theme_color_override("font_color", Color(1, 1, 1, 1)))
-			locker_btn.mouse_exited.connect(func(): locker_btn_label.add_theme_color_override("font_color", Color(0.94, 0.96, 0.98, 1)))
-			locker_btn.button_down.connect(func(): locker_btn_label.add_theme_color_override("font_color", Color(0.98, 0.82, 0.25, 1)))
-			locker_btn.button_up.connect(func(): locker_btn_label.add_theme_color_override("font_color", Color(1, 1, 1, 1) if locker_btn.is_hovered() else Color(0.94, 0.96, 0.98, 1)))
+		_setup_center_box_button(locker_btn, locker_btn_icon, icon_locker, locker_btn_label)
 	if star_progress_btn:
-		star_progress_btn.icon = icon_star_full
-		star_progress_btn.expand_icon = true
-		star_progress_btn.add_theme_constant_override("icon_max_width", 20)
-		star_progress_btn.add_theme_constant_override("h_separation", 8)
-	if continue_btn:
-		continue_btn.icon = null
-	if play_btn:
-		play_btn.icon = null
+		_apply_button_icon(star_progress_btn, icon_star_full, 20, 8)
+	if level_select_btn:
+		if level_select_btn_icon != null and level_select_btn_label != null:
+			_setup_center_box_button(level_select_btn, level_select_btn_icon, icon_levels, level_select_btn_label)
+		else:
+			_apply_button_icon(level_select_btn, icon_levels, 20, 8)
 
 	_init_sector_styles()
 	_setup_sector_tabs()
 	if back_btn:
-		back_btn.icon = icon_undo
-		back_btn.expand_icon = true
-		back_btn.add_theme_constant_override("icon_max_width", 18)
-		back_btn.add_theme_constant_override("h_separation", 6)
+		_apply_button_icon(back_btn, icon_back, 18, 8)
 		back_btn.text = "RETURN"
 
 	_show_main_view()
@@ -1130,7 +1133,61 @@ func _refresh_achievements_ui() -> void:
 		achievements_items_vbox.add_child(card)
 
 
-func _create_achievement_item_card(_ach_id: String, _icon: String, title: String, desc: String, is_unlocked: bool) -> Control:
+func _setup_center_box_button(btn: Button, icon_rect: TextureRect, tex: Texture2D, lbl: Label) -> void:
+	if btn == null:
+		return
+	btn.icon = null
+	btn.text = ""
+	btn.tooltip_text = ""
+	if icon_rect != null:
+		icon_rect.texture = tex
+	if lbl != null and not btn.has_meta("_center_box_feedback"):
+		btn.set_meta("_center_box_feedback", true)
+		btn.mouse_entered.connect(func(): lbl.add_theme_color_override("font_color", Color(1, 1, 1, 1)))
+		btn.mouse_exited.connect(func(): lbl.add_theme_color_override("font_color", Color(0.94, 0.96, 0.98, 1)))
+		btn.button_down.connect(func(): lbl.add_theme_color_override("font_color", Color(0.98, 0.82, 0.25, 1)))
+		btn.button_up.connect(func(): lbl.add_theme_color_override("font_color", Color(1, 1, 1, 1) if btn.is_hovered() else Color(0.94, 0.96, 0.98, 1)))
+
+
+func _apply_button_icon(btn: Button, tex: Texture2D, max_w: int = 20, h_sep: int = 8) -> void:
+	if btn == null:
+		return
+	btn.icon = tex
+	btn.expand_icon = true
+	btn.add_theme_constant_override("icon_max_width", max_w)
+	btn.add_theme_constant_override("h_separation", h_sep)
+
+
+func _apply_compact_button_padding(btn: Button, horiz_pad: int = 10) -> void:
+	if btn == null or btn.has_meta("_compact_pad_applied"):
+		return
+	btn.set_meta("_compact_pad_applied", true)
+	for state_name in ["normal", "hover", "pressed", "focus"]:
+		var sb: StyleBox = btn.get_theme_stylebox(state_name, "Button")
+		if sb != null:
+			var dup_sb: StyleBox = sb.duplicate()
+			dup_sb.content_margin_left = float(horiz_pad)
+			dup_sb.content_margin_right = float(horiz_pad)
+			btn.add_theme_stylebox_override(state_name, dup_sb)
+
+
+func _get_achievement_icon(ach_id: String) -> Texture2D:
+	match ach_id:
+		"first_shift": return icon_play
+		"cargo_master": return icon_sector_1
+		"cold_storage": return icon_sector_2
+		"cyber_master": return icon_sector_3
+		"quantum_master": return icon_sector_4
+		"depot_cleared": return icon_trophy
+		"precision_starter": return icon_star_full
+		"precision_master": return icon_star_full
+		"puzzle_perfectionist": return icon_crown
+		"stylin_porter": return icon_locker
+		"heavy_lifter": return icon_flame
+		_: return icon_trophy
+
+
+func _create_achievement_item_card(ach_id: String, _icon: String, title: String, desc: String, is_unlocked: bool) -> Control:
 	var panel: PanelContainer = PanelContainer.new()
 	panel.custom_minimum_size = Vector2(0, 64)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1151,10 +1208,11 @@ func _create_achievement_item_card(_ach_id: String, _icon: String, title: String
 
 	var icon_rect: TextureRect = TextureRect.new()
 	icon_rect.mouse_filter = Control.MOUSE_FILTER_PASS
-	icon_rect.custom_minimum_size = Vector2(28, 28)
+	icon_rect.custom_minimum_size = Vector2(30, 30)
 	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon_rect.texture = icon_trophy if is_unlocked else icon_lock
+	icon_rect.texture = _get_achievement_icon(ach_id)
+	icon_rect.modulate = Color.WHITE if is_unlocked else Color(0.55, 0.62, 0.72, 0.72)
 	hbox.add_child(icon_rect)
 
 	var info_vbox: VBoxContainer = VBoxContainer.new()
@@ -1213,6 +1271,7 @@ func _update_settings_ui() -> void:
 			music_vol_label.text = "MUSIC: %d%%" % int(m_vol * 100)
 
 	if music_toggle_btn:
+		_apply_button_icon(music_toggle_btn, icon_music_on if m_on else icon_music_off, 18, 8)
 		if loc_mgr:
 			var m_status: String = loc_mgr.tr_text("MENU_SOUND_ON" if m_on else "MENU_SOUND_OFF")
 			music_toggle_btn.text = loc_mgr.tr_text("SETTINGS_MUSIC_TOGGLE", [m_status])
@@ -1221,6 +1280,7 @@ func _update_settings_ui() -> void:
 			music_toggle_btn.text = "MUSIC: " + status_text
 
 	if tap_walk_btn:
+		_apply_button_icon(tap_walk_btn, icon_control_swipe, 18, 8)
 		if loc_mgr:
 			var tw_status: String = loc_mgr.tr_text("MENU_SOUND_ON" if tap_walk_on else "MENU_SOUND_OFF")
 			tap_walk_btn.text = loc_mgr.tr_text("SETTINGS_TAP_WALK", [tw_status])
@@ -1236,6 +1296,7 @@ func _update_settings_ui() -> void:
 			sfx_vol_label.text = "SOUND FX: %d%%" % int(s_vol * 100)
 
 	if track_cycle_btn:
+		_apply_button_icon(track_cycle_btn, icon_music_on, 18, 8)
 		var track_name: String = "Warehouse Chill" if track_idx == 0 else "Industrial Pulse"
 		if loc_mgr:
 			var key: String = "TRACK_LOFI" if track_idx == 0 else "TRACK_INDUSTRIAL"
@@ -1243,13 +1304,46 @@ func _update_settings_ui() -> void:
 		track_cycle_btn.text = track_name
 
 	if control_mode_btn:
+		var scheme_id: int = save_mgr.control_scheme if (save_mgr and "control_scheme" in save_mgr) else 0
+		var ctrl_tex: Texture2D = icon_control_swipe
+		if scheme_id == 1:
+			ctrl_tex = icon_control_dpad
+		elif scheme_id == 2:
+			ctrl_tex = icon_control_gamepad
+		_apply_button_icon(control_mode_btn, ctrl_tex, 20, 8)
 		var mode_name: String = save_mgr.get_control_scheme_name() if save_mgr and save_mgr.has_method("get_control_scheme_name") else "SWIPE"
 		var mode_key: String = "CONTROL_" + mode_name.replace("-", "")
 		var mode_text: String = loc_mgr.tr_text(mode_key) if loc_mgr else mode_name
 		control_mode_btn.text = loc_mgr.tr_text("SETTINGS_CONTROLS", [mode_text]) if loc_mgr else "CONTROLS: %s" % mode_name
 
+	_apply_settings_icons()
+
 	if close_settings_btn and loc_mgr:
 		close_settings_btn.text = loc_mgr.tr_text("SETTINGS_CLOSE")
+
+
+func _apply_settings_icons() -> void:
+	var m_on: bool = save_mgr.music_enabled if (save_mgr and "music_enabled" in save_mgr) else true
+	var scheme_id: int = save_mgr.control_scheme if (save_mgr and "control_scheme" in save_mgr) else 0
+	var ctrl_tex: Texture2D = icon_control_swipe
+	if scheme_id == 1:
+		ctrl_tex = icon_control_dpad
+	elif scheme_id == 2:
+		ctrl_tex = icon_control_gamepad
+	if music_toggle_btn:
+		music_toggle_btn.custom_minimum_size.x = maxf(music_toggle_btn.custom_minimum_size.x, 148.0)
+		_apply_compact_button_padding(music_toggle_btn, 10)
+	_apply_button_icon(music_toggle_btn, icon_music_on if m_on else icon_music_off, 18, 6)
+	_apply_button_icon(track_cycle_btn, icon_music_on, 18, 8)
+	_apply_button_icon(control_mode_btn, ctrl_tex, 20, 8)
+	_apply_button_icon(tap_walk_btn, icon_control_swipe, 18, 8)
+	if sound_btn:
+		sound_btn.custom_minimum_size.x = maxf(sound_btn.custom_minimum_size.x, 148.0)
+		_apply_compact_button_padding(sound_btn, 10)
+	_apply_button_icon(sound_btn, icon_sfx, 18, 6)
+	_apply_button_icon(haptics_btn, icon_haptics, 18, 8)
+	_apply_button_icon(language_btn, icon_globe, 18, 8)
+	_apply_button_icon(credits_btn, icon_info, 18, 8)
 
 
 func _on_music_slider_changed(value: float) -> void:
@@ -1364,7 +1458,11 @@ func _update_menu_state() -> void:
 		if language_btn != null:
 			language_btn.text = loc_mgr.tr_text("MENU_LANGUAGE", [loc_mgr.get_language_display_name()])
 		if level_select_btn != null:
-			level_select_btn.text = loc_mgr.tr_text("MENU_LEVEL_SELECT")
+			if level_select_btn_label != null:
+				level_select_btn.text = ""
+				level_select_btn_label.text = loc_mgr.tr_text("MENU_LEVEL_SELECT")
+			else:
+				level_select_btn.text = loc_mgr.tr_text("MENU_LEVEL_SELECT")
 		if credits_btn != null:
 			credits_btn.text = loc_mgr.tr_text("MENU_CREDITS")
 		if back_btn != null:
@@ -1420,6 +1518,12 @@ func _update_menu_state() -> void:
 				locker_btn_label.text = "SUPPLY DEPOT"
 			else:
 				locker_btn.text = "SUPPLY DEPOT"
+		if level_select_btn:
+			if level_select_btn_label != null:
+				level_select_btn.text = ""
+				level_select_btn_label.text = "LEVEL SELECT"
+			else:
+				level_select_btn.text = "LEVEL SELECT"
 		if achievements_btn:
 			achievements_btn.text = ""
 			achievements_btn.tooltip_text = ""
@@ -1453,6 +1557,8 @@ func _update_menu_state() -> void:
 		var lang_code: String = loc_mgr.current_language.to_upper() if loc_mgr else "EN"
 		quick_lang_btn.text = lang_code
 
+	_apply_settings_icons()
+
 	# Breakout Retention Engine: Daily Shift Hero Card
 	if daily_shift_btn == null:
 		var deck: VBoxContainer = find_child("ActionDeck", true, false) as VBoxContainer
@@ -1463,10 +1569,7 @@ func _update_menu_state() -> void:
 			daily_shift_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			daily_shift_btn.theme_type_variation = &"SecondaryButton"
 			daily_shift_btn.add_theme_font_size_override("font_size", 14)
-			daily_shift_btn.icon = icon_calendar
-			daily_shift_btn.expand_icon = true
-			daily_shift_btn.add_theme_constant_override("icon_max_width", 22)
-			daily_shift_btn.add_theme_constant_override("h_separation", 8)
+			_apply_button_icon(daily_shift_btn, icon_calendar, 22, 8)
 			daily_shift_btn.pressed.connect(_on_daily_shift_pressed)
 			_attach_spring_physics(daily_shift_btn)
 			var dual_deck: Control = deck.find_child("DualDeck", false, false) as Control
@@ -1477,22 +1580,22 @@ func _update_menu_state() -> void:
 				deck.add_child(daily_shift_btn)
 
 	if daily_shift_btn != null and save_mgr != null and save_mgr.has_method("get_daily_challenge_info"):
-		daily_shift_btn.icon = icon_calendar
-		daily_shift_btn.expand_icon = true
-		daily_shift_btn.add_theme_constant_override("icon_max_width", 22)
-		daily_shift_btn.add_theme_constant_override("h_separation", 8)
 		var d_info: Dictionary = save_mgr.get_daily_challenge_info()
 		var streak_count: int = d_info.get("streak", 0)
 		var is_done: bool = d_info.get("is_completed", false)
+		var ds_icon: Texture2D = icon_calendar
 		if is_done:
+			ds_icon = icon_check
 			daily_shift_btn.text = loc_mgr.tr_text("DAILY_SHIFT_CLEARED", [streak_count]) if loc_mgr else ("DAILY SHIFT: CLEARED ✓ (STREAK: %d)" % streak_count)
 			daily_shift_btn.modulate = Color(0.80, 1.0, 0.85)
 		else:
 			if streak_count > 0:
+				ds_icon = icon_flame
 				daily_shift_btn.text = loc_mgr.tr_text("DAILY_SHIFT_STREAK", [streak_count]) if loc_mgr else ("DAILY SHIFT • %d STREAK (+3 HINTS)" % streak_count)
 			else:
 				daily_shift_btn.text = loc_mgr.tr_text("DAILY_SHIFT_PLAY") if loc_mgr else "DAILY SHIFT • PLAY (+3 HINTS)"
 			daily_shift_btn.modulate = Color(1.0, 0.92, 0.55)
+		_apply_button_icon(daily_shift_btn, ds_icon, 22, 8)
 
 
 func _on_language_pressed() -> void:
@@ -2128,8 +2231,13 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 		title_lbl.text = loc_mgr.tr_text("VAULT_UNLOCKED_TITLE") if loc_mgr else "★ STAR VAULT UNLOCKED! ★"
 	var icon_rect: TextureRect = star_vault_modal.find_child("VaultIconRect", true, false) as TextureRect
 	if icon_rect:
-		if vault.get("reward_type") == "hints":
+		var skin_id_v: String = vault.get("skin_id", "")
+		if vault.get("stars", 0) >= 210:
+			icon_rect.texture = icon_crown
+		elif vault.get("reward_type") == "hints":
 			icon_rect.texture = icon_hint
+		elif skin_id_v == "golden_porter":
+			icon_rect.texture = icon_crown
 		else:
 			icon_rect.texture = icon_locker
 	if icon_lbl:

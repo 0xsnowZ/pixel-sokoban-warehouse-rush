@@ -316,6 +316,7 @@ var icon_hint: Texture2D = preload("res://assets/icons/icon_hint.png")
 var icon_trophy: Texture2D = preload("res://assets/icons/icon_trophy.png")
 var icon_lock: Texture2D = preload("res://assets/icons/icon_lock.png")
 var icon_check: Texture2D = preload("res://assets/icons/icon_check.png")
+var icon_crown: Texture2D = preload("res://assets/icons/icon_crown.png")
 
 
 func _initialize_nodes() -> void:
@@ -1166,6 +1167,22 @@ func _on_level_won() -> void:
 		level_placard_label.text = loc_mgr.tr_text("WIN_LEVEL_PLACARD", [current_level_index + 1, ch_title_text.to_upper()]) if loc_mgr else ("LEVEL %d  •  %s" % [current_level_index + 1, ch_title_text.to_upper()])
 
 	var is_master: bool = (grid.moves_count <= optimal_moves)
+	if win_modal != null:
+		var crown_badge: TextureRect = win_modal.find_child("MasterCrownIcon", true, false) as TextureRect
+		if crown_badge == null and win_modal.has_node("VBox"):
+			var vbox_w: VBoxContainer = win_modal.get_node("VBox") as VBoxContainer
+			crown_badge = TextureRect.new()
+			crown_badge.name = "MasterCrownIcon"
+			crown_badge.texture = icon_crown
+			crown_badge.custom_minimum_size = Vector2(44, 44)
+			crown_badge.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			crown_badge.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			crown_badge.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			vbox_w.add_child(crown_badge)
+			vbox_w.move_child(crown_badge, 0)
+		if crown_badge != null:
+			crown_badge.visible = is_master
+
 	if loc_mgr:
 		if moves_title_lbl: moves_title_lbl.text = loc_mgr.tr_text("STAT_MOVES_TITLE")
 		if time_title_lbl: time_title_lbl.text = loc_mgr.tr_text("STAT_TIME_TITLE")

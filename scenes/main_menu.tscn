@@ -160,6 +160,31 @@ custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 15
+
+[node name="CenterBox" type="HBoxContainer" parent="MainView/BottomMargin/ActionDeck/DualDeck/LevelSelectBtn"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="Icon" type="TextureRect" parent="MainView/BottomMargin/ActionDeck/DualDeck/LevelSelectBtn/CenterBox"]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="MainView/BottomMargin/ActionDeck/DualDeck/LevelSelectBtn/CenterBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.95, 0.98, 1, 1)
+theme_override_font_sizes/font_size = 15
 text = "LEVEL SELECT"
 
 [node name="LockerBtn" type="Button" parent="MainView/BottomMargin/ActionDeck/DualDeck"]
@@ -703,7 +728,7 @@ step = 0.05
 value = 0.7
 
 [node name="MusicToggleBtn" type="Button" parent="SettingsModal/Margin/VBox/Scroll/ItemsVBox/MusicBox/MusicRow"]
-custom_minimum_size = Vector2(126, 36)
+custom_minimum_size = Vector2(148, 36)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "MUSIC: ON"
@@ -748,7 +773,7 @@ step = 0.05
 value = 0.8
 
 [node name="SoundToggleBtn" type="Button" parent="SettingsModal/Margin/VBox/Scroll/ItemsVBox/SfxBox/SfxRow"]
-custom_minimum_size = Vector2(126, 36)
+custom_minimum_size = Vector2(148, 36)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "SOUND: ON"

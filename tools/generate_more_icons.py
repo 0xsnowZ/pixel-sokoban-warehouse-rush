@@ -33,47 +33,134 @@ def make_calendar():
     svg = """<svg viewBox="-32 -32 576 576" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <filter id="shadow" x="-20%" y="-20%" width="150%" height="150%">
-      <feDropShadow dx="8" dy="16" stdDeviation="12" flood-color="#000000" flood-opacity="0.45"/>
+      <feDropShadow dx="8" dy="16" stdDeviation="12" flood-color="#000000" flood-opacity="0.52"/>
     </filter>
     <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#FFFFFF"/>
-      <stop offset="100%" stop-color="#E2E8F0"/>
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="100%" stop-color="#1E293B"/>
     </linearGradient>
     <linearGradient id="hdrGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#F59E0B"/>
+      <stop offset="0%" stop-color="#FBBF24"/>
       <stop offset="100%" stop-color="#D97706"/>
     </linearGradient>
     <linearGradient id="ringGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#CBD5E1"/>
+      <stop offset="0%" stop-color="#F8FAFC"/>
       <stop offset="100%" stop-color="#64748B"/>
+    </linearGradient>
+    <linearGradient id="starGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FEF9C3"/>
+      <stop offset="50%" stop-color="#FDE047"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
     </linearGradient>
   </defs>
   <g filter="url(#shadow)">
-    <!-- Calendar Body -->
-    <rect x="32" y="64" width="448" height="416" rx="40" fill="url(#bodyGrad)" stroke="#1E293B" stroke-width="20"/>
-    <!-- Top Header Banner -->
-    <path d="M 32 104 C 32 82 48 64 72 64 L 440 64 C 464 64 480 82 480 104 L 480 160 L 32 160 Z" fill="url(#hdrGrad)" stroke="#1E293B" stroke-width="20"/>
-    
-    <!-- Binder Rings -->
-    <rect x="120" y="24" width="40" height="72" rx="16" fill="url(#ringGrad)" stroke="#1E293B" stroke-width="12"/>
-    <rect x="352" y="24" width="40" height="72" rx="16" fill="url(#ringGrad)" stroke="#1E293B" stroke-width="12"/>
-    
-    <!-- Grid Squares (Warehouse Shift Days) -->
-    <rect x="96" y="210" width="56" height="56" rx="10" fill="#94A3B8"/>
-    <rect x="192" y="210" width="56" height="56" rx="10" fill="#94A3B8"/>
-    <rect x="288" y="210" width="56" height="56" rx="10" fill="#94A3B8"/>
-    <rect x="384" y="210" width="56" height="56" rx="10" fill="#F59E0B"/>
-    
-    <rect x="96" y="296" width="56" height="56" rx="10" fill="#94A3B8"/>
-    <rect x="192" y="296" width="56" height="56" rx="10" fill="#94A3B8"/>
-    <rect x="288" y="296" width="56" height="56" rx="10" fill="#10B981"/>
-    <rect x="384" y="296" width="56" height="56" rx="10" fill="#10B981"/>
-    
-    <!-- Star Stamp on Current Day -->
-    <path d="M 316 324 L 306 344 L 284 346 L 301 361 L 296 382 L 316 370 L 336 382 L 331 361 L 348 346 L 326 344 Z" fill="#FBBF24" stroke="#78350F" stroke-width="4"/>
+    <!-- Dark Steel Shift Calendar Body -->
+    <rect x="32" y="64" width="448" height="416" rx="44" fill="url(#bodyGrad)" stroke="#0F172A" stroke-width="26"/>
+    <!-- Amber Header Strip -->
+    <path d="M 32 108 C 32 82 52 64 76 64 L 436 64 C 460 64 480 82 480 108 L 480 172 L 32 172 Z" fill="url(#hdrGrad)" stroke="#0F172A" stroke-width="26"/>
+    <line x1="68" y1="84" x2="444" y2="84" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" opacity="0.55"/>
+
+    <!-- Steel Binder Clasps -->
+    <rect x="116" y="18" width="44" height="82" rx="18" fill="url(#ringGrad)" stroke="#0F172A" stroke-width="18"/>
+    <rect x="352" y="18" width="44" height="82" rx="18" fill="url(#ringGrad)" stroke="#0F172A" stroke-width="18"/>
+
+    <!-- Bold Crisp Daily Shift Star Emblem (readable at 22px!) -->
+    <polygon points="256,204 288,274 364,284 308,338 322,414 256,378 190,414 204,338 148,284 224,274"
+             fill="url(#starGrad)" stroke="#0F172A" stroke-width="18" stroke-linejoin="round"/>
   </g>
 </svg>"""
     render_svg_to_png(svg, "icon_calendar.png")
+
+
+def make_sfx():
+    svg = """<svg viewBox="-32 -32 576 576" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="150%" height="150%">
+      <feDropShadow dx="6" dy="14" stdDeviation="12" flood-color="#000000" flood-opacity="0.48"/>
+    </filter>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FEF08A"/><stop offset="50%" stop-color="#FBBF24"/><stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+    <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#E0F2FE"/><stop offset="100%" stop-color="#38BDF8"/>
+    </linearGradient>
+  </defs>
+  <g filter="url(#shadow)">
+    <polygon points="56,192 148,192 276,84 276,428 148,320 56,320" fill="url(#goldGrad)" stroke="#0F172A" stroke-width="26" stroke-linejoin="round"/>
+    <path d="M 332 178 C 374 218, 374 294, 332 334" fill="none" stroke="#0F172A" stroke-width="50" stroke-linecap="round"/>
+    <path d="M 332 178 C 374 218, 374 294, 332 334" fill="none" stroke="url(#cyanGrad)" stroke-width="24" stroke-linecap="round"/>
+    <path d="M 392 118 C 464 190, 464 322, 392 394" fill="none" stroke="#0F172A" stroke-width="50" stroke-linecap="round"/>
+    <path d="M 392 118 C 464 190, 464 322, 392 394" fill="none" stroke="url(#cyanGrad)" stroke-width="24" stroke-linecap="round"/>
+  </g>
+</svg>"""
+    render_svg_to_png(svg, "icon_sfx.png")
+
+
+def make_haptics():
+    svg = """<svg viewBox="-32 -32 576 576" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="150%" height="150%">
+      <feDropShadow dx="6" dy="14" stdDeviation="12" flood-color="#000000" flood-opacity="0.48"/>
+    </filter>
+    <linearGradient id="steelGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FAFC"/><stop offset="50%" stop-color="#CBD5E1"/><stop offset="100%" stop-color="#475569"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FDE047"/><stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+  </defs>
+  <g filter="url(#shadow)">
+    <rect x="148" y="64" width="216" height="384" rx="34" fill="url(#steelGrad)" stroke="#0F172A" stroke-width="26"/>
+    <rect x="180" y="108" width="152" height="264" rx="14" fill="#1E293B" stroke="#0F172A" stroke-width="14"/>
+    <circle cx="256" cy="408" r="14" fill="#0F172A"/>
+    <!-- Left/Right Vibration Pulse Arcs -->
+    <polyline points="86,164 46,214 86,256 46,298 86,348" fill="none" stroke="#0F172A" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/>
+    <polyline points="86,164 46,214 86,256 46,298 86,348" fill="none" stroke="url(#goldGrad)" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+    <polyline points="426,164 466,214 426,256 466,298 426,348" fill="none" stroke="#0F172A" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/>
+    <polyline points="426,164 466,214 426,256 466,298 426,348" fill="none" stroke="url(#goldGrad)" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>"""
+    render_svg_to_png(svg, "icon_haptics.png")
+
+
+def make_globe():
+    svg = """<svg viewBox="-32 -32 576 576" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="150%" height="150%">
+      <feDropShadow dx="6" dy="14" stdDeviation="12" flood-color="#000000" flood-opacity="0.48"/>
+    </filter>
+    <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E0F2FE"/><stop offset="45%" stop-color="#38BDF8"/><stop offset="100%" stop-color="#0284C7"/>
+    </linearGradient>
+  </defs>
+  <g filter="url(#shadow)">
+    <circle cx="256" cy="256" r="204" fill="url(#cyanGrad)" stroke="#0F172A" stroke-width="28"/>
+    <ellipse cx="256" cy="256" rx="92" ry="200" fill="none" stroke="#0F172A" stroke-width="22"/>
+    <line x1="56" y1="256" x2="456" y2="256" stroke="#0F172A" stroke-width="22"/>
+    <path d="M 88 154 H 424" fill="none" stroke="#0F172A" stroke-width="20"/>
+    <path d="M 88 358 H 424" fill="none" stroke="#0F172A" stroke-width="20"/>
+  </g>
+</svg>"""
+    render_svg_to_png(svg, "icon_globe.png")
+
+
+def make_info():
+    svg = """<svg viewBox="-32 -32 576 576" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="150%" height="150%">
+      <feDropShadow dx="6" dy="14" stdDeviation="12" flood-color="#000000" flood-opacity="0.48"/>
+    </filter>
+    <linearGradient id="steelGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FAFC"/><stop offset="50%" stop-color="#CBD5E1"/><stop offset="100%" stop-color="#475569"/>
+    </linearGradient>
+  </defs>
+  <g filter="url(#shadow)">
+    <circle cx="256" cy="256" r="204" fill="url(#steelGrad)" stroke="#0F172A" stroke-width="28"/>
+    <circle cx="256" cy="148" r="28" fill="#0F172A"/>
+    <rect x="228" y="212" width="56" height="164" rx="22" fill="#0F172A"/>
+  </g>
+</svg>"""
+    render_svg_to_png(svg, "icon_info.png")
 
 
 def make_flame():
@@ -257,6 +344,10 @@ def make_sector_4_quantum():
 if __name__ == "__main__":
     make_calendar()
     make_flame()
+    make_sfx()
+    make_haptics()
+    make_globe()
+    make_info()
     make_sector_1_cargo()
     make_sector_2_cold()
     make_sector_3_cyber()
