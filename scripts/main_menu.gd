@@ -2566,48 +2566,39 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 	var claim_btn: Button = star_vault_modal.find_child("ClaimVaultBtn", true, false) as Button
 	var close_v_btn: Button = star_vault_modal.find_child("CloseVaultBtn", true, false) as Button
 
-	# Tier-matched frame & showcase styling
+	# Single matte modern architectural card + soft circular emblem glow (no nested border boxes)
 	if vault_card:
 		var vp_sz: Vector2 = get_viewport_rect().size if (is_inside_tree() and get_viewport() != null) else (size if size != Vector2.ZERO else Vector2(540.0, 960.0))
 		var insets: Dictionary = safe_area_mgr.get_safe_insets(self) if safe_area_mgr else {"top": 0.0, "bottom": 0.0, "left": 0.0, "right": 0.0}
-		var avail_w: float = maxf(260.0, vp_sz.x - insets.get("left", 0.0) - insets.get("right", 0.0) - 32.0)
-		vault_card.custom_minimum_size = Vector2(clampf(avail_w, 290.0, 384.0), 0.0)
+		var avail_w: float = maxf(260.0, vp_sz.x - insets.get("left", 0.0) - insets.get("right", 0.0) - 44.0)
+		vault_card.custom_minimum_size = Vector2(clampf(avail_w, 280.0, 344.0), 0.0)
 
 		var sb_card := StyleBoxFlat.new()
-		sb_card.bg_color = Color(0.045, 0.070, 0.130, 0.99)
-		sb_card.border_color = accent
-		sb_card.set_border_width_all(2)
-		sb_card.border_width_bottom = 4
-		sb_card.set_corner_radius_all(18)
-		sb_card.shadow_color = Color(0.0, 0.0, 0.0, 0.72)
-		sb_card.shadow_size = 18
-		sb_card.shadow_offset = Vector2(0, 6)
+		sb_card.bg_color = Color(0.058, 0.082, 0.140, 0.98)
+		sb_card.border_color = Color(accent.r, accent.g, accent.b, 0.42)
+		sb_card.set_border_width_all(1)
+		sb_card.set_corner_radius_all(22)
+		sb_card.shadow_color = Color(0.0, 0.0, 0.0, 0.70)
+		sb_card.shadow_size = 28
+		sb_card.shadow_offset = Vector2(0, 10)
 		vault_card.add_theme_stylebox_override("panel", sb_card)
 
 	if header_banner:
-		var sb_hdr := StyleBoxFlat.new()
-		sb_hdr.bg_color = Color(accent.r * 0.20, accent.g * 0.20, accent.b * 0.20, 0.90)
-		sb_hdr.border_color = Color(accent.r, accent.g, accent.b, 0.55)
-		sb_hdr.set_border_width_all(1)
-		sb_hdr.set_corner_radius_all(10)
-		header_banner.add_theme_stylebox_override("panel", sb_hdr)
+		header_banner.visible = false
 
 	if title_lbl:
 		title_lbl.text = loc_mgr.tr_text("VAULT_UNLOCKED_TITLE") if loc_mgr else "MILESTONE VAULT UNLOCKED"
-		title_lbl.add_theme_color_override("font_color", accent.lightened(0.22))
 
 	if milestone_lbl:
-		milestone_lbl.text = loc_mgr.tr_text("VAULT_MILESTONE_REACHED", [v_stars]) if loc_mgr else ("%d ★ MILESTONE" % v_stars)
-		milestone_lbl.add_theme_color_override("font_color", accent.lightened(0.18))
+		milestone_lbl.text = loc_mgr.tr_text("VAULT_MILESTONE_REACHED", [v_stars]) if loc_mgr else ("%d ★  VAULT UNLOCKED" % v_stars)
+		milestone_lbl.add_theme_color_override("font_color", Color(accent.r, accent.g, accent.b, 0.92))
 
 	if medallion:
 		var sb_med := StyleBoxFlat.new()
-		sb_med.bg_color = Color(0.075, 0.115, 0.20, 1.0)
-		sb_med.border_color = accent
-		sb_med.set_border_width_all(2)
-		sb_med.set_corner_radius_all(16)
-		sb_med.shadow_color = Color(accent.r, accent.g, accent.b, 0.30)
-		sb_med.shadow_size = 10
+		sb_med.bg_color = Color(accent.r, accent.g, accent.b, 0.11)
+		sb_med.border_color = Color(accent.r, accent.g, accent.b, 0.25)
+		sb_med.set_border_width_all(1)
+		sb_med.set_corner_radius_all(42)
 		medallion.add_theme_stylebox_override("panel", sb_med)
 
 	if icon_rect:
@@ -2625,12 +2616,7 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 		name_lbl.text = loc_mgr.tr_text("VAULT_NAME_FORMAT", [v_name]) if loc_mgr else v_name
 
 	if reward_pill:
-		var sb_rew := StyleBoxFlat.new()
-		sb_rew.bg_color = Color(accent.r * 0.16, accent.g * 0.16, accent.b * 0.16, 0.95)
-		sb_rew.border_color = Color(accent.r, accent.g, accent.b, 0.72)
-		sb_rew.set_border_width_all(1)
-		sb_rew.set_corner_radius_all(20)
-		reward_pill.add_theme_stylebox_override("panel", sb_rew)
+		reward_pill.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 
 	if reward_icon:
 		if r_type == "hints":
@@ -2642,22 +2628,21 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 
 	if reward_lbl:
 		if r_type == "hints":
-			reward_lbl.text = loc_mgr.tr_text("VAULT_REWARD_HINTS", [r_amount]) if loc_mgr else ("+%d SOLVER HINTS" % r_amount)
+			reward_lbl.text = loc_mgr.tr_text("VAULT_REWARD_HINTS", [r_amount]) if loc_mgr else ("+%d Solver Hints" % r_amount)
 		elif is_crate_skin:
-			reward_lbl.text = loc_mgr.tr_text("VAULT_REWARD_CRATE") if loc_mgr else "EXCLUSIVE CRATE SKIN"
+			reward_lbl.text = loc_mgr.tr_text("VAULT_REWARD_CRATE") if loc_mgr else "Crate Skin Unlocked"
 		else:
-			reward_lbl.text = loc_mgr.tr_text("VAULT_REWARD_OUTFIT") if loc_mgr else "EXCLUSIVE WORKER OUTFIT"
+			reward_lbl.text = loc_mgr.tr_text("VAULT_REWARD_OUTFIT") if loc_mgr else "Worker Outfit Unlocked"
 		reward_lbl.add_theme_color_override("font_color", accent.lightened(0.28))
 
 	if desc_lbl:
-		if r_type == "hints":
-			desc_lbl.text = loc_mgr.tr_text("VAULT_DESC_HINTS") if loc_mgr else "Ready to claim into your hint stock"
-		elif is_crate_skin:
-			desc_lbl.text = loc_mgr.tr_text("VAULT_DESC_CRATE") if loc_mgr else "Unlocked & ready in Supply Depot"
-		else:
-			desc_lbl.text = loc_mgr.tr_text("VAULT_DESC_OUTFIT") if loc_mgr else "Unlocked & ready in Supply Depot"
+		var desc_str: String = ""
+		if r_type != "hints":
+			desc_str = (loc_mgr.tr_text("VAULT_DESC_CRATE") if is_crate_skin else loc_mgr.tr_text("VAULT_DESC_OUTFIT")) if loc_mgr else "Equippable in Supply Depot"
+		desc_lbl.text = desc_str
+		desc_lbl.visible = not desc_str.is_empty()
 
-	# Populate progression ladder bar cleanly
+	# Clean ultra-slim milestone progress track
 	var total_stars_now: int = save_mgr.get_total_stars() if (save_mgr and save_mgr.has_method("get_total_stars")) else v_stars
 	var next_target: int = v_stars
 	if save_mgr and save_mgr.has_method("get_all_star_vaults"):
@@ -2670,7 +2655,7 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 		prog_curr_lbl.text = "%d ★" % total_stars_now
 	if prog_next_lbl:
 		if next_target > v_stars:
-			prog_next_lbl.text = loc_mgr.tr_text("VAULT_NEXT_TARGET", [next_target]) if loc_mgr else ("Next: %d ★" % next_target)
+			prog_next_lbl.text = loc_mgr.tr_text("VAULT_NEXT_TARGET", [next_target]) if loc_mgr else ("Next %d ★" % next_target)
 		else:
 			prog_next_lbl.text = loc_mgr.tr_text("VAULT_FINAL_TIER") if loc_mgr else "Final Milestone!"
 	if prog_bar:
@@ -2678,7 +2663,7 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 		prog_bar.value = float(mini(total_stars_now, maxi(next_target, v_stars)))
 		var sb_fill := StyleBoxFlat.new()
 		sb_fill.bg_color = accent
-		sb_fill.set_corner_radius_all(4)
+		sb_fill.set_corner_radius_all(3)
 		prog_bar.add_theme_stylebox_override("fill", sb_fill)
 
 	if claim_btn:
@@ -2687,8 +2672,24 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 			claim_btn.text = loc_mgr.tr_text("BTN_CLAIM_HINTS", [r_amount]) if loc_mgr else ("CLAIM +%d HINTS" % r_amount)
 		else:
 			claim_btn.text = loc_mgr.tr_text("BTN_CLAIM_EQUIP") if loc_mgr else "CLAIM & EQUIP"
+		var sb_cta := StyleBoxFlat.new()
+		sb_cta.bg_color = accent.darkened(0.06)
+		sb_cta.set_corner_radius_all(14)
+		sb_cta.content_margin_top = 12.0
+		sb_cta.content_margin_bottom = 12.0
+		claim_btn.add_theme_stylebox_override("normal", sb_cta)
+		var sb_cta_hov := sb_cta.duplicate() as StyleBoxFlat
+		sb_cta_hov.bg_color = accent
+		claim_btn.add_theme_stylebox_override("hover", sb_cta_hov)
+		var sb_cta_prs := sb_cta.duplicate() as StyleBoxFlat
+		sb_cta_prs.bg_color = accent.darkened(0.18)
+		claim_btn.add_theme_stylebox_override("pressed", sb_cta_prs)
+		claim_btn.add_theme_color_override("font_color", Color(0.05, 0.06, 0.09))
+		claim_btn.add_theme_color_override("font_hover_color", Color(0.03, 0.04, 0.06))
+		claim_btn.add_theme_color_override("font_pressed_color", Color(0.05, 0.06, 0.09))
+		claim_btn.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.0))
 	if close_v_btn:
-		close_v_btn.text = loc_mgr.tr_text("BTN_LATER") if loc_mgr else "Claim Later"
+		close_v_btn.text = loc_mgr.tr_text("BTN_LATER") if loc_mgr else "Later"
 	if loc_mgr and loc_mgr.has_method("apply_rtl"):
 		loc_mgr.apply_rtl(star_vault_modal)
 
@@ -2771,14 +2772,14 @@ func _create_star_vault_modal() -> PanelContainer:
 	center.add_child(card)
 
 	var margin: MarginContainer = MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 20)
-	margin.add_theme_constant_override("margin_top", 18)
-	margin.add_theme_constant_override("margin_right", 20)
-	margin.add_theme_constant_override("margin_bottom", 16)
+	margin.add_theme_constant_override("margin_left", 26)
+	margin.add_theme_constant_override("margin_top", 24)
+	margin.add_theme_constant_override("margin_right", 26)
+	margin.add_theme_constant_override("margin_bottom", 18)
 	card.add_child(margin)
 
 	var vbox: VBoxContainer = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 12)
+	vbox.add_theme_constant_override("separation", 16)
 	margin.add_child(vbox)
 
 	# 1. Top Header Banner Plaque
@@ -2819,22 +2820,17 @@ func _create_star_vault_modal() -> PanelContainer:
 	s_right.texture = icon_star_full
 	hdr_hbox.add_child(s_right)
 
-	# 2. Dark Inset Reward Showcase Card
+	# 2. Clean Borderless Reward Showcase
 	var showcase := PanelContainer.new()
 	showcase.name = "ShowcasePanel"
-	var sb_show := StyleBoxFlat.new()
-	sb_show.bg_color = Color(0.025, 0.042, 0.082, 0.96)
-	sb_show.border_color = Color(0.24, 0.33, 0.48, 0.55)
-	sb_show.set_border_width_all(1)
-	sb_show.set_corner_radius_all(14)
-	showcase.add_theme_stylebox_override("panel", sb_show)
+	showcase.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	vbox.add_child(showcase)
 
 	var show_margin := MarginContainer.new()
-	show_margin.add_theme_constant_override("margin_left", 16)
-	show_margin.add_theme_constant_override("margin_top", 14)
-	show_margin.add_theme_constant_override("margin_right", 16)
-	show_margin.add_theme_constant_override("margin_bottom", 14)
+	show_margin.add_theme_constant_override("margin_left", 0)
+	show_margin.add_theme_constant_override("margin_top", 2)
+	show_margin.add_theme_constant_override("margin_right", 0)
+	show_margin.add_theme_constant_override("margin_bottom", 4)
 	showcase.add_child(show_margin)
 
 	var show_vbox := VBoxContainer.new()
@@ -2938,11 +2934,11 @@ func _create_star_vault_modal() -> PanelContainer:
 
 	var prog_bar := ProgressBar.new()
 	prog_bar.name = "VaultProgressBar"
-	prog_bar.custom_minimum_size = Vector2(0, 8)
+	prog_bar.custom_minimum_size = Vector2(0, 5)
 	prog_bar.show_percentage = false
 	var sb_track := StyleBoxFlat.new()
-	sb_track.bg_color = Color(0.03, 0.05, 0.09, 1.0)
-	sb_track.set_corner_radius_all(4)
+	sb_track.bg_color = Color(1.0, 1.0, 1.0, 0.08)
+	sb_track.set_corner_radius_all(3)
 	prog_bar.add_theme_stylebox_override("background", sb_track)
 	prog_vbox.add_child(prog_bar)
 

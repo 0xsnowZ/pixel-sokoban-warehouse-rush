@@ -7,8 +7,8 @@
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_blur"]
 shader = ExtResource("4_blur_shader")
-shader_parameter/blur_amount = 2.0
-shader_parameter/tint_color = Color(0.025, 0.04, 0.075, 0.54)
+shader_parameter/blur_amount = 2.6
+shader_parameter/tint_color = Color(0.02, 0.03, 0.06, 0.72)
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3

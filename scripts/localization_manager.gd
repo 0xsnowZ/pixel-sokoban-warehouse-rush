@@ -819,19 +819,19 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "%s"
 	},
 	"VAULT_DESC_HINTS": {
-		"en": "Ready to claim into your hint stock",
-		"fr": "Prêt à ajouter à votre réserve d'indices",
-		"ar": "جاهز للإضافة إلى رصيد التلميحات"
+		"en": "",
+		"fr": "",
+		"ar": ""
 	},
 	"VAULT_DESC_CRATE": {
-		"en": "Unlocked & ready in Supply Depot",
-		"fr": "Débloqué et prêt au Dépôt Central",
-		"ar": "تم الفتح وجاهز في مستودع الإمدادات"
+		"en": "Equippable in Supply Depot",
+		"fr": "Disponible au Dépôt Central",
+		"ar": "متاح في مستودع الإمدادات"
 	},
 	"VAULT_DESC_OUTFIT": {
-		"en": "Unlocked & ready in Supply Depot",
-		"fr": "Débloquée et prête au Dépôt Central",
-		"ar": "تم الفتح وجاهز في مستودع الإمدادات"
+		"en": "Equippable in Supply Depot",
+		"fr": "Disponible au Dépôt Central",
+		"ar": "متاح في مستودع الإمدادات"
 	},
 	"BTN_CLAIM_REWARD": {
 		"en": "CLAIM REWARD",
@@ -849,34 +849,34 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "استلام وتجهيز"
 	},
 	"BTN_LATER": {
-		"en": "Claim Later",
+		"en": "Later",
 		"fr": "Plus tard",
 		"ar": "لاحقاً"
 	},
 	"VAULT_REWARD_HINTS": {
-		"en": "+%d SOLVER HINTS",
-		"fr": "+%d INDICES GRATUITS",
+		"en": "+%d Solver Hints",
+		"fr": "+%d Indices gratuits",
 		"ar": "+%d تلميحات حل"
 	},
 	"VAULT_REWARD_CRATE": {
-		"en": "EXCLUSIVE CRATE SKIN",
-		"fr": "CAISSE EXCLUSIVE DÉBLOQUÉE",
-		"ar": "مظهر صندوق حصري"
+		"en": "Crate Skin Unlocked",
+		"fr": "Nouvelle caisse débloquée",
+		"ar": "مظهر صندوق جديد"
 	},
 	"VAULT_REWARD_OUTFIT": {
-		"en": "EXCLUSIVE WORKER OUTFIT",
-		"fr": "TENUE EXCLUSIVE DÉBLOQUÉE",
-		"ar": "زي عامل حصري"
+		"en": "Worker Outfit Unlocked",
+		"fr": "Nouvelle tenue débloquée",
+		"ar": "زي عامل جديد"
 	},
 	"VAULT_MILESTONE_REACHED": {
-		"en": "%d ★ MILESTONE",
-		"fr": "PALIER %d ★",
-		"ar": "إنجاز %d ★"
+		"en": "%d ★  VAULT UNLOCKED",
+		"fr": "%d ★  COFFRE DÉBLOQUÉ",
+		"ar": "%d ★  تم فتح الخزنة"
 	},
 	"VAULT_NEXT_TARGET": {
-		"en": "Next: %d ★",
-		"fr": "Suivant : %d ★",
-		"ar": "التالي: %d ★"
+		"en": "Next %d ★",
+		"fr": "Suiv. %d ★",
+		"ar": "التالي %d ★"
 	},
 	"VAULT_FINAL_TIER": {
 		"en": "Final Milestone!",
