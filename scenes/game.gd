@@ -4785,11 +4785,10 @@ func _create_achievement_banner() -> PanelContainer:
 	banner.visible = false
 
 	var sb: StyleBoxFlat = StyleBoxFlat.new()
-	sb.bg_color = Color(0.08, 0.11, 0.18, 0.96)
-	sb.border_color = Color(1.0, 0.84, 0.28, 1.0)
-	sb.set_border_width_all(2)
-	sb.border_width_bottom = 3
-	sb.set_corner_radius_all(12)
+	sb.bg_color = Color(0.075, 0.088, 0.116, 0.96)
+	sb.border_color = Color(0.94, 0.76, 0.34, 0.50)
+	sb.set_border_width_all(1)
+	sb.set_corner_radius_all(14)
 	sb.shadow_color = Color(0.0, 0.0, 0.0, 0.55)
 	sb.shadow_size = 8
 	banner.add_theme_stylebox_override("panel", sb)

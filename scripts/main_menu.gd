@@ -972,10 +972,15 @@ func _refresh_locker_ui() -> void:
 
 func _create_locker_item_card(_item_id: String, icon: String, item_name: String, desc: String, req_stars: int, total_stars: int, is_equipped: bool, equip_callable: Callable, preview_texture: Texture2D = null, preview_tint: Color = Color.WHITE) -> Control:
 	var panel: PanelContainer = PanelContainer.new()
-	panel.theme_type_variation = &"CardPanel"
 	panel.custom_minimum_size = Vector2(0, 68)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.mouse_filter = Control.MOUSE_FILTER_PASS
+	var sb_row := StyleBoxFlat.new()
+	sb_row.bg_color = Color(0.055, 0.068, 0.095, 0.94)
+	sb_row.border_color = Color(0.92, 0.74, 0.34, 0.45) if is_equipped else Color(1.0, 1.0, 1.0, 0.08)
+	sb_row.set_border_width_all(1)
+	sb_row.set_corner_radius_all(14)
+	panel.add_theme_stylebox_override("panel", sb_row)
 
 	var margin: MarginContainer = MarginContainer.new()
 	margin.mouse_filter = Control.MOUSE_FILTER_PASS
@@ -993,8 +998,13 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 	if preview_texture != null:
 		var preview_frame: PanelContainer = PanelContainer.new()
 		preview_frame.custom_minimum_size = Vector2(44, 44)
-		preview_frame.theme_type_variation = &"TopBarPanel"
 		preview_frame.mouse_filter = Control.MOUSE_FILTER_PASS
+		var sb_pv := StyleBoxFlat.new()
+		sb_pv.bg_color = Color(0.08, 0.10, 0.145, 0.96)
+		sb_pv.border_color = Color(1.0, 1.0, 1.0, 0.09)
+		sb_pv.set_border_width_all(1)
+		sb_pv.set_corner_radius_all(10)
+		preview_frame.add_theme_stylebox_override("panel", sb_pv)
 		var tex_rect: TextureRect = TextureRect.new()
 		tex_rect.custom_minimum_size = Vector2(32, 32)
 		tex_rect.texture = preview_texture
@@ -1021,7 +1031,8 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 	name_lbl.mouse_filter = Control.MOUSE_FILTER_PASS
 	name_lbl.text = item_name
 	name_lbl.add_theme_font_size_override("font_size", 14)
-	name_lbl.add_theme_color_override("font_color", Color(0.98, 0.85, 0.30) if is_equipped else Color(0.90, 0.95, 1.0))
+	name_lbl.add_theme_color_override("font_color", Color(0.95, 0.78, 0.36) if is_equipped else Color(0.94, 0.96, 0.99))
+	name_lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0))
 	info_vbox.add_child(name_lbl)
 
 	var desc_lbl: Label = Label.new()
@@ -1029,11 +1040,12 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 	var is_unlocked: bool = (total_stars >= req_stars)
 	if is_unlocked:
 		desc_lbl.text = desc
-		desc_lbl.add_theme_color_override("font_color", Color(0.65, 0.72, 0.82))
+		desc_lbl.add_theme_color_override("font_color", Color(0.64, 0.70, 0.80))
 	else:
 		var req_text: String = loc_mgr.tr_text("LOCKER_LOCKED_STARS", [req_stars]) if loc_mgr else ("%d Stars required" % req_stars)
 		desc_lbl.text = req_text
-		desc_lbl.add_theme_color_override("font_color", Color(1.0, 0.55, 0.40))
+		desc_lbl.add_theme_color_override("font_color", Color(0.95, 0.60, 0.48))
+	desc_lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0))
 	desc_lbl.add_theme_font_size_override("font_size", 11)
 	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info_vbox.add_child(desc_lbl)
@@ -1053,15 +1065,15 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 	var btn_lbl: Label = Label.new()
 	btn_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	btn_lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0))
 
 	if is_equipped:
 		var sb_eq: StyleBoxFlat = StyleBoxFlat.new()
-		sb_eq.bg_color = Color(0.12, 0.40, 0.24, 0.95)
-		sb_eq.border_color = Color(0.35, 0.85, 0.52, 0.95)
-		sb_eq.set_border_width_all(2)
-		sb_eq.border_width_bottom = 3
-		sb_eq.set_corner_radius_all(8)
-		sb_eq.shadow_color = Color(0, 0, 0, 0.35)
+		sb_eq.bg_color = Color(0.12, 0.52, 0.28, 1.0)
+		sb_eq.border_color = Color(0.45, 0.90, 0.60, 0.45)
+		sb_eq.set_border_width_all(1)
+		sb_eq.set_corner_radius_all(10)
+		sb_eq.shadow_color = Color(0, 0, 0, 0.28)
 		sb_eq.shadow_size = 2
 		act_btn.add_theme_stylebox_override("normal", sb_eq)
 		act_btn.add_theme_stylebox_override("hover", sb_eq)
@@ -1075,13 +1087,13 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 		btn_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		btn_icon.custom_minimum_size = Vector2(16, 16)
 		btn_icon.texture = icon_check
-		btn_icon.modulate = Color(0.95, 1.0, 0.95, 1.0)
+		btn_icon.modulate = Color(1.0, 1.0, 1.0, 1.0)
 		btn_center.add_child(btn_icon)
 
 		var eq_text: String = loc_mgr.tr_text("LOCKER_EQUIPPED") if loc_mgr else "EQUIPPED"
 		btn_lbl.text = eq_text
 		btn_lbl.add_theme_font_size_override("font_size", 12)
-		btn_lbl.add_theme_color_override("font_color", Color(0.95, 1.0, 0.96, 1.0))
+		btn_lbl.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
 		btn_center.add_child(btn_lbl)
 
 		act_btn.tooltip_text = ""
@@ -1092,13 +1104,13 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 		var equip_text: String = loc_mgr.tr_text("LOCKER_EQUIP") if loc_mgr else "EQUIP"
 		btn_lbl.text = equip_text
 		btn_lbl.add_theme_font_size_override("font_size", 13)
-		btn_lbl.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
+		btn_lbl.add_theme_color_override("font_color", Color(0.067, 0.078, 0.110, 1.0))
 		btn_center.add_child(btn_lbl)
 
-		act_btn.mouse_entered.connect(func(): btn_lbl.add_theme_color_override("font_color", Color(1.0, 0.95, 0.8, 1.0)))
-		act_btn.mouse_exited.connect(func(): btn_lbl.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0)))
-		act_btn.button_down.connect(func(): btn_lbl.add_theme_color_override("font_color", Color(0.98, 0.82, 0.25, 1.0)))
-		act_btn.button_up.connect(func(): btn_lbl.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0)))
+		act_btn.mouse_entered.connect(func(): btn_lbl.add_theme_color_override("font_color", Color(0.04, 0.05, 0.08, 1.0)))
+		act_btn.mouse_exited.connect(func(): btn_lbl.add_theme_color_override("font_color", Color(0.067, 0.078, 0.110, 1.0)))
+		act_btn.button_down.connect(func(): btn_lbl.add_theme_color_override("font_color", Color(0.067, 0.078, 0.110, 1.0)))
+		act_btn.button_up.connect(func(): btn_lbl.add_theme_color_override("font_color", Color(0.067, 0.078, 0.110, 1.0)))
 
 		act_btn.tooltip_text = ""
 		act_btn.pressed.connect(func():
@@ -1110,11 +1122,11 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 
 	else:
 		var sb_lock: StyleBoxFlat = StyleBoxFlat.new()
-		sb_lock.bg_color = Color(0.11, 0.14, 0.20, 0.90)
-		sb_lock.border_color = Color(0.28, 0.36, 0.48, 0.75)
-		sb_lock.set_border_width_all(2)
-		sb_lock.set_corner_radius_all(8)
-		sb_lock.shadow_color = Color(0, 0, 0, 0.35)
+		sb_lock.bg_color = Color(0.085, 0.105, 0.145, 0.92)
+		sb_lock.border_color = Color(1.0, 1.0, 1.0, 0.10)
+		sb_lock.set_border_width_all(1)
+		sb_lock.set_corner_radius_all(10)
+		sb_lock.shadow_color = Color(0, 0, 0, 0.25)
 		sb_lock.shadow_size = 2
 		act_btn.add_theme_stylebox_override("normal", sb_lock)
 		act_btn.add_theme_stylebox_override("hover", sb_lock)
@@ -1250,9 +1262,9 @@ func _style_star_progress_pill() -> void:
 
 	var pill_hov: StyleBoxFlat = pill_norm.duplicate()
 	pill_hov.bg_color = Color(0.11, 0.15, 0.24, 0.96)
-	pill_hov.border_color = Color(0.98, 0.84, 0.38, 0.92)
-	pill_hov.shadow_color = Color(0.96, 0.78, 0.28, 0.28)
-	pill_hov.shadow_size = 10
+	pill_hov.border_color = Color(0.95, 0.78, 0.36, 0.78)
+	pill_hov.shadow_color = Color(0, 0, 0, 0.38)
+	pill_hov.shadow_size = 5
 
 	var pill_prs: StyleBoxFlat = pill_norm.duplicate()
 	pill_prs.bg_color = Color(0.05, 0.07, 0.12, 0.98)
@@ -1357,6 +1369,12 @@ func _create_achievement_item_card(ach_id: String, _icon: String, title: String,
 	panel.custom_minimum_size = Vector2(0, 64)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.mouse_filter = Control.MOUSE_FILTER_PASS
+	var sb_ach := StyleBoxFlat.new()
+	sb_ach.bg_color = Color(0.055, 0.068, 0.095, 0.94)
+	sb_ach.border_color = Color(0.94, 0.76, 0.36, 0.45) if is_unlocked else Color(1.0, 1.0, 1.0, 0.075)
+	sb_ach.set_border_width_all(1)
+	sb_ach.set_corner_radius_all(14)
+	panel.add_theme_stylebox_override("panel", sb_ach)
 
 	var margin: MarginContainer = MarginContainer.new()
 	margin.mouse_filter = Control.MOUSE_FILTER_PASS
@@ -1390,14 +1408,16 @@ func _create_achievement_item_card(ach_id: String, _icon: String, title: String,
 	title_lbl.mouse_filter = Control.MOUSE_FILTER_PASS
 	title_lbl.text = title
 	title_lbl.add_theme_font_size_override("font_size", 14)
-	title_lbl.add_theme_color_override("font_color", Color(0.98, 0.85, 0.30) if is_unlocked else Color(0.65, 0.70, 0.80))
+	title_lbl.add_theme_color_override("font_color", Color(0.95, 0.78, 0.36) if is_unlocked else Color(0.76, 0.81, 0.89))
+	title_lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0))
 	info_vbox.add_child(title_lbl)
 
 	var desc_lbl: Label = Label.new()
 	desc_lbl.mouse_filter = Control.MOUSE_FILTER_PASS
 	desc_lbl.text = desc
 	desc_lbl.add_theme_font_size_override("font_size", 11)
-	desc_lbl.add_theme_color_override("font_color", Color(0.85, 0.90, 0.98) if is_unlocked else Color(0.45, 0.50, 0.60))
+	desc_lbl.add_theme_color_override("font_color", Color(0.84, 0.88, 0.95) if is_unlocked else Color(0.54, 0.60, 0.70))
+	desc_lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0))
 	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info_vbox.add_child(desc_lbl)
 
@@ -1732,8 +1752,26 @@ func _update_menu_state() -> void:
 			daily_shift_btn.name = "DailyShiftBtn"
 			daily_shift_btn.custom_minimum_size = Vector2(0, 48)
 			daily_shift_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			daily_shift_btn.theme_type_variation = &"SecondaryButton"
+			daily_shift_btn.add_theme_font_override("font", _get_modern_font(500))
 			daily_shift_btn.add_theme_font_size_override("font_size", 14)
+			var sb_ds := StyleBoxFlat.new()
+			sb_ds.bg_color = Color(0.085, 0.112, 0.132, 0.96)
+			sb_ds.border_color = Color(0.34, 0.78, 0.56, 0.38)
+			sb_ds.set_border_width_all(1)
+			sb_ds.set_corner_radius_all(14)
+			sb_ds.content_margin_left = 16.0
+			sb_ds.content_margin_right = 16.0
+			sb_ds.content_margin_top = 8.0
+			sb_ds.content_margin_bottom = 8.0
+			daily_shift_btn.add_theme_stylebox_override("normal", sb_ds)
+			var sb_ds_hov := sb_ds.duplicate() as StyleBoxFlat
+			sb_ds_hov.bg_color = Color(0.115, 0.150, 0.175, 0.98)
+			sb_ds_hov.border_color = Color(0.42, 0.86, 0.64, 0.65)
+			daily_shift_btn.add_theme_stylebox_override("hover", sb_ds_hov)
+			daily_shift_btn.add_theme_stylebox_override("pressed", sb_ds)
+			daily_shift_btn.add_theme_color_override("font_color", Color(0.88, 0.96, 0.91))
+			daily_shift_btn.add_theme_color_override("font_hover_color", Color(0.95, 0.99, 0.96))
+			daily_shift_btn.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.0))
 			_apply_button_icon(daily_shift_btn, icon_calendar, 22, 8)
 			daily_shift_btn.pressed.connect(_on_daily_shift_pressed)
 			_attach_spring_physics(daily_shift_btn)
@@ -1749,17 +1787,18 @@ func _update_menu_state() -> void:
 		var streak_count: int = d_info.get("streak", 0)
 		var is_done: bool = d_info.get("is_completed", false)
 		var ds_icon: Texture2D = icon_calendar
+		daily_shift_btn.modulate = Color.WHITE
 		if is_done:
 			ds_icon = icon_check
 			daily_shift_btn.text = loc_mgr.tr_text("DAILY_SHIFT_CLEARED", [streak_count]) if loc_mgr else ("DAILY SHIFT: CLEARED ✓ (STREAK: %d)" % streak_count)
-			daily_shift_btn.modulate = Color(0.80, 1.0, 0.85)
+			daily_shift_btn.add_theme_color_override("font_color", Color(0.62, 0.92, 0.72))
 		else:
 			if streak_count > 0:
 				ds_icon = icon_flame
 				daily_shift_btn.text = loc_mgr.tr_text("DAILY_SHIFT_STREAK", [streak_count]) if loc_mgr else ("DAILY SHIFT • %d STREAK (+3 HINTS)" % streak_count)
 			else:
 				daily_shift_btn.text = loc_mgr.tr_text("DAILY_SHIFT_PLAY") if loc_mgr else "DAILY SHIFT • PLAY (+3 HINTS)"
-			daily_shift_btn.modulate = Color(1.0, 0.92, 0.55)
+			daily_shift_btn.add_theme_color_override("font_color", Color(0.88, 0.96, 0.91))
 		_apply_button_icon(daily_shift_btn, ds_icon, 22, 8)
 
 	# Persistent Clickable Pill when an unlocked Star Vault is waiting to be claimed (e.g. after tapping Later)
@@ -1922,14 +1961,14 @@ func _init_sector_styles() -> void:
 
 		var norm: StyleBoxFlat = StyleBoxFlat.new()
 		norm.bg_color = base_bg
-		norm.border_color = border_col
+		norm.border_color = Color(border_col.r, border_col.g, border_col.b, 0.55)
 		norm.border_width_left = 1
 		norm.border_width_top = 1
 		norm.border_width_right = 1
-		norm.border_width_bottom = 3
+		norm.border_width_bottom = 2
 		norm.set_corner_radius_all(12)
-		norm.shadow_color = Color(border_col.r, border_col.g, border_col.b, 0.18)
-		norm.shadow_size = 5
+		norm.shadow_color = Color(0, 0, 0, 0.30)
+		norm.shadow_size = 3
 		norm.shadow_offset = Vector2(0, 2)
 		norm.content_margin_left = 4.0
 		norm.content_margin_top = 6.0
@@ -1939,8 +1978,9 @@ func _init_sector_styles() -> void:
 
 		var hov: StyleBoxFlat = norm.duplicate()
 		hov.bg_color = base_bg.lightened(0.10)
-		hov.shadow_color = Color(border_col.r, border_col.g, border_col.b, 0.34)
-		hov.shadow_size = 7
+		hov.border_color = border_col
+		hov.shadow_color = Color(0, 0, 0, 0.36)
+		hov.shadow_size = 4
 		_sector_styles_hover.append(hov)
 
 		var prs: StyleBoxFlat = norm.duplicate()
@@ -2032,8 +2072,8 @@ func _setup_sector_tabs() -> void:
 		var tab_hov: StyleBoxFlat = tab_norm.duplicate()
 		tab_hov.bg_color = Color(0.115, 0.15, 0.23, 0.98)
 		tab_hov.border_color = col
-		tab_hov.shadow_color = Color(col.r, col.g, col.b, 0.30)
-		tab_hov.shadow_size = 7
+		tab_hov.shadow_color = Color(0, 0, 0, 0.36)
+		tab_hov.shadow_size = 4
 		tab_btn.add_theme_stylebox_override("hover", tab_hov)
 
 		var tab_prs: StyleBoxFlat = tab_norm.duplicate()
@@ -2890,8 +2930,8 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 		claim_btn.add_theme_font_override("font", _get_modern_font(600))
 		claim_btn.add_theme_font_size_override("font_size", 14)
 		var sb_cta := StyleBoxFlat.new()
-		sb_cta.bg_color = Color(0.91, 0.54, 0.10)
-		sb_cta.border_color = Color(1.0, 0.84, 0.48, 0.32)
+		sb_cta.bg_color = Color(0.93, 0.57, 0.12)
+		sb_cta.border_color = Color(1.0, 1.0, 1.0, 0.25)
 		sb_cta.border_width_top = 1
 		sb_cta.set_corner_radius_all(14)
 		sb_cta.shadow_color = Color(0.0, 0.0, 0.0, 0.30)
@@ -2901,14 +2941,14 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 		sb_cta.content_margin_bottom = 13.0
 		claim_btn.add_theme_stylebox_override("normal", sb_cta)
 		var sb_cta_hov := sb_cta.duplicate() as StyleBoxFlat
-		sb_cta_hov.bg_color = Color(0.96, 0.61, 0.16)
+		sb_cta_hov.bg_color = Color(0.97, 0.63, 0.17)
 		claim_btn.add_theme_stylebox_override("hover", sb_cta_hov)
 		var sb_cta_prs := sb_cta.duplicate() as StyleBoxFlat
-		sb_cta_prs.bg_color = Color(0.78, 0.44, 0.07)
+		sb_cta_prs.bg_color = Color(0.79, 0.46, 0.08)
 		claim_btn.add_theme_stylebox_override("pressed", sb_cta_prs)
-		claim_btn.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
-		claim_btn.add_theme_color_override("font_hover_color", Color(1.0, 1.0, 1.0))
-		claim_btn.add_theme_color_override("font_pressed_color", Color(0.96, 0.92, 0.86))
+		claim_btn.add_theme_color_override("font_color", Color(0.067, 0.078, 0.110))
+		claim_btn.add_theme_color_override("font_hover_color", Color(0.04, 0.05, 0.08))
+		claim_btn.add_theme_color_override("font_pressed_color", Color(0.067, 0.078, 0.110))
 		claim_btn.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.0))
 	if close_v_btn:
 		close_v_btn.text = loc_mgr.tr_text("BTN_LATER") if loc_mgr else "Later"
