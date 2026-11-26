@@ -13,7 +13,7 @@ import numpy as np
 from PIL import Image
 
 OUTPUT_DIR = "/home/snowz/godot/assets"
-ARTIFACT_DIR = "/home/snowz/.gemini/antigravity-ide/brain/9a93013c-7615-47d7-ae14-3f8a6be1d265"
+ARTIFACT_DIR = "/home/snowz/.gemini/antigravity/brain/db19d3e6-5897-4bec-b12d-4a1222e63add"
 W, H = 64, 64
 
 # Rich, curated 32-bit modern indie palette (RGBA)
@@ -413,175 +413,248 @@ def build_up_frame(walk_frame=0):
     return c.get_image()
 
 
+def _draw_side_boot(c, x_toe, y_top, is_near=True, plant_flat=True):
+    """Draws a grounded or striding left-facing 16-bit work boot with rounded toe, tongue, and rubber tread."""
+    body_c = 'boot_base' if is_near else 'boot_far'
+    sh_c = 'boot_sh' if is_near else 'boot_far_sh'
+    hi_c = 'boot_hi' if is_near else 'boot_base'
+    toe_c = 'boot_toe' if is_near else 'boot_base'
+    sole_c = 'boot_sole' if is_near else 'boot_far_sh'
+
+    # Main boot shaft & ankle
+    c.fill_rect(x_toe + 2, y_top, x_toe + 10, y_top + 4, body_c)
+    c.fill_rect(x_toe + 8, y_top, x_toe + 10, y_top + 4, sh_c)
+    c.fill_rect(x_toe + 3, y_top, x_toe + 8, y_top + 1, hi_c)
+
+    # Rounded reinforced front toe box
+    c.fill_rect(x_toe, y_top + 2, x_toe + 3, y_top + 4, body_c)
+    c.fill_rect(x_toe, y_top + 2, x_toe + 2, y_top + 3, toe_c)
+
+    if plant_flat:
+        c.fill_rect(x_toe, y_top + 5, x_toe + 11, y_top + 6, sole_c)
+        c.set_px(x_toe, y_top + 4, sole_c)
+        c.set_px(x_toe + 11, y_top + 4, sole_c)
+    else:
+        # Push-off boot slightly raised at heel
+        c.fill_rect(x_toe, y_top + 5, x_toe + 9, y_top + 6, sole_c)
+        c.fill_rect(x_toe + 7, y_top + 4, x_toe + 11, y_top + 5, sole_c)
+
+
 def build_side_frame(facing_left=True, walk_frame=0):
     c = CanvasBuilder()
     bob = 1 if walk_frame > 0 else 0
-    
-    # 1. Cap Visor (Pointing LEFT)
-    c.fill_rect(16, 14+bob, 26, 14+bob, 'cap_hi')
-    c.fill_rect(15, 15+bob, 26, 15+bob, 'cap_base')
-    c.fill_rect(16, 16+bob, 27, 16+bob, 'cap_visor_bot')
-    
-    # Cap Crown
-    c.fill_rect(28, 6+bob, 37, 6+bob, 'cap_hi')
-    c.fill_rect(25, 7+bob, 39, 8+bob, 'cap_mid')
-    c.fill_rect(23, 9+bob, 41, 13+bob, 'cap_base')
-    c.fill_rect(39, 10+bob, 42, 14+bob, 'cap_dark')
-    c.fill_rect(32, 7+bob, 33, 13+bob, 'cap_dark')
-    c.fill_rect(30, 5+bob, 32, 5+bob, 'cap_dark')
-    c.set_px(31, 5+bob, 'cap_badge')
-    # Cap badge on side
-    c.fill_rect(25, 10+bob, 28, 12+bob, 'cap_badge')
-    c.set_px(25, 10+bob, 'cap_badge_sh')
-    c.set_px(28, 12+bob, 'cap_badge_sh')
-    
-    # Hair & Ear
-    # Sideburn in front of ear
-    c.fill_rect(26, 16+bob, 28, 18+bob, 'hair_base')
-    c.set_px(26, 18+bob, 'hair_dark')
-    
-    # Natural rounded hair at nape of neck
-    c.fill_rect(36, 15+bob, 40, 16+bob, 'hair_base')
-    c.fill_rect(36, 17+bob, 41, 19+bob, 'hair_base')
-    c.set_px(37, 17+bob, 'hair_hi')
-    c.set_px(38, 17+bob, 'hair_hi')
-    c.fill_rect(36, 20+bob, 40, 21+bob, 'hair_dark')
-    c.fill_rect(35, 22+bob, 38, 23+bob, 'hair_dark')
-    
-    # Ear
+
+    # =========================================================================
+    # 1. SOLID 3/4-PROFILE CHIBI HEAD, HAIR & EARS (Zero hollow/transparent gaps)
+    # =========================================================================
+    # Solid inner head & cranium base strictly within face/jaw bounds (zero leak behind nape)
+    c.fill_rect(23, 16+bob, 37, 22+bob, 'skin_base')
+    c.fill_rect(23, 23+bob, 34, 24+bob, 'skin_base')
+    c.fill_rect(24, 25+bob, 33, 25+bob, 'skin_base')
+    c.fill_rect(26, 26+bob, 32, 26+bob, 'skin_sh')
+    # Under-visor forehead cast shadow
+    c.fill_rect(22, 17+bob, 35, 17+bob, 'skin_sh')
+
+    # Soft, friendly chibi face contour
+    c.fill_rect(22, 18+bob, 23, 24+bob, 'skin_base')
+    c.set_px(21, 20+bob, 'skin_hi')
+    c.set_px(21, 21+bob, 'skin_base')
+    c.set_px(21, 22+bob, 'skin_sh')  # Soft curved button nose
+    # Warm friendly smile (subtle upward turn) & clean jaw curve
+    c.fill_rect(23, 24+bob, 24, 24+bob, 'skin_out')
+    c.set_px(25, 23+bob, 'skin_out')
+    c.set_px(22, 24+bob, 'skin_base')
+    c.fill_rect(23, 25+bob, 26, 25+bob, 'skin_sh')
+
+    # Rounded Hair Crown & Nape (cleanly meets cap at y=13..16 & neck at y=23)
+    c.fill_rect(34, 14+bob, 40, 20+bob, 'hair_base')
+    c.fill_rect(35, 16+bob, 41, 19+bob, 'hair_base')
+    c.fill_rect(37, 17+bob, 39, 18+bob, 'hair_hi')
+    c.fill_rect(34, 20+bob, 40, 21+bob, 'hair_dark')
+    c.fill_rect(34, 22+bob, 38, 23+bob, 'hair_dark')
+    # Neat sideburn lock ahead of ear
+    c.fill_rect(30, 17+bob, 32, 20+bob, 'hair_base')
+    c.set_px(31, 21+bob, 'hair_dark')
+
+    # Sculpted Ear (cleanly embedded over solid skin/hair)
     c.fill_rect(31, 19+bob, 34, 22+bob, 'skin_sh')
     c.fill_rect(32, 20+bob, 33, 21+bob, 'skin_base')
 
-    # Face Side Profile (Soft, cute anime/indie chibi proportions)
-    # Forehead & brow
-    c.fill_rect(23, 17+bob, 31, 20+bob, 'skin_base')
-    c.fill_rect(22, 18+bob, 23, 20+bob, 'skin_base')
-    # Soft button nose
-    c.fill_rect(21, 20+bob, 24, 21+bob, 'skin_base')
-    c.set_px(20, 21+bob, 'skin_hi') # nose tip highlight
-    c.set_px(21, 22+bob, 'skin_sh') # nose bottom shadow
-    # Mouth indent and gentle smile
-    c.fill_rect(22, 22+bob, 31, 24+bob, 'skin_base')
-    c.fill_rect(23, 23+bob, 25, 23+bob, 'skin_out') # smile line
-    # Chin curve
-    c.fill_rect(21, 24+bob, 24, 25+bob, 'skin_base')
-    c.fill_rect(22, 25+bob, 31, 25+bob, 'skin_sh')
-    
-    # Eye in profile
-    c.fill_rect(24, 17+bob, 26, 17+bob, 'hair_dark') # eyebrow
-    c.fill_rect(24, 18+bob, 26, 20+bob, 'eye_pupil')
-    c.set_px(26, 19+bob, 'eye_iris')
-    c.set_px(26, 20+bob, 'eye_white')
-    c.set_px(24, 18+bob, 'eye_hi') # Specular shine
-    
-    # Delicate cheek blush
-    c.fill_rect(26, 21+bob, 28, 22+bob, 'blush')
+    # Expressive 3/4 Eye (matches player_down style: brow, iris, sclera, highlight)
+    c.fill_rect(24, 18+bob, 27, 18+bob, 'hair_dark')  # Eyebrow
+    c.fill_rect(25, 19+bob, 27, 21+bob, 'eye_white')
+    c.fill_rect(25, 19+bob, 26, 21+bob, 'eye_iris')
+    c.fill_rect(25, 20+bob, 26, 21+bob, 'eye_pupil')
+    c.set_px(25, 19+bob, 'eye_hi')
 
-    # Neck
-    c.fill_rect(27, 26+bob, 34, 27+bob, 'skin_sh')
+    # Rosy Cheek Blush
+    c.fill_rect(27, 22+bob, 29, 23+bob, 'blush')
 
-    # Torso
-    c.fill_rect(25, 28+bob, 36, 30+bob, 'shirt_base')
-    c.fill_rect(35, 29+bob, 39, 35+bob, 'shirt_sh')
-    c.fill_rect(24, 29+bob, 26, 31+bob, 'shirt_hi')
-    
-    # Denim Bib & Body
-    c.fill_rect(24, 31+bob, 36, 43+bob, 'denim_base')
-    c.fill_rect(26, 32+bob, 35, 41+bob, 'denim_mid')
-    c.fill_rect(27, 29+bob, 30, 35+bob, 'denim_sh')
-    c.fill_rect(26, 34+bob, 28, 35+bob, 'brass')
-    c.set_px(26, 35+bob, 'brass_sh')
-    c.fill_rect(28, 38+bob, 34, 42+bob, 'denim_sh')
-    
-    # Tool Belt & Pouch
-    c.fill_rect(23, 42+bob, 37, 44+bob, 'belt_base')
-    c.fill_rect(23, 44+bob, 37, 44+bob, 'belt_sh')
-    c.fill_rect(34, 41+bob, 38, 46+bob, 'belt_sh')
-    c.set_px(37, 41+bob, 'brass')
+    # =========================================================================
+    # 2. RED PORTER CAP (Sleek dome, rounded back contour, 3/4 front emblem)
+    # =========================================================================
+    c.fill_rect(27, 6+bob, 36, 6+bob, 'cap_hi')
+    c.fill_rect(24, 7+bob, 38, 8+bob, 'cap_mid')
+    c.fill_rect(22, 9+bob, 40, 13+bob, 'cap_base')
+    # Flush rounded back shadow & subtle rear panel contour (no harsh stripe bar)
+    c.fill_rect(39, 9+bob, 41, 13+bob, 'cap_dark')
+    c.fill_rect(40, 11+bob, 41, 13+bob, 'cap_dark')
+    c.set_px(39, 8+bob, 'cap_dark')
+    c.fill_rect(35, 8+bob, 35, 12+bob, 'shirt_base')
+    c.fill_rect(30, 5+bob, 33, 5+bob, 'cap_dark')
+    c.set_px(31, 5+bob, 'cap_badge')
+    c.set_px(32, 5+bob, 'cap_badge')
 
-    # Locomotion Far Arm in Walk Frame 2 (Swing forward)
-    if walk_frame == 2:
-        c.fill_rect(20, 34+bob, 24, 38+bob, 'shirt_sh')
-        c.fill_rect(19, 39+bob, 24, 40+bob, 'glove_far')
-        c.fill_rect(18, 41+bob, 23, 45+bob, 'glove_far')
-        c.fill_rect(18, 45+bob, 22, 46+bob, 'glove_far')
+    # Brass Cap Badge (3/4 front placement matching player_down.png)
+    c.fill_rect(23, 11+bob, 26, 13+bob, 'cap_badge')
+    c.set_px(23, 11+bob, 'cap_badge_sh')
+    c.set_px(26, 13+bob, 'cap_badge_sh')
+    c.set_px(24, 12+bob, 'cap_out')
 
-    # LEGS & LOCOMOTION
+    # Cap Visor extending naturally forward over brow
+    c.fill_rect(17, 14+bob, 35, 14+bob, 'cap_hi')
+    c.fill_rect(16, 15+bob, 36, 15+bob, 'cap_base')
+    c.fill_rect(17, 16+bob, 34, 16+bob, 'cap_visor_bot')
+
+    # =========================================================================
+    # 3. STURDY NECK, TORSO, OVERALLS & SOLID PELVIS BRIDGE (No detached waist!)
+    # =========================================================================
+    # Neck & Collar
+    c.fill_rect(27, 27+bob, 34, 27+bob, 'skin_sh')
+    c.fill_rect(24, 28+bob, 36, 29+bob, 'shirt_base')
+    c.fill_rect(24, 28+bob, 27, 29+bob, 'shirt_hi')
+
+    # Chunky 3/4 Worker Torso (23..37 wide, flush back silhouette)
+    c.fill_rect(23, 29+bob, 37, 33+bob, 'shirt_base')
+    c.fill_rect(35, 29+bob, 37, 35+bob, 'shirt_sh')
+    c.fill_rect(23, 29+bob, 25, 31+bob, 'shirt_hi')
+
+    # Far Arm Swinging Forward (ONLY behind torso in walk_frame == 1 when near leg strides forward!)
+    if walk_frame == 1:
+        c.fill_rect(21, 31+bob, 24, 36+bob, 'shirt_sh')
+        c.fill_rect(19, 34+bob, 23, 38+bob, 'shirt_sh')
+        c.fill_rect(18, 38+bob, 22, 39+bob, 'glove_cuff')
+        c.fill_rect(17, 39+bob, 22, 44+bob, 'glove_far')
+        c.fill_rect(18, 40+bob, 21, 41+bob, 'glove_base')
+
+    # Denim Bib & Overalls (Rich midtone shading + front brass buckle)
+    c.fill_rect(23, 30+bob, 37, 41+bob, 'denim_base')
+    c.fill_rect(25, 31+bob, 35, 41+bob, 'denim_mid')
+    c.fill_rect(35, 32+bob, 37, 41+bob, 'denim_sh')
+    # Suspender straps + brass buckle
+    c.fill_rect(25, 29+bob, 28, 34+bob, 'denim_sh')
+    c.fill_rect(33, 29+bob, 35, 34+bob, 'denim_sh')
+    c.fill_rect(25, 34+bob, 28, 35+bob, 'brass')
+    c.set_px(25, 35+bob, 'brass_sh')
+    # Front-side pocket detail
+    c.fill_rect(24, 37+bob, 28, 40+bob, 'denim_sh')
+    c.fill_rect(25, 37+bob, 27, 39+bob, 'denim_base')
+    c.set_px(24, 37+bob, 'brass')
+
+    # Utility Belt & Flush Hip Bridge
+    c.fill_rect(22, 42+bob, 37, 43+bob, 'belt_base')
+    c.fill_rect(22, 44+bob, 37, 44+bob, 'belt_sh')
+    c.fill_rect(23, 42+bob, 25, 44+bob, 'brass')
+    c.set_px(24, 43+bob, 'belt_sh')
+    # Compact side tool pouch tucked cleanly at hip
+    c.fill_rect(35, 42+bob, 38, 46+bob, 'belt_sh')
+    c.fill_rect(36, 43+bob, 37, 45+bob, 'belt_base')
+    c.set_px(36, 42+bob, 'brass')
+
+    # Solid pelvis bridge across y = 45..47 so legs NEVER detach from belt during stride!
+    c.fill_rect(23, 45+bob, 36, 47+bob, 'denim_sh')
+    c.fill_rect(25, 45+bob, 34, 46+bob, 'denim_base')
+
+    # =========================================================================
+    # 4. LEGS & BOOTS (Balanced contralateral gait, consistent chunky boots)
+    # =========================================================================
     if walk_frame == 0:
-        c.fill_rect(25, 45, 32, 53, 'denim_base')
-        c.fill_rect(26, 46, 31, 51, 'denim_mid')
-        c.fill_rect(25, 52, 32, 53, 'denim_hi')
-        c.fill_rect(25, 54, 32, 54, 'denim_out')
-        c.fill_rect(23, 55, 33, 59, 'boot_base')
-        c.fill_rect(21, 57, 24, 59, 'boot_toe')
-        c.fill_rect(25, 55, 31, 56, 'boot_hi')
-        c.fill_rect(21, 60, 34, 61, 'boot_sole')
-        c.set_px(21, 59, 'boot_sole')
-        c.set_px(34, 59, 'boot_sole')
-        
-        # Far leg behind
-        c.fill_rect(33, 45, 38, 52, 'denim_far')
-        c.fill_rect(32, 53, 39, 58, 'boot_far')
-        c.fill_rect(31, 58, 40, 59, 'boot_far_sh')
+        # Far leg slightly stepped back
+        c.fill_rect(30, 46, 36, 54, 'denim_far')
+        c.fill_rect(31, 47, 35, 52, 'denim_far_sh')
+        c.fill_rect(30, 53, 36, 54, 'denim_sh')
+        _draw_side_boot(c, 29, 55, is_near=False, plant_flat=True)
+
+        # Near leg grounded cleanly under center
+        c.fill_rect(23, 46, 31, 54, 'denim_base')
+        c.fill_rect(24, 47, 30, 52, 'denim_mid')
+        c.fill_rect(30, 46, 31, 53, 'denim_sh')
+        c.fill_rect(23, 53, 31, 54, 'denim_hi')
+        _draw_side_boot(c, 21, 55, is_near=True, plant_flat=True)
 
     elif walk_frame == 1:
-        # Near leg forward-left
-        c.fill_rect(21, 46+bob, 29, 53+bob, 'denim_base')
-        c.fill_rect(22, 47+bob, 28, 51+bob, 'denim_mid')
-        c.fill_rect(20, 52+bob, 28, 53+bob, 'denim_hi')
-        by_n = 54 + bob
-        c.fill_rect(18, by_n, 29, by_n+4, 'boot_base')
-        c.fill_rect(16, by_n+2, 19, by_n+4, 'boot_toe')
-        c.fill_rect(20, by_n, 26, by_n+1, 'boot_hi')
-        c.fill_rect(16, by_n+5, 30, by_n+6, 'boot_sole')
-        c.set_px(16, by_n+4, 'boot_sole')
-        
-        # Far leg trailing back-right
-        c.fill_rect(32, 45+bob, 39, 51+bob, 'denim_far')
-        c.fill_rect(35, 51+bob, 42, 56+bob, 'boot_far')
-        c.fill_rect(37, 56+bob, 43, 58+bob, 'boot_far_sh')
+        # Far leg pushing back-right
+        c.fill_rect(31, 46+bob, 37, 50+bob, 'denim_far')
+        c.fill_rect(33, 49+bob, 39, 53+bob, 'denim_far')
+        c.fill_rect(33, 52+bob, 39, 53+bob, 'denim_sh')
+        _draw_side_boot(c, 32, 54+bob, is_near=False, plant_flat=False)
+
+        # Near leg striding crisply forward-left
+        c.fill_rect(23, 46+bob, 31, 49+bob, 'denim_base')
+        c.fill_rect(21, 48+bob, 29, 54+bob, 'denim_base')
+        c.fill_rect(22, 48+bob, 28, 52+bob, 'denim_mid')
+        c.fill_rect(21, 53+bob, 29, 54+bob, 'denim_hi')
+        _draw_side_boot(c, 19, 55+bob, is_near=True, plant_flat=True)
 
     elif walk_frame == 2:
-        # Near leg push-off back-right
-        c.fill_rect(28, 46+bob, 36, 52+bob, 'denim_base')
-        c.fill_rect(29, 47+bob, 35, 50+bob, 'denim_mid')
-        c.fill_rect(29, 52+bob, 36, 53+bob, 'denim_hi')
-        by_n = 53 + bob
-        c.fill_rect(31, by_n, 38, by_n+4, 'boot_base')
-        c.fill_rect(32, by_n+4, 39, by_n+6, 'boot_sole')
-        
         # Far leg swinging forward-left
-        c.fill_rect(20, 46+bob, 27, 52+bob, 'denim_far')
-        c.fill_rect(17, 53+bob, 27, 57+bob, 'boot_far')
-        c.fill_rect(16, 57+bob, 28, 59+bob, 'boot_far_sh')
+        c.fill_rect(23, 46+bob, 30, 49+bob, 'denim_far')
+        c.fill_rect(20, 48+bob, 28, 54+bob, 'denim_far')
+        c.fill_rect(21, 49+bob, 27, 52+bob, 'denim_sh')
+        c.fill_rect(20, 53+bob, 28, 54+bob, 'denim_base')
+        _draw_side_boot(c, 18, 55+bob, is_near=False, plant_flat=True)
 
-    # ARMS & WORK GLOVES (Near Arm)
+        # Near leg pushing back-right
+        c.fill_rect(29, 46+bob, 35, 50+bob, 'denim_base')
+        c.fill_rect(30, 48+bob, 37, 53+bob, 'denim_base')
+        c.fill_rect(31, 49+bob, 36, 51+bob, 'denim_mid')
+        c.fill_rect(30, 52+bob, 37, 53+bob, 'denim_hi')
+        _draw_side_boot(c, 30, 54+bob, is_near=True, plant_flat=False)
+
+    # =========================================================================
+    # 5. NEAR ARM & WORK GLOVE (Rounded shoulder socket + natural arm swing)
+    # =========================================================================
     if walk_frame == 0:
-        c.fill_rect(28, 33, 34, 38, 'shirt_base')
-        c.fill_rect(27, 34, 29, 38, 'shirt_hi')
-        c.fill_rect(27, 39, 34, 40, 'glove_cuff')
-        c.fill_rect(26, 41, 35, 46, 'glove_base')
-        c.fill_rect(26, 41, 33, 43, 'glove_hi')
-        c.fill_rect(26, 45, 34, 46, 'glove_sh')
-        c.fill_rect(23, 42, 26, 44, 'glove_base')
+        # Relaxed vertical side arm (flush back contour + clean front edge)
+        c.fill_rect(29, 29, 36, 38, 'shirt_base')
+        c.fill_rect(29, 30, 31, 37, 'shirt_hi')
+        c.fill_rect(34, 31, 36, 38, 'shirt_sh')
+        c.fill_rect(28, 39, 35, 40, 'glove_cuff')
+        c.fill_rect(27, 41, 36, 46, 'glove_base')
+        c.fill_rect(27, 41, 34, 43, 'glove_hi')
+        c.fill_rect(27, 45, 36, 46, 'glove_sh')
+        c.fill_rect(25, 42, 27, 44, 'glove_base')  # Forward thumb
+
     elif walk_frame == 1:
-        c.fill_rect(24, 33+bob, 31, 37+bob, 'shirt_base')
-        c.fill_rect(22, 36+bob, 27, 39+bob, 'shirt_hi')
-        c.fill_rect(21, 39+bob, 27, 40+bob, 'glove_cuff')
-        c.fill_rect(19, 41+bob, 28, 46+bob, 'glove_base')
-        c.fill_rect(19, 41+bob, 26, 43+bob, 'glove_hi')
-        c.fill_rect(17, 42+bob, 20, 44+bob, 'glove_base')
-    elif walk_frame == 2:
+        # Near leg is FORWARD -> Near arm swings naturally BACK (contralateral balance!)
+        c.fill_rect(29, 29+bob, 35, 34+bob, 'shirt_base')
+        c.fill_rect(29, 30+bob, 31, 33+bob, 'shirt_hi')
         c.fill_rect(31, 33+bob, 36, 38+bob, 'shirt_base')
-        c.fill_rect(34, 36+bob, 38, 40+bob, 'shirt_sh')
-        c.fill_rect(35, 40+bob, 40, 41+bob, 'glove_cuff')
-        c.fill_rect(36, 42+bob, 43, 47+bob, 'glove_base')
-        c.fill_rect(37, 42+bob, 42, 44+bob, 'glove_hi')
+        c.fill_rect(35, 34+bob, 37, 38+bob, 'shirt_sh')
+        c.fill_rect(32, 39+bob, 38, 40+bob, 'glove_cuff')
+        c.fill_rect(32, 41+bob, 39, 45+bob, 'glove_base')
+        c.fill_rect(33, 41+bob, 38, 43+bob, 'glove_hi')
+        c.fill_rect(32, 44+bob, 39, 45+bob, 'glove_sh')
+        c.fill_rect(30, 42+bob, 32, 44+bob, 'glove_base')  # Thumb
+
+    elif walk_frame == 2:
+        # Far leg is FORWARD -> Near arm swings naturally FORWARD across torso!
+        c.fill_rect(28, 29+bob, 34, 34+bob, 'shirt_base')
+        c.fill_rect(28, 30+bob, 30, 33+bob, 'shirt_hi')
+        c.fill_rect(33, 30+bob, 34, 34+bob, 'shirt_sh')
+        c.fill_rect(25, 34+bob, 32, 38+bob, 'shirt_base')
+        c.fill_rect(24, 34+bob, 26, 36+bob, 'shirt_hi')
+        c.fill_rect(25, 37+bob, 32, 38+bob, 'shirt_sh')  # Underside crease defines bent forearm!
+        c.fill_rect(22, 38+bob, 28, 39+bob, 'glove_cuff')
+        c.fill_rect(20, 40+bob, 27, 45+bob, 'glove_base')
+        c.fill_rect(21, 40+bob, 26, 42+bob, 'glove_hi')
+        c.fill_rect(20, 44+bob, 27, 45+bob, 'glove_sh')
+        c.fill_rect(18, 41+bob, 20, 43+bob, 'glove_base')  # Thumb pointing forward
 
     img = c.get_image()
     if not facing_left:
         img = img.transpose(Image.FLIP_LEFT_RIGHT)
-        
+
     return img
 
 
