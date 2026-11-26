@@ -3132,22 +3132,20 @@ func _draw_goal_hazard_brackets(rect: Rect2, _ch: Dictionary) -> void:
 	# Industrial Hydraulic Pallet Dock - Docked & Locked State ("CARGO SECURED & LOCKED")
 	var center: Vector2 = rect.get_center()
 
-	# 1. 4 Corner Runway Guidance Diodes switch to solid high-visibility emerald green
+	# 1. 4 Corner Runway Guidance Diodes switch to warm golden amber
 	# Position matches exact LED diode placement in assets/goal_pad.png (38 / 128)
 	var led_offset: float = tile_size * (38.0 / 128.0)
-	var lock_col: Color = Color(0.22, 1.0, 0.52, 0.95)
+	var lock_col: Color = Color(1.0, 0.86, 0.28, 0.90)
 	for dx in [-1.0, 1.0]:
 		for dy in [-1.0, 1.0]:
 			var diode_pos: Vector2 = center + Vector2(dx * led_offset, dy * led_offset)
-			# Soft beacon halo
-			draw_circle(diode_pos, 3.2, Color(0.20, 1.0, 0.50, 0.35))
-			# Sharp LED diode core
+			draw_circle(diode_pos, 3.0, Color(1.0, 0.82, 0.20, 0.30))
 			draw_circle(diode_pos, 1.4, lock_col)
 
-	# 2. Crisp perimeter dock lock framing under crate
+	# 2. Crisp golden perimeter dock framing under crate
 	var pad: float = tile_size * (14.0 / 128.0)
 	var lock_rect: Rect2 = Rect2(rect.position + Vector2(pad, pad), Vector2(tile_size - pad * 2.0, tile_size - pad * 2.0))
-	draw_rect(lock_rect, Color(0.25, 1.0, 0.55, 0.32), false, 1.4)
+	draw_rect(lock_rect, Color(1.0, 0.85, 0.25, 0.28), false, 1.4)
 
 
 func _draw_goal_light_pillar(rect: Rect2, goal_pos: Vector2i, ch: Dictionary, time_sec: float) -> void:
@@ -3546,16 +3544,8 @@ func _draw_crate(rect: Rect2, on_goal: bool, logical_pos: Vector2i = Vector2i.ZE
 	var crate_skin_id: String = crate_skin_info.get("id", "classic_wood")
 	var crate_tint: Color = crate_skin_info.get("tint", Color.WHITE)
 
-	var c_tex: Texture2D
-	var c_mod: Color
-	if crate_skin_id == "classic_wood":
-		c_tex = tex_crate_goal if on_goal else tex_crate
-		c_mod = Color(1.0, 1.0, 1.0) if on_goal else (ch["crate_tint"] * crate_tint)
-	else:
-		# Custom unlocked skins preserve their unique surface texture & tint even when docked!
-		c_tex = tex_crate
-		var base_skin_mod: Color = ch["crate_tint"] * crate_tint
-		c_mod = base_skin_mod.lerp(Color(1.05, 1.02, 0.80), 0.25) if on_goal else base_skin_mod
+	var c_tex: Texture2D = tex_crate_goal if on_goal else tex_crate
+	var c_mod: Color = Color(1.0, 1.0, 1.0) if on_goal else (ch["crate_tint"] * crate_tint)
 	draw_texture_rect(c_tex, draw_r, false, c_mod)
 
 	# 2. 3D Volume Key-Light & Ambient Occlusion Shading
@@ -3569,75 +3559,55 @@ func _draw_crate(rect: Rect2, on_goal: bool, logical_pos: Vector2i = Vector2i.ZE
 	draw_line(draw_r.position + Vector2(2.0, draw_r.size.y - 1.0), draw_r.end - Vector2(2.0, 1.0), Color(0.0, 0.0, 0.0, 0.45), 2.0)
 	draw_line(Vector2(draw_r.end.x - 1.0, draw_r.position.y + 2.0), draw_r.end - Vector2(1.0, 2.0), Color(0.0, 0.0, 0.0, 0.35), 1.8)
 
-	# Crate custom skin accessories (retained both on and off goals so skin identity shines!)
-	match crate_skin_id:
-		"steel_container":
-			# Cold-rolled metallic corner angle braces
-			var brace_len: float = draw_r.size.x * 0.22
-			var b_col: Color = Color(0.85, 0.92, 1.0, 0.85)
-			draw_line(draw_r.position, draw_r.position + Vector2(brace_len, 0), b_col, 2.0)
-			draw_line(draw_r.position, draw_r.position + Vector2(0, brace_len), b_col, 2.0)
-			draw_line(draw_r.position + Vector2(draw_r.size.x, 0), draw_r.position + Vector2(draw_r.size.x - brace_len, 0), b_col, 2.0)
-			draw_line(draw_r.position + Vector2(draw_r.size.x, 0), draw_r.position + Vector2(draw_r.size.x, brace_len), b_col, 2.0)
-			draw_line(draw_r.position + Vector2(0, draw_r.size.y), draw_r.position + Vector2(brace_len, draw_r.size.y), b_col, 2.0)
-			draw_line(draw_r.position + Vector2(0, draw_r.size.y), draw_r.position + Vector2(0, draw_r.size.y - brace_len), b_col, 2.0)
-			draw_line(draw_r.end, draw_r.end - Vector2(brace_len, 0), b_col, 2.0)
-			draw_line(draw_r.end, draw_r.end - Vector2(0, brace_len), b_col, 2.0)
-		"hazard_box":
-			# Caution diagonal hazard accent in center
-			var h_col: Color = Color(0.12, 0.12, 0.15, 0.75)
-			var c_len: float = draw_r.size.x * 0.35
-			draw_line(c_center - Vector2(c_len * 0.5, c_len * 0.5), c_center + Vector2(c_len * 0.5, c_len * 0.5), h_col, 3.5)
-			draw_line(c_center - Vector2(c_len * 0.5, -c_len * 0.5), c_center + Vector2(c_len * 0.5, -c_len * 0.5), h_col, 3.5)
-		"cryo_vault":
-			# 4 Frost crystalline corner studs
-			var pad: float = draw_r.size.x * 0.18
-			var frost_pts: Array[Vector2] = [
-				draw_r.position + Vector2(pad, pad),
-				draw_r.position + Vector2(draw_r.size.x - pad, pad),
-				draw_r.position + Vector2(pad, draw_r.size.y - pad),
-				draw_r.position + Vector2(draw_r.size.x - pad, draw_r.size.y - pad)
-			]
-			for pt in frost_pts:
-				draw_circle(pt, 2.2, Color(0.85, 0.98, 1.0, 0.88))
-				draw_circle(pt, 1.0, Color(1.0, 1.0, 1.0, 0.98))
-		"luxury_safe":
-			# Central brass vault combination dial
-			draw_circle(c_center, 6.2, Color(0.12, 0.10, 0.08, 0.88))
-			draw_circle(c_center, 5.0, Color(1.0, 0.86, 0.28, 0.96))
-			draw_circle(c_center, 2.0, Color(0.30, 0.20, 0.05, 1.0))
-			# 4 Gold corner rivets
-			var g_pad: float = draw_r.size.x * 0.14
-			var g_corners: Array[Vector2] = [
-				draw_r.position + Vector2(g_pad, g_pad),
-				draw_r.position + Vector2(draw_r.size.x - g_pad, g_pad),
-				draw_r.position + Vector2(g_pad, draw_r.size.y - g_pad),
-				draw_r.position + Vector2(draw_r.size.x - g_pad, draw_r.size.y - g_pad)
-			]
-			for pt in g_corners:
-				draw_circle(pt, 2.4, Color(1.0, 0.85, 0.25, 0.95))
-				draw_circle(pt - Vector2(0.5, 0.5), 0.8, Color(1.0, 1.0, 0.90, 1.0))
-
-	if on_goal:
-		var time_sec: float = float(Time.get_ticks_msec()) / 1000.0
-		var star_pulse: float = sin(time_sec * 4.0) * 0.15
-		var aura_spark: Color = ch["goal_aura"]
-		aura_spark.a = 0.50
-		draw_circle(c_center, 9.5 * (1.0 + star_pulse), aura_spark)
-		draw_circle(c_center, 4.0, Color(1.0, 1.0, 0.92, 0.95))
-
-		# 4 Radiant metallic lock-in corner rivets
-		var r_pad: float = draw_r.size.x * 0.14
-		var corners: Array[Vector2] = [
-			draw_r.position + Vector2(r_pad, r_pad),
-			draw_r.position + Vector2(draw_r.size.x - r_pad, r_pad),
-			draw_r.position + Vector2(r_pad, draw_r.size.y - r_pad),
-			draw_r.position + Vector2(draw_r.size.x - r_pad, draw_r.size.y - r_pad)
-		]
-		for corn in corners:
-			draw_circle(corn, 2.8, Color(0.08, 0.10, 0.14, 0.90))
-			draw_circle(corn, 2.0, aura_spark)
-			draw_circle(corn - Vector2(0.5, 0.5), 0.9, Color(1.0, 1.0, 0.95, 0.98))
+	# Crate custom skin accessories (shown off-goal so docked crates always restore clean gold sprite)
+	if not on_goal:
+		match crate_skin_id:
+			"steel_container":
+				# Cold-rolled metallic corner angle braces
+				var brace_len: float = draw_r.size.x * 0.22
+				var b_col: Color = Color(0.85, 0.92, 1.0, 0.85)
+				draw_line(draw_r.position, draw_r.position + Vector2(brace_len, 0), b_col, 2.0)
+				draw_line(draw_r.position, draw_r.position + Vector2(0, brace_len), b_col, 2.0)
+				draw_line(draw_r.position + Vector2(draw_r.size.x, 0), draw_r.position + Vector2(draw_r.size.x - brace_len, 0), b_col, 2.0)
+				draw_line(draw_r.position + Vector2(draw_r.size.x, 0), draw_r.position + Vector2(draw_r.size.x, brace_len), b_col, 2.0)
+				draw_line(draw_r.position + Vector2(0, draw_r.size.y), draw_r.position + Vector2(brace_len, draw_r.size.y), b_col, 2.0)
+				draw_line(draw_r.position + Vector2(0, draw_r.size.y), draw_r.position + Vector2(0, draw_r.size.y - brace_len), b_col, 2.0)
+				draw_line(draw_r.end, draw_r.end - Vector2(brace_len, 0), b_col, 2.0)
+				draw_line(draw_r.end, draw_r.end - Vector2(0, brace_len), b_col, 2.0)
+			"hazard_box":
+				# Caution diagonal hazard accent in center
+				var h_col: Color = Color(0.12, 0.12, 0.15, 0.75)
+				var c_len: float = draw_r.size.x * 0.35
+				draw_line(c_center - Vector2(c_len * 0.5, c_len * 0.5), c_center + Vector2(c_len * 0.5, c_len * 0.5), h_col, 3.5)
+				draw_line(c_center - Vector2(c_len * 0.5, -c_len * 0.5), c_center + Vector2(c_len * 0.5, -c_len * 0.5), h_col, 3.5)
+			"cryo_vault":
+				# 4 Frost crystalline corner studs
+				var pad: float = draw_r.size.x * 0.18
+				var frost_pts: Array[Vector2] = [
+					draw_r.position + Vector2(pad, pad),
+					draw_r.position + Vector2(draw_r.size.x - pad, pad),
+					draw_r.position + Vector2(pad, draw_r.size.y - pad),
+					draw_r.position + Vector2(draw_r.size.x - pad, draw_r.size.y - pad)
+				]
+				for pt in frost_pts:
+					draw_circle(pt, 2.2, Color(0.85, 0.98, 1.0, 0.88))
+					draw_circle(pt, 1.0, Color(1.0, 1.0, 1.0, 0.98))
+			"luxury_safe":
+				# Central brass vault combination dial
+				draw_circle(c_center, 6.2, Color(0.12, 0.10, 0.08, 0.88))
+				draw_circle(c_center, 5.0, Color(1.0, 0.86, 0.28, 0.96))
+				draw_circle(c_center, 2.0, Color(0.30, 0.20, 0.05, 1.0))
+				# 4 Gold corner rivets
+				var g_pad: float = draw_r.size.x * 0.14
+				var g_corners: Array[Vector2] = [
+					draw_r.position + Vector2(g_pad, g_pad),
+					draw_r.position + Vector2(draw_r.size.x - g_pad, g_pad),
+					draw_r.position + Vector2(g_pad, draw_r.size.y - g_pad),
+					draw_r.position + Vector2(draw_r.size.x - g_pad, draw_r.size.y - g_pad)
+				]
+				for pt in g_corners:
+					draw_circle(pt, 2.4, Color(1.0, 0.85, 0.25, 0.95))
+					draw_circle(pt - Vector2(0.5, 0.5), 0.8, Color(1.0, 1.0, 0.90, 1.0))
 
 
 func _draw_player(rect: Rect2) -> void:
