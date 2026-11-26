@@ -160,6 +160,20 @@ func test_tracking_security_camera(game: Node) -> void:
 	game._trigger_bump_recoil(Vector2i.UP)
 	assert_true(game.cctv_alert_timer > 0.0, "Wall collision activates camera alert strobe timer (got %f)" % game.cctv_alert_timer)
 
+	# Test inward hemisphere clamping (must never swivel backwards into brick walls)
+	game.visual_player_pos = Vector2(float(game.cctv_camera_tile.x) - 3.0, float(game.cctv_camera_tile.y) - 2.0)
+	for _i in range(10):
+		game._update_security_camera(0.1)
+	var offset_from_normal: float = absf(wrapf(game.cctv_current_angle - game.cctv_mount_normal, -PI, PI))
+	assert_true(offset_from_normal <= deg_to_rad(52.5), "CCTV gimbal stays clamped within inward wall hemisphere (offset %f deg)" % rad_to_deg(offset_from_normal))
+
+	# Test raycast wall occlusion stops cleanly at perimeter masonry
+	var origin: Vector2 = game.grid_origin + game.board_shake_offset
+	var anchor: Vector2 = game._get_security_camera_anchor(origin)
+	var ray_hit: Vector2 = game._cast_cctv_ray(origin, anchor, game.cctv_mount_normal, game.tile_size * 20.0)
+	var hit_dist: float = (ray_hit - anchor).length()
+	assert_true(hit_dist < game.tile_size * float(game.grid.height + 1), "CCTV raycast stops at wall boundary instead of punching infinitely through bricks")
+
 	# Test camera initialization across all chapters
 	for lvl in [15, 35, 50]:
 		game.load_level(lvl)
