@@ -1967,15 +1967,15 @@ func _init_sector_styles() -> void:
 	# Frontier unlocked style
 	_frontier_style = StyleBoxFlat.new()
 	_frontier_style.bg_color = Color(0.24, 0.17, 0.06, 0.98)
-	_frontier_style.border_color = Color(1.0, 0.84, 0.28, 1.0)
-	_frontier_style.border_width_left = 2
-	_frontier_style.border_width_top = 2
-	_frontier_style.border_width_right = 2
+	_frontier_style.border_color = Color(1.0, 0.84, 0.28, 0.90)
+	_frontier_style.border_width_left = 1
+	_frontier_style.border_width_top = 1
+	_frontier_style.border_width_right = 1
 	_frontier_style.border_width_bottom = 3
 	_frontier_style.set_corner_radius_all(12)
-	_frontier_style.shadow_color = Color(1.0, 0.80, 0.22, 0.42)
-	_frontier_style.shadow_size = 10
-	_frontier_style.shadow_offset = Vector2(0, 3)
+	_frontier_style.shadow_color = Color(0.0, 0.0, 0.0, 0.36)
+	_frontier_style.shadow_size = 4
+	_frontier_style.shadow_offset = Vector2(0, 2)
 	_frontier_style.content_margin_left = 4.0
 	_frontier_style.content_margin_top = 6.0
 	_frontier_style.content_margin_right = 4.0
@@ -2890,20 +2890,25 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 		claim_btn.add_theme_font_override("font", _get_modern_font(600))
 		claim_btn.add_theme_font_size_override("font_size", 14)
 		var sb_cta := StyleBoxFlat.new()
-		sb_cta.bg_color = Color(0.955, 0.965, 0.980)
+		sb_cta.bg_color = Color(0.91, 0.54, 0.10)
+		sb_cta.border_color = Color(1.0, 0.84, 0.48, 0.32)
+		sb_cta.border_width_top = 1
 		sb_cta.set_corner_radius_all(14)
+		sb_cta.shadow_color = Color(0.0, 0.0, 0.0, 0.30)
+		sb_cta.shadow_size = 4
+		sb_cta.shadow_offset = Vector2(0, 2)
 		sb_cta.content_margin_top = 13.0
 		sb_cta.content_margin_bottom = 13.0
 		claim_btn.add_theme_stylebox_override("normal", sb_cta)
 		var sb_cta_hov := sb_cta.duplicate() as StyleBoxFlat
-		sb_cta_hov.bg_color = Color(1.0, 1.0, 1.0)
+		sb_cta_hov.bg_color = Color(0.96, 0.61, 0.16)
 		claim_btn.add_theme_stylebox_override("hover", sb_cta_hov)
 		var sb_cta_prs := sb_cta.duplicate() as StyleBoxFlat
-		sb_cta_prs.bg_color = Color(0.84, 0.87, 0.92)
+		sb_cta_prs.bg_color = Color(0.78, 0.44, 0.07)
 		claim_btn.add_theme_stylebox_override("pressed", sb_cta_prs)
-		claim_btn.add_theme_color_override("font_color", Color(0.067, 0.078, 0.110))
-		claim_btn.add_theme_color_override("font_hover_color", Color(0.04, 0.05, 0.08))
-		claim_btn.add_theme_color_override("font_pressed_color", Color(0.067, 0.078, 0.110))
+		claim_btn.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
+		claim_btn.add_theme_color_override("font_hover_color", Color(1.0, 1.0, 1.0))
+		claim_btn.add_theme_color_override("font_pressed_color", Color(0.96, 0.92, 0.86))
 		claim_btn.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.0))
 	if close_v_btn:
 		close_v_btn.text = loc_mgr.tr_text("BTN_LATER") if loc_mgr else "Later"
