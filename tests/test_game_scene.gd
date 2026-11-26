@@ -394,12 +394,16 @@ func test_win_modal_three_star_system() -> void:
 	assert_true(save_mgr.is_optimal_clear(0, 9), "Level 0 at 9 moves achieves Master Crown")
 	assert_false(save_mgr.is_optimal_clear(0, 10), "Level 0 at 10 moves does not achieve Master Crown")
 	assert_true("MASTER" in loc.tr_text("WIN_BANNER_MASTER"), "EN Master Crown banner contains MASTER")
+	assert_false("👑" in loc.tr_text("WIN_BANNER_MASTER"), "EN Master banner removes duplicate crown emoji")
 	assert_true("PERFECT" in loc.tr_text("WIN_TARGET_MASTER", [9]), "EN Master Crown target text contains PERFECT")
+	assert_false("👑" in loc.tr_text("WIN_TARGET_MASTER", [9]), "EN Master target text removes duplicate crown emoji")
 
 	loc.set_language("fr")
 	assert_true("PARFAIT" in loc.tr_text("WIN_BANNER_MASTER"), "FR Master Crown banner contains PARFAIT")
+	assert_false("👑" in loc.tr_text("WIN_BANNER_MASTER"), "FR Master banner removes duplicate crown emoji")
 	loc.set_language("ar")
 	assert_true("مثالي" in loc.tr_text("WIN_BANNER_MASTER"), "AR Master Crown banner contains Arabic text")
+	assert_false("👑" in loc.tr_text("WIN_BANNER_MASTER"), "AR Master banner removes duplicate crown emoji")
 	loc.set_language("en")
 
 	game.free()

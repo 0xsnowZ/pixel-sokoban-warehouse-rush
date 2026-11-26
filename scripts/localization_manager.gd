@@ -429,9 +429,9 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "اكتمل المستوى!"
 	},
 	"WIN_BANNER_MASTER": {
-		"en": "👑 MASTER PAR ACHIEVED!",
-		"fr": "👑 PAR PARFAIT ATTEINT !",
-		"ar": "👑 إتقان قياسي مثالي!"
+		"en": "MASTER PAR ACHIEVED!",
+		"fr": "PAR PARFAIT ATTEINT !",
+		"ar": "إتقان قياسي مثالي!"
 	},
 	"STAT_MOVES_TITLE": {
 		"en": "MOVES",
@@ -459,9 +459,9 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "الهدف: ≤ %d حركة"
 	},
 	"WIN_TARGET_MASTER": {
-		"en": "👑 PERFECT PAR: %d MOVES",
-		"fr": "👑 PAR PARFAIT : %d MOUV.",
-		"ar": "👑 إنجاز مثالي: %d حركة"
+		"en": "PERFECT PAR: %d MOVES",
+		"fr": "PAR PARFAIT : %d MOUV.",
+		"ar": "إنجاز مثالي: %d حركة"
 	},
 	"WIN_TITLE": {
 		"en": "LEVEL %d COMPLETED!",
@@ -809,39 +809,89 @@ const TRANSLATIONS: Dictionary = {
 		"ar": "تم تأمين جميع مكافآت الخزائن ✓"
 	},
 	"VAULT_UNLOCKED_TITLE": {
-		"en": "★ STAR VAULT UNLOCKED! ★",
-		"fr": "★ COFFRE ÉTOILÉ DÉBLOQUÉ ! ★",
-		"ar": "★ تم فتح خزنة النجوم! ★"
+		"en": "MILESTONE VAULT UNLOCKED",
+		"fr": "COFFRE ÉTOILÉ DÉBLOQUÉ",
+		"ar": "تم فتح خزنة النجوم"
 	},
 	"VAULT_NAME_FORMAT": {
-		"en": "%s (%d Stars)",
-		"fr": "%s (%d Étoiles)",
-		"ar": "%s (%d نجمة)"
+		"en": "%s",
+		"fr": "%s",
+		"ar": "%s"
 	},
 	"VAULT_DESC_HINTS": {
-		"en": "Congratulations! You earned +%d Free Solver Hints for your dedication!",
-		"fr": "Félicitations ! Vous gagnez +%d indices gratuits !",
-		"ar": "تهانينا! لقد ربحت +%d تلميحات مجانية!"
+		"en": "Ready to claim into your hint stock",
+		"fr": "Prêt à ajouter à votre réserve d'indices",
+		"ar": "جاهز للإضافة إلى رصيد التلميحات"
 	},
 	"VAULT_DESC_CRATE": {
-		"en": "Exclusive Crate Skin Unlocked! Visit the Supply Depot to equip your new gear!",
-		"fr": "Apparence de caisse débloquée ! Visitez le Dépôt Central pour l'équiper !",
-		"ar": "تم فتح مظهر صندوق حصري! تفضّل إلى مستودع الإمدادات لتجهيزه!"
+		"en": "Unlocked & ready in Supply Depot",
+		"fr": "Débloqué et prêt au Dépôt Central",
+		"ar": "تم الفتح وجاهز في مستودع الإمدادات"
 	},
 	"VAULT_DESC_OUTFIT": {
-		"en": "Exclusive Outfit Unlocked! Visit the Supply Depot to equip your new gear!",
-		"fr": "Tenue exclusive débloquée ! Visitez le Dépôt Central pour l'équiper !",
-		"ar": "تم فتح زي حصري! تفضّل إلى مستودع الإمدادات لتجهيزه!"
+		"en": "Unlocked & ready in Supply Depot",
+		"fr": "Débloquée et prête au Dépôt Central",
+		"ar": "تم الفتح وجاهز في مستودع الإمدادات"
 	},
 	"BTN_CLAIM_REWARD": {
 		"en": "CLAIM REWARD",
 		"fr": "RÉCLAMER",
 		"ar": "استلام المكافأة"
 	},
+	"BTN_CLAIM_HINTS": {
+		"en": "CLAIM +%d HINTS",
+		"fr": "RÉCLAMER +%d INDICES",
+		"ar": "استلام +%d تلميحات"
+	},
+	"BTN_CLAIM_EQUIP": {
+		"en": "CLAIM & EQUIP",
+		"fr": "RÉCLAMER & ÉQUIPER",
+		"ar": "استلام وتجهيز"
+	},
 	"BTN_LATER": {
-		"en": "LATER",
-		"fr": "PLUS TARD",
+		"en": "Claim Later",
+		"fr": "Plus tard",
 		"ar": "لاحقاً"
+	},
+	"VAULT_REWARD_HINTS": {
+		"en": "+%d SOLVER HINTS",
+		"fr": "+%d INDICES GRATUITS",
+		"ar": "+%d تلميحات حل"
+	},
+	"VAULT_REWARD_CRATE": {
+		"en": "EXCLUSIVE CRATE SKIN",
+		"fr": "CAISSE EXCLUSIVE DÉBLOQUÉE",
+		"ar": "مظهر صندوق حصري"
+	},
+	"VAULT_REWARD_OUTFIT": {
+		"en": "EXCLUSIVE WORKER OUTFIT",
+		"fr": "TENUE EXCLUSIVE DÉBLOQUÉE",
+		"ar": "زي عامل حصري"
+	},
+	"VAULT_MILESTONE_REACHED": {
+		"en": "%d ★ MILESTONE",
+		"fr": "PALIER %d ★",
+		"ar": "إنجاز %d ★"
+	},
+	"VAULT_NEXT_TARGET": {
+		"en": "Next: %d ★",
+		"fr": "Suivant : %d ★",
+		"ar": "التالي: %d ★"
+	},
+	"VAULT_FINAL_TIER": {
+		"en": "Final Milestone!",
+		"fr": "Palier final !",
+		"ar": "الإنجاز النهائي!"
+	},
+	"VAULT_READY_BANNER": {
+		"en": "VAULT READY: %s  •  TAP TO CLAIM",
+		"fr": "COFFRE PRÊT : %s  •  TOUCHER POUR RÉCLAMER",
+		"ar": "خزنة جاهزة: %s  •  المس للاستلام"
+	},
+	"VAULT_CLAIMED_TOAST": {
+		"en": "Claimed: %s!",
+		"fr": "Réclamé : %s !",
+		"ar": "تم الاستلام: %s!"
 	},
 	"ACHIEVEMENT_BANNER_HEADER": {
 		"en": "ACHIEVEMENT UNLOCKED",

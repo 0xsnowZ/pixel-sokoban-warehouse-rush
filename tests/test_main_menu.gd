@@ -426,26 +426,44 @@ func test_breakout_hit_menu_features() -> void:
 		menu._update_menu_state()
 		assert_true("CLEARED ✓" in menu.daily_shift_btn.text, "Daily Shift button indicates CLEARED after completion")
 
-	# 2. Star Vault Milestone Modal
-	var vault_data: Dictionary = {
-		"stars": 15,
-		"name": "Bronze Supply Cache",
-		"reward_type": "hints",
-		"amount": 5,
-		"icon": "🥉"
-	}
-	menu._show_star_vault_modal(0, vault_data)
+	# 2. Star Vault Milestone Modal (Redesigned Card + Reward Pill + Chaining + Deferred Pill)
+	for i in range(9):
+		menu.save_mgr.record_level_completion(i, menu.save_mgr.get_optimal_moves(i), 3, TEST_SAVE_PATH) # 27 stars -> unlocks vaults 0 (15★) & 1 (25★)
+	menu._update_menu_state()
+	menu._refresh_level_grid_buttons()
+	assert_true(menu.vault_ready_btn != null and menu.vault_ready_btn.visible, "VaultReadyBtn surfaces unclaimed Star Vault on Main Menu")
+
+	menu._check_star_vault_milestones()
 	assert_true(menu.star_vault_modal != null, "Star Vault modal created")
 	assert_true(menu.star_vault_modal.visible, "Star Vault modal visible after trigger")
+
+	var reward_lbl: Label = menu.star_vault_modal.find_child("RewardPillLabel", true, false) as Label
+	var prog_bar: ProgressBar = menu.star_vault_modal.find_child("VaultProgressBar", true, false) as ProgressBar
+	assert_true(reward_lbl != null and "+5" in reward_lbl.text, "Reward pill shows exact +5 Solver Hints value")
+	assert_true(prog_bar != null and prog_bar.max_value == 25.0, "Star Vault progress bar targets next tier (25★)")
 
 	var claim_btn: Button = menu.star_vault_modal.find_child("ClaimVaultBtn", true, false) as Button
 	assert_true(claim_btn != null, "Claim button exists on Star Vault modal")
 
-	# Claim the vault
+	# Claim vault 0 -> should seamlessly chain into vault 1 (25★)!
 	claim_btn.pressed.emit()
-	assert_false(menu.star_vault_modal.visible, "Star Vault modal hidden after claiming")
+	assert_true(menu.save_mgr.is_star_vault_claimed(0), "First Star Vault marked claimed")
+	assert_true(menu.star_vault_modal.visible, "Star Vault modal chains seamlessly to second unclaimed vault (25★)")
+	assert_false(menu.save_mgr.is_star_vault_claimed(1), "Second Star Vault awaits claim click")
+
+	# Claim vault 1 -> modal hides cleanly & VaultReadyBtn hides
+	claim_btn.pressed.emit()
+	assert_true(menu.save_mgr.is_star_vault_claimed(1), "Second Star Vault claimed in chain")
+	assert_false(menu.star_vault_modal.visible, "Star Vault modal hidden after claiming all unlocked vaults")
+	assert_true(menu.vault_ready_btn == null or not menu.vault_ready_btn.visible, "VaultReadyBtn hides once all vaults are claimed")
 
 	# Back action dismisses Star Vault Modal cleanly
+	var vault_data: Dictionary = {
+		"stars": 15,
+		"name": "Bronze Supply Cache",
+		"reward_type": "hints",
+		"amount": 5
+	}
 	menu._show_star_vault_modal(0, vault_data)
 	assert_true(menu.star_vault_modal.visible, "Star Vault modal reopened for Back dismiss check")
 	assert_true(menu._handle_menu_back_request(), "Menu back handler consumes Star Vault modal")

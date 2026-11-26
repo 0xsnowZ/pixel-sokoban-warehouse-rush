@@ -1161,7 +1161,15 @@ func _on_level_won() -> void:
 			var daily_msg: String = loc_mgr.tr_text("TOAST_DAILY_CLEARED", [cur_streak]) if loc_mgr else ("DAILY SHIFT CLEARED! +3 HINTS • %d DAY STREAK" % cur_streak)
 			_show_hint_toast(daily_msg, Color(1.0, 0.85, 0.25))
 		else:
+			var unclaimed_before: int = save_mgr.get_unclaimed_star_vaults().size() if save_mgr.has_method("get_unclaimed_star_vaults") else 0
 			save_mgr.record_level_completion(current_level_index, grid.moves_count, grid.pushes_count)
+			if save_mgr.has_method("get_unclaimed_star_vaults"):
+				var unclaimed_after: Array[Dictionary] = save_mgr.get_unclaimed_star_vaults()
+				if unclaimed_after.size() > unclaimed_before and not unclaimed_after.is_empty():
+					var newest_v: Dictionary = unclaimed_after[unclaimed_after.size() - 1].get("vault", {})
+					var v_name: String = str(newest_v.get("name", "Supply Cache"))
+					var v_title: String = loc_mgr.tr_text("VAULT_UNLOCKED_TITLE") if loc_mgr else "MILESTONE VAULT UNLOCKED"
+					_show_hint_toast("%s: %s" % [v_title, v_name], Color(1.0, 0.86, 0.28))
 	_check_achievements()
 	if ad_mgr and not is_daily_challenge:
 		ad_mgr.record_level_completed(current_level_index)
@@ -1241,7 +1249,7 @@ func _on_level_won() -> void:
 				win_stats.text = loc_mgr.tr_text("WIN_TARGET_HINT", [three_star_target])
 	else:
 		if win_title:
-			win_title.text = "👑 MASTER PAR ACHIEVED!" if is_master else "LEVEL COMPLETED!"
+			win_title.text = "MASTER PAR ACHIEVED!" if is_master else "LEVEL COMPLETED!"
 		if win_menu_button: win_menu_button.text = "MENU"
 		if win_retry_button: win_retry_button.text = "RETRY"
 		if next_level_button:
@@ -1251,7 +1259,7 @@ func _on_level_won() -> void:
 				next_level_button.text = "NEXT"
 		if win_stats:
 			if is_master:
-				win_stats.text = "👑 PERFECT PAR: %d MOVES" % grid.moves_count
+				win_stats.text = "PERFECT PAR: %d MOVES" % grid.moves_count
 			else:
 				win_stats.text = "Target: ≤ %d moves" % three_star_target
 
