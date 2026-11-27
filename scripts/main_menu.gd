@@ -9,6 +9,7 @@ extends Control
 
 const SaveManagerScript: GDScript = preload("res://scripts/save_manager.gd")
 const AchievementManagerScript: GDScript = preload("res://scripts/achievement_manager.gd")
+const CosmeticRendererScript: GDScript = preload("res://scripts/cosmetic_renderer.gd")
 const TOTAL_LEVELS_COUNT: int = 75
 const AVAILABLE_LEVELS_COUNT: int = 75 # All 75 verified solvable levels active
 const GAME_SCENE_PATH: String = "res://scenes/game.tscn"
@@ -59,6 +60,15 @@ var _sector_font_colors: Array[Color] = [
 var tex_player_down: Texture2D = preload("res://assets/player_down.png")
 var tex_player_down_w1: Texture2D = preload("res://assets/player_down_walk1.png")
 var tex_player_down_w2: Texture2D = preload("res://assets/player_down_walk2.png")
+var tex_player_up: Texture2D = preload("res://assets/player_up.png")
+var tex_player_up_w1: Texture2D = preload("res://assets/player_up_walk1.png")
+var tex_player_up_w2: Texture2D = preload("res://assets/player_up_walk2.png")
+var tex_player_left: Texture2D = preload("res://assets/player_left.png")
+var tex_player_left_w1: Texture2D = preload("res://assets/player_left_walk1.png")
+var tex_player_left_w2: Texture2D = preload("res://assets/player_left_walk2.png")
+var tex_player_right: Texture2D = preload("res://assets/player_right.png")
+var tex_player_right_w1: Texture2D = preload("res://assets/player_right_walk1.png")
+var tex_player_right_w2: Texture2D = preload("res://assets/player_right_walk2.png")
 var tex_crate: Texture2D = preload("res://assets/crate_normal.png")
 var tex_crate_goal: Texture2D = preload("res://assets/crate_goal.png")
 var tex_goal_pad: Texture2D = preload("res://assets/goal_pad.png")
@@ -69,6 +79,9 @@ var _vault_emblem_kind: String = "cube"
 var _vault_emblem_accent: Color = Color(0.92, 0.72, 0.34)
 
 var _preview_anim_time: float = 0.0
+var _preview_worker_skin_id: String = ""
+var _preview_crate_skin_id: String = ""
+var _preview_dir_timer: float = 0.0
 
 var save_mgr: Node = null
 var audio_mgr: Node = null
@@ -691,6 +704,10 @@ func _show_locker() -> void:
 		settings_modal.hide()
 	if achievements_modal:
 		achievements_modal.hide()
+	if save_mgr:
+		_preview_worker_skin_id = save_mgr.selected_worker_skin
+		_preview_crate_skin_id = save_mgr.selected_crate_skin
+	_preview_dir_timer = 0.0
 	if locker_modal:
 		_refresh_locker_ui()
 		_animate_modal_open(locker_modal)
@@ -739,22 +756,70 @@ func _hide_achievements() -> void:
 	_update_menu_state()
 
 
+func _apply_locker_tab_styles() -> void:
+	var tab_buttons: Array = [
+		[outfits_tab_btn, current_locker_tab == "outfits"],
+		[crates_tab_btn, current_locker_tab == "crates"]
+	]
+	for pair in tab_buttons:
+		var btn: Button = pair[0] as Button
+		var is_active: bool = bool(pair[1])
+		if btn == null:
+			continue
+		btn.clip_contents = true
+		btn.add_theme_font_size_override("font_size", 13)
+		btn.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0))
+		if is_active:
+			btn.theme_type_variation = &"PrimaryButton"
+			for s_name in ["normal", "hover", "pressed"]:
+				btn.remove_theme_stylebox_override(s_name)
+			btn.add_theme_font_override("font", _get_modern_font(600))
+			for c_name in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+				btn.add_theme_color_override(c_name, Color(0.067, 0.078, 0.110, 1.0))
+		else:
+			btn.theme_type_variation = &""
+			var sb_idle: StyleBoxFlat = StyleBoxFlat.new()
+			sb_idle.bg_color = Color(0.065, 0.082, 0.118, 0.94)
+			sb_idle.border_color = Color(1.0, 1.0, 1.0, 0.09)
+			sb_idle.set_border_width_all(1)
+			sb_idle.set_corner_radius_all(12)
+			var sb_hover: StyleBoxFlat = sb_idle.duplicate()
+			sb_hover.bg_color = Color(0.098, 0.122, 0.172, 0.96)
+			sb_hover.border_color = Color(1.0, 1.0, 1.0, 0.16)
+			btn.add_theme_stylebox_override("normal", sb_idle)
+			btn.add_theme_stylebox_override("hover", sb_hover)
+			btn.add_theme_stylebox_override("pressed", sb_idle)
+			btn.add_theme_font_override("font", _get_modern_font(500))
+			for c_name in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+				btn.add_theme_color_override(c_name, Color(0.78, 0.84, 0.94, 1.0))
+
+
 func _switch_locker_tab(tab: String) -> void:
 	if audio_mgr:
 		audio_mgr.play_click()
 	if haptic_mgr:
 		haptic_mgr.vibrate_click()
 	current_locker_tab = tab
-	if outfits_tab_btn:
-		outfits_tab_btn.theme_type_variation = &"PrimaryButton" if tab == "outfits" else &""
-	if crates_tab_btn:
-		crates_tab_btn.theme_type_variation = &"PrimaryButton" if tab == "crates" else &""
+	_apply_locker_tab_styles()
+	_refresh_locker_ui()
+
+
+func _preview_locker_item(tab_kind: String, item_id: String) -> void:
+	if tab_kind == "outfits":
+		_preview_worker_skin_id = item_id
+	else:
+		_preview_crate_skin_id = item_id
+	if audio_mgr:
+		audio_mgr.play_click()
+	if haptic_mgr:
+		haptic_mgr.vibrate_click()
 	_refresh_locker_ui()
 
 
 func _on_equip_worker_skin(skin_id: String) -> void:
 	if save_mgr and save_mgr.has_method("equip_worker_skin"):
 		var ok: bool = save_mgr.equip_worker_skin(skin_id)
+		_preview_worker_skin_id = save_mgr.selected_worker_skin
 		if ok:
 			if audio_mgr:
 				if audio_mgr.has_method("play_ui_equip"):
@@ -769,6 +834,7 @@ func _on_equip_worker_skin(skin_id: String) -> void:
 func _on_equip_crate_skin(skin_id: String) -> void:
 	if save_mgr and save_mgr.has_method("equip_crate_skin"):
 		var ok: bool = save_mgr.equip_crate_skin(skin_id)
+		_preview_crate_skin_id = save_mgr.selected_crate_skin
 		if ok:
 			if audio_mgr:
 				if audio_mgr.has_method("play_ui_equip"):
@@ -783,8 +849,61 @@ func _on_equip_crate_skin(skin_id: String) -> void:
 func _process(delta: float) -> void:
 	if locker_modal != null and locker_modal.visible:
 		_preview_anim_time += delta
+		_preview_dir_timer += delta
 		if locker_preview_content != null:
 			locker_preview_content.queue_redraw()
+
+
+func _get_preview_worker_frame(facing_dir: Vector2i, walk_phase: int) -> Texture2D:
+	if facing_dir == Vector2i.RIGHT:
+		if walk_phase == 0 and tex_player_right_w1:
+			return tex_player_right_w1
+		if walk_phase == 2 and tex_player_right_w2:
+			return tex_player_right_w2
+		return tex_player_right if tex_player_right else tex_player_down
+	if facing_dir == Vector2i.UP:
+		if walk_phase == 0 and tex_player_up_w1:
+			return tex_player_up_w1
+		if walk_phase == 2 and tex_player_up_w2:
+			return tex_player_up_w2
+		return tex_player_up if tex_player_up else tex_player_down
+	if facing_dir == Vector2i.LEFT:
+		if walk_phase == 0 and tex_player_left_w1:
+			return tex_player_left_w1
+		if walk_phase == 2 and tex_player_left_w2:
+			return tex_player_left_w2
+		return tex_player_left if tex_player_left else tex_player_down
+	if walk_phase == 0 and tex_player_down_w1:
+		return tex_player_down_w1
+	if walk_phase == 2 and tex_player_down_w2:
+		return tex_player_down_w2
+	return tex_player_down
+
+
+func _draw_locker_stage_status_chip(canvas: Control, center_x: float, y_top: float, label_text: String, text_col: Color, bg_col: Color, border_col: Color) -> void:
+	var font: Font = _get_modern_font(500)
+	if font == null or label_text.is_empty():
+		return
+	var font_sz: int = 10
+	var txt_size: Vector2 = font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_sz)
+	var pill_w: float = txt_size.x + 18.0
+	var pill_h: float = 18.0
+	var pill_r: Rect2 = Rect2(center_x - pill_w * 0.5, y_top, pill_w, pill_h)
+	var sb_pill: StyleBoxFlat = StyleBoxFlat.new()
+	sb_pill.bg_color = bg_col
+	sb_pill.border_color = border_col
+	sb_pill.set_border_width_all(1)
+	sb_pill.set_corner_radius_all(9)
+	canvas.draw_style_box(sb_pill, pill_r)
+	canvas.draw_string(
+		font,
+		Vector2(pill_r.position.x, y_top + 12.5),
+		label_text,
+		HORIZONTAL_ALIGNMENT_CENTER,
+		pill_w,
+		font_sz,
+		text_col
+	)
 
 
 func _on_preview_content_draw() -> void:
@@ -796,136 +915,168 @@ func _on_preview_content_draw() -> void:
 		return
 
 	var center_x: float = size.x * 0.5
-	var base_y: float = size.y * 0.64
+	var base_y: float = 82.0
 
-	# 1. Industrial Platform Pedestal
-	var plat_w: float = minf(size.x - 32.0, 320.0)
-	var plat_h: float = 24.0
-	var plat_rect: Rect2 = Rect2(center_x - plat_w * 0.5, base_y - 2.0, plat_w, plat_h)
+	var eq_worker_id: String = save_mgr.selected_worker_skin if save_mgr else "classic"
+	var eq_crate_id: String = save_mgr.selected_crate_skin if save_mgr else "classic_wood"
+	var worker_id: String = _preview_worker_skin_id if not _preview_worker_skin_id.is_empty() else eq_worker_id
+	var crate_id: String = _preview_crate_skin_id if not _preview_crate_skin_id.is_empty() else eq_crate_id
 
-	# Platform soft drop shadow
-	locker_preview_content.draw_rect(plat_rect.grow(2.0), Color(0.04, 0.06, 0.09, 0.55), false, 2.0)
-	locker_preview_content.draw_rect(plat_rect, Color(0.12, 0.16, 0.22, 0.95))
-	# Polished metallic rim line on platform
+	var worker_info: Dictionary = save_mgr.get_worker_skin_info(worker_id) if (save_mgr and save_mgr.has_method("get_worker_skin_info")) else {}
+	var crate_info: Dictionary = save_mgr.get_crate_skin_info(crate_id) if (save_mgr and save_mgr.has_method("get_crate_skin_info")) else {}
+
+	# 1. Soft Ambient Spotlight Washes & Industrial Platform Bay
+	var w_accent: Color = worker_info.get("accent_color", Color(0.95, 0.78, 0.35))
+	var c_accent: Color = crate_info.get("tint", Color(0.38, 0.72, 0.96))
+	var worker_pos: Vector2 = Vector2(center_x - 46.0, base_y)
+	var crate_pos: Vector2 = Vector2(center_x + 46.0, base_y)
+
+	locker_preview_content.draw_circle(worker_pos + Vector2(0, -20), 34.0, Color(w_accent.r, w_accent.g, w_accent.b, 0.055))
+	locker_preview_content.draw_circle(worker_pos + Vector2(0, -20), 22.0, Color(w_accent.r, w_accent.g, w_accent.b, 0.075))
+	locker_preview_content.draw_circle(crate_pos + Vector2(0, -20), 34.0, Color(c_accent.r, c_accent.g, c_accent.b, 0.055))
+	locker_preview_content.draw_circle(crate_pos + Vector2(0, -20), 22.0, Color(c_accent.r, c_accent.g, c_accent.b, 0.075))
+
+	var plat_w: float = minf(size.x - 32.0, 304.0)
+	var plat_h: float = 22.0
+	var plat_rect: Rect2 = Rect2(center_x - plat_w * 0.5, base_y - 7.0, plat_w, plat_h)
+	var sb_plat: StyleBoxFlat = StyleBoxFlat.new()
+	sb_plat.bg_color = Color(0.085, 0.110, 0.160, 0.96)
+	sb_plat.border_color = Color(1.0, 1.0, 1.0, 0.10)
+	sb_plat.set_border_width_all(1)
+	sb_plat.set_corner_radius_all(6)
+	locker_preview_content.draw_style_box(sb_plat, plat_rect)
 	locker_preview_content.draw_line(
-		plat_rect.position + Vector2(2.0, 1.0),
-		plat_rect.position + Vector2(plat_rect.size.x - 2.0, 1.0),
-		Color(0.95, 0.82, 0.35, 0.70), 1.5
+		plat_rect.position + Vector2(6.0, 1.0),
+		plat_rect.position + Vector2(plat_rect.size.x - 6.0, 1.0),
+		Color(0.95, 0.78, 0.35, 0.45),
+		1.0
+	)
+	locker_preview_content.draw_line(
+		Vector2(center_x, plat_rect.position.y + 3.0),
+		Vector2(center_x, plat_rect.end.y - 3.0),
+		Color(1.0, 1.0, 1.0, 0.07),
+		1.0
 	)
 
-	# 2. Freight Crate on Goal Pad (Right side)
-	var crate_pos: Vector2 = Vector2(center_x + 50.0, base_y + 1.0)
-	var goal_rect: Rect2 = Rect2(crate_pos - Vector2(17, 16), Vector2(34, 32))
-	if tex_goal_pad:
-		locker_preview_content.draw_texture_rect(tex_goal_pad, goal_rect, false, Color(1.0, 1.0, 1.0, 0.85))
+	# 2. Freight Crate on Illuminated Bay Dock Plate (Right Bay, flush inside pedestal)
+	var bay_col: Color = crate_info.get("tint", Color(0.95, 0.78, 0.35))
+	var bay_plate: Rect2 = Rect2(crate_pos.x - 22.0, base_y + 1.0, 44.0, 7.0)
+	var sb_bay: StyleBoxFlat = StyleBoxFlat.new()
+	sb_bay.bg_color = Color(bay_col.r * 0.28, bay_col.g * 0.28, bay_col.b * 0.32, 0.92)
+	sb_bay.border_color = Color(bay_col.r, bay_col.g, bay_col.b, 0.48)
+	sb_bay.set_border_width_all(1)
+	sb_bay.set_corner_radius_all(3)
+	locker_preview_content.draw_style_box(sb_bay, bay_plate)
+	locker_preview_content.draw_circle(crate_pos + Vector2(0, 3), 12.0, Color(0.0, 0.0, 0.0, 0.36))
 
-	var crate_info: Dictionary = save_mgr.get_crate_skin_info() if (save_mgr and save_mgr.has_method("get_crate_skin_info")) else {}
-	var crate_id: String = crate_info.get("id", "classic_wood")
-	var crate_tint: Color = crate_info.get("tint", Color.WHITE)
-	var crate_draw_r: Rect2 = Rect2(crate_pos - Vector2(15, 23), Vector2(30, 30))
-
-	# Soft crate shadow
-	locker_preview_content.draw_circle(crate_pos + Vector2(0, 4), 10.0, Color(0.0, 0.0, 0.0, 0.35))
+	var crate_draw_r: Rect2 = Rect2(crate_pos - Vector2(21.0, 38.0), Vector2(42.0, 42.0))
 	if tex_crate:
-		locker_preview_content.draw_texture_rect(tex_crate, crate_draw_r, false, crate_tint)
+		var crate_skinned: Texture2D = CosmeticRendererScript.get_crate_texture(crate_id, tex_crate)
+		locker_preview_content.draw_texture_rect(crate_skinned, crate_draw_r, false, Color.WHITE)
+	CosmeticRendererScript.draw_crate_accessories(locker_preview_content, crate_draw_r, crate_id, false)
 
-	# Crate custom skin accessories in preview
-	var c_center: Vector2 = crate_draw_r.get_center()
-	match crate_id:
-		"steel_container":
-			var b_col: Color = Color(0.85, 0.92, 1.0, 0.80)
-			locker_preview_content.draw_rect(crate_draw_r.grow(-1), b_col, false, 1.4)
-		"hazard_box":
-			locker_preview_content.draw_rect(crate_draw_r.grow(-2), Color(1.0, 0.75, 0.15, 0.80), false, 1.5)
-			locker_preview_content.draw_line(c_center - Vector2(5, 5), c_center + Vector2(5, 5), Color(0.12, 0.12, 0.15, 0.85), 2.5)
-			locker_preview_content.draw_line(c_center - Vector2(5, -5), c_center + Vector2(5, -5), Color(0.12, 0.12, 0.15, 0.85), 2.5)
-		"cryo_vault":
-			locker_preview_content.draw_rect(crate_draw_r.grow(-2), Color(0.40, 0.88, 1.0, 0.80), false, 1.5)
-			locker_preview_content.draw_circle(c_center, 3.0, Color(0.85, 0.98, 1.0, 0.90))
-		"luxury_safe":
-			locker_preview_content.draw_rect(crate_draw_r.grow(-2), Color(1.0, 0.84, 0.20, 0.90), false, 1.8)
-			locker_preview_content.draw_circle(c_center, 4.0, Color(1.0, 0.86, 0.28, 0.95))
+	# 3. 4-Direction Animated Worker Showcase (Left Bay)
+	var dir_cycle: Array[Vector2i] = [Vector2i.DOWN, Vector2i.RIGHT, Vector2i.UP, Vector2i.LEFT]
+	var dir_idx: int = int(_preview_dir_timer / 1.35) % 4
+	var facing_dir: Vector2i = dir_cycle[dir_idx]
+	var walk_phase: int = int(_preview_anim_time * 4.2) % 4
+	var bob_y: float = -1.4 if (walk_phase == 0 or walk_phase == 2) else 0.0
+	var base_p_tex: Texture2D = _get_preview_worker_frame(facing_dir, walk_phase)
+	var worker_rect: Rect2 = Rect2(worker_pos - Vector2(22.0, 40.0) + Vector2(0.0, bob_y), Vector2(44.0, 44.0))
 
-	# 3. Worker with animated walk/breathing cycle (Left side)
-	var worker_pos: Vector2 = Vector2(center_x - 50.0, base_y + 1.0)
-	var walk_phase: int = int(_preview_anim_time * 3.5) % 4
-	var p_tex: Texture2D = tex_player_down
-	var bob_y: float = 0.0
-	if walk_phase == 0:
-		p_tex = tex_player_down_w1 if tex_player_down_w1 else tex_player_down
-		bob_y = -1.2
-	elif walk_phase == 2:
-		p_tex = tex_player_down_w2 if tex_player_down_w2 else tex_player_down
-		bob_y = -1.2
+	locker_preview_content.draw_circle(worker_pos + Vector2(0, 4), 12.0, Color(0.0, 0.0, 0.0, 0.38))
+	if base_p_tex:
+		var skinned_p_tex: Texture2D = CosmeticRendererScript.get_worker_texture(worker_id, base_p_tex)
+		locker_preview_content.draw_texture_rect(skinned_p_tex, worker_rect, false, Color.WHITE)
+	CosmeticRendererScript.draw_worker_accessories(locker_preview_content, worker_rect, facing_dir, worker_id, _preview_anim_time)
 
-	var worker_info: Dictionary = save_mgr.get_worker_skin_info() if (save_mgr and save_mgr.has_method("get_worker_skin_info")) else {}
-	var worker_id: String = worker_info.get("id", "classic")
-	var worker_mod: Color = worker_info.get("sprite_tint", Color.WHITE)
-	var worker_rect: Rect2 = Rect2(worker_pos - Vector2(14, 25) + Vector2(0, bob_y), Vector2(28, 28))
-
-	# Worker foot shadow
-	locker_preview_content.draw_circle(worker_pos + Vector2(0, 3), 9.0, Color(0.0, 0.0, 0.0, 0.35))
-	if p_tex:
-		locker_preview_content.draw_texture_rect(p_tex, worker_rect, false, worker_mod)
-
-	# Worker accessories in preview
-	var w_center: Vector2 = worker_rect.get_center()
-	match worker_id:
-		"safety_vest":
-			var stripe_y: float = worker_rect.position.y + worker_rect.size.y * 0.54
-			locker_preview_content.draw_line(Vector2(w_center.x - 6, stripe_y), Vector2(w_center.x + 6, stripe_y), Color(0.95, 0.98, 1.0, 0.90), 2.0)
-		"mechanic":
-			var belt_y: float = worker_rect.position.y + worker_rect.size.y * 0.58
-			locker_preview_content.draw_line(Vector2(w_center.x - 6, belt_y), Vector2(w_center.x + 6, belt_y), Color(0.18, 0.20, 0.25, 0.90), 2.0)
-			locker_preview_content.draw_line(Vector2(w_center.x + 3, belt_y - 2), Vector2(w_center.x + 3, belt_y + 3), Color(0.85, 0.90, 0.98, 0.95), 1.5)
-		"foreman":
-			var brim_y: float = worker_rect.position.y + worker_rect.size.y * 0.28
-			locker_preview_content.draw_line(Vector2(w_center.x - 7, brim_y), Vector2(w_center.x + 7, brim_y), Color(1.0, 0.90, 0.25, 0.90), 1.8)
-		"hazmat":
-			var visor_y: float = worker_rect.position.y + worker_rect.size.y * 0.32
-			locker_preview_content.draw_line(Vector2(w_center.x - 5, visor_y), Vector2(w_center.x + 5, visor_y), Color(0.20, 0.95, 1.0, 0.95), 2.0)
-		"golden_porter":
-			var shim: float = sin(_preview_anim_time * 5.0) * 0.25 + 0.75
-			locker_preview_content.draw_circle(w_center + Vector2(0, -worker_rect.size.y * 0.45), 2.2 * shim, Color(1.0, 0.95, 0.60, 0.85))
-
-	# 4. Loadout Display Text Banner
+	# 4. Top Loadout Title Banner
 	var w_name: String = loc_mgr.tr_text(worker_info.get("name_key", "")) if (loc_mgr and worker_info.has("name_key")) else worker_info.get("name", "Classic")
 	var c_name: String = loc_mgr.tr_text(crate_info.get("name_key", "")) if (loc_mgr and crate_info.has("name_key")) else crate_info.get("name", "Pine")
-	var banner_text: String = "%s  •  %s" % [w_name.to_upper(), c_name.to_upper()]
-	var font: Font = get_theme_default_font()
-	if font:
-		var font_sz: int = 11
-		var txt_w: float = font.get_string_size(banner_text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_sz).x
+	var banner_text: String = "%s  ·  %s" % [w_name.to_upper(), c_name.to_upper()]
+	var title_font: Font = _get_modern_font(600)
+	if title_font:
 		locker_preview_content.draw_string(
-			font,
-			Vector2(center_x - txt_w * 0.5, 14.0),
+			title_font,
+			Vector2(0.0, 18.0),
 			banner_text,
 			HORIZONTAL_ALIGNMENT_CENTER,
-			-1,
-			font_sz,
-			Color(0.98, 0.85, 0.30, 0.95)
+			size.x,
+			11,
+			Color(0.96, 0.80, 0.38, 0.96)
 		)
+
+	# 5. Bottom Try-On Status Chip
+	var total_stars: int = save_mgr.get_total_stars() if save_mgr else 0
+	var focused_info: Dictionary = worker_info if current_locker_tab == "outfits" else crate_info
+	var focused_req: int = int(focused_info.get("required_stars", 0))
+	var w_req: int = int(worker_info.get("required_stars", 0))
+	var c_req: int = int(crate_info.get("required_stars", 0))
+	var chip_text: String = ""
+	var chip_txt_col: Color = Color(0.72, 0.90, 0.78, 0.95)
+	var chip_bg_col: Color = Color(0.075, 0.145, 0.115, 0.92)
+	var chip_bd_col: Color = Color(0.35, 0.82, 0.52, 0.35)
+
+	if total_stars < focused_req or total_stars < w_req or total_stars < c_req:
+		var locked_req: int = focused_req if total_stars < focused_req else (w_req if total_stars < w_req else c_req)
+		chip_text = loc_mgr.tr_text("LOCKER_TRYON_LOCKED", [locked_req]) if loc_mgr else ("Preview · Unlocks at %d ★" % locked_req)
+		chip_txt_col = Color(0.98, 0.80, 0.38, 0.98)
+		chip_bg_col = Color(0.145, 0.105, 0.055, 0.92)
+		chip_bd_col = Color(0.95, 0.74, 0.30, 0.40)
+	elif worker_id != eq_worker_id or crate_id != eq_crate_id:
+		chip_text = loc_mgr.tr_text("LOCKER_TRYON_UNLOCKED") if loc_mgr else "Preview · Unlocked"
+		chip_txt_col = Color(0.72, 0.88, 1.0, 0.96)
+		chip_bg_col = Color(0.075, 0.115, 0.180, 0.92)
+		chip_bd_col = Color(0.42, 0.72, 0.98, 0.38)
+	else:
+		chip_text = loc_mgr.tr_text("LOCKER_ACTIVE_LOADOUT") if loc_mgr else "Active Loadout"
+
+	_draw_locker_stage_status_chip(locker_preview_content, center_x, 104.0, chip_text, chip_txt_col, chip_bg_col, chip_bd_col)
 
 
 func _refresh_locker_ui() -> void:
 	if locker_modal == null or save_mgr == null:
 		return
 
+	if _preview_worker_skin_id.is_empty():
+		_preview_worker_skin_id = save_mgr.selected_worker_skin
+	if _preview_crate_skin_id.is_empty():
+		_preview_crate_skin_id = save_mgr.selected_crate_skin
+
+	var preview_frame: PanelContainer = locker_modal.find_child("PreviewFrame", true, false) as PanelContainer
+	if preview_frame:
+		preview_frame.clip_contents = true
+		var sb_stage: StyleBoxFlat = StyleBoxFlat.new()
+		sb_stage.bg_color = Color(0.048, 0.060, 0.088, 0.98)
+		sb_stage.border_color = Color(1.0, 1.0, 1.0, 0.09)
+		sb_stage.set_border_width_all(1)
+		sb_stage.set_corner_radius_all(16)
+		preview_frame.add_theme_stylebox_override("panel", sb_stage)
+
 	if locker_preview_content:
+		locker_preview_content.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		locker_preview_content.queue_redraw()
 
 	var total_stars: int = save_mgr.get_total_stars()
 	if locker_title_label:
 		locker_title_label.text = loc_mgr.tr_text("LOCKER_TITLE") if loc_mgr else "SUPPLY DEPOT"
+		locker_title_label.add_theme_font_override("font", _get_modern_font(600))
+		locker_title_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0))
 	if locker_stars_badge:
 		locker_stars_badge.text = loc_mgr.tr_text("LOCKER_STARS_BADGE", [total_stars]) if loc_mgr else ("%d / 225 Stars Collected" % total_stars)
+		locker_stars_badge.add_theme_font_override("font", _get_modern_font(500))
+		locker_stars_badge.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0))
 
 	if outfits_tab_btn:
 		outfits_tab_btn.text = loc_mgr.tr_text("LOCKER_TAB_OUTFITS") if loc_mgr else "OUTFITS"
 	if crates_tab_btn:
 		crates_tab_btn.text = loc_mgr.tr_text("LOCKER_TAB_CRATES") if loc_mgr else "CRATES"
-	if close_locker_btn and loc_mgr:
-		close_locker_btn.text = loc_mgr.tr_text("BTN_CLOSE")
+	_apply_locker_tab_styles()
+	if close_locker_btn:
+		close_locker_btn.add_theme_font_override("font", _get_modern_font(600))
+		close_locker_btn.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0))
+		if loc_mgr:
+			close_locker_btn.text = loc_mgr.tr_text("BTN_CLOSE")
 
 	if locker_items_vbox == null:
 		return
@@ -936,48 +1087,59 @@ func _refresh_locker_ui() -> void:
 
 	if current_locker_tab == "outfits":
 		var skins: Array[Dictionary] = save_mgr.get_all_worker_skins()
-		var player_tex: Texture2D = preload("res://assets/player_down.png")
 		for skin in skins:
+			var s_id: String = skin["id"]
 			var card: Control = _create_locker_item_card(
-				skin["id"],
+				s_id,
 				skin.get("icon", "🧢"),
 				loc_mgr.tr_text(skin["name_key"]) if loc_mgr else skin.get("name", ""),
 				loc_mgr.tr_text(skin["desc_key"]) if loc_mgr else skin.get("desc", ""),
 				skin.get("required_stars", 0),
 				total_stars,
-				save_mgr.selected_worker_skin == skin["id"],
-				Callable(self, "_on_equip_worker_skin").bind(skin["id"]),
-				player_tex,
-				skin.get("sprite_tint", Color.WHITE)
+				save_mgr.selected_worker_skin == s_id,
+				Callable(self, "_on_equip_worker_skin").bind(s_id),
+				tex_player_down,
+				skin.get("sprite_tint", Color.WHITE),
+				"outfits",
+				_preview_worker_skin_id == s_id,
+				Callable(self, "_preview_locker_item").bind("outfits", s_id)
 			)
 			locker_items_vbox.add_child(card)
 	else:
 		var crates: Array[Dictionary] = save_mgr.get_all_crate_skins()
-		var crate_tex: Texture2D = preload("res://assets/crate_normal.png")
 		for crate in crates:
+			var c_id: String = crate["id"]
 			var card: Control = _create_locker_item_card(
-				crate["id"],
+				c_id,
 				crate.get("icon", "📦"),
 				loc_mgr.tr_text(crate["name_key"]) if loc_mgr else crate.get("name", ""),
 				loc_mgr.tr_text(crate["desc_key"]) if loc_mgr else crate.get("desc", ""),
 				crate.get("required_stars", 0),
 				total_stars,
-				save_mgr.selected_crate_skin == crate["id"],
-				Callable(self, "_on_equip_crate_skin").bind(crate["id"]),
-				crate_tex,
-				crate.get("tint", Color.WHITE)
+				save_mgr.selected_crate_skin == c_id,
+				Callable(self, "_on_equip_crate_skin").bind(c_id),
+				tex_crate,
+				crate.get("tint", Color.WHITE),
+				"crates",
+				_preview_crate_skin_id == c_id,
+				Callable(self, "_preview_locker_item").bind("crates", c_id)
 			)
 			locker_items_vbox.add_child(card)
 
 
-func _create_locker_item_card(_item_id: String, icon: String, item_name: String, desc: String, req_stars: int, total_stars: int, is_equipped: bool, equip_callable: Callable, preview_texture: Texture2D = null, preview_tint: Color = Color.WHITE) -> Control:
+func _create_locker_item_card(item_id: String, icon: String, item_name: String, desc: String, req_stars: int, total_stars: int, is_equipped: bool, equip_callable: Callable, preview_texture: Texture2D = null, _preview_tint: Color = Color.WHITE, item_kind: String = "outfits", is_previewed: bool = false, preview_callable: Callable = Callable()) -> Control:
 	var panel: PanelContainer = PanelContainer.new()
-	panel.custom_minimum_size = Vector2(0, 68)
+	panel.custom_minimum_size = Vector2(0, 62)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.mouse_filter = Control.MOUSE_FILTER_PASS
-	var sb_row := StyleBoxFlat.new()
-	sb_row.bg_color = Color(0.055, 0.068, 0.095, 0.94)
-	sb_row.border_color = Color(0.92, 0.74, 0.34, 0.45) if is_equipped else Color(1.0, 1.0, 1.0, 0.08)
+	var sb_row: StyleBoxFlat = StyleBoxFlat.new()
+	sb_row.bg_color = Color(0.070, 0.088, 0.125, 0.96) if (is_equipped or is_previewed) else Color(0.055, 0.068, 0.095, 0.94)
+	if is_equipped:
+		sb_row.border_color = Color(0.95, 0.78, 0.35, 0.55)
+	elif is_previewed:
+		sb_row.border_color = Color(1.0, 1.0, 1.0, 0.30)
+	else:
+		sb_row.border_color = Color(1.0, 1.0, 1.0, 0.08)
 	sb_row.set_border_width_all(1)
 	sb_row.set_corner_radius_all(14)
 	panel.add_theme_stylebox_override("panel", sb_row)
@@ -985,9 +1147,9 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 	var margin: MarginContainer = MarginContainer.new()
 	margin.mouse_filter = Control.MOUSE_FILTER_PASS
 	margin.add_theme_constant_override("margin_left", 12)
-	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_top", 7)
 	margin.add_theme_constant_override("margin_right", 12)
-	margin.add_theme_constant_override("margin_bottom", 8)
+	margin.add_theme_constant_override("margin_bottom", 7)
 	panel.add_child(margin)
 
 	var hbox: HBoxContainer = HBoxContainer.new()
@@ -997,22 +1159,36 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 
 	if preview_texture != null:
 		var preview_frame: PanelContainer = PanelContainer.new()
-		preview_frame.custom_minimum_size = Vector2(44, 44)
+		preview_frame.custom_minimum_size = Vector2(48, 48)
+		preview_frame.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		preview_frame.mouse_filter = Control.MOUSE_FILTER_PASS
-		var sb_pv := StyleBoxFlat.new()
-		sb_pv.bg_color = Color(0.08, 0.10, 0.145, 0.96)
-		sb_pv.border_color = Color(1.0, 1.0, 1.0, 0.09)
+		var sb_pv: StyleBoxFlat = StyleBoxFlat.new()
+		sb_pv.bg_color = Color(0.065, 0.082, 0.120, 0.98)
+		sb_pv.border_color = Color(0.95, 0.78, 0.35, 0.45) if is_equipped else (Color(1.0, 1.0, 1.0, 0.24) if is_previewed else Color(1.0, 1.0, 1.0, 0.09))
 		sb_pv.set_border_width_all(1)
-		sb_pv.set_corner_radius_all(10)
+		sb_pv.set_corner_radius_all(11)
 		preview_frame.add_theme_stylebox_override("panel", sb_pv)
-		var tex_rect: TextureRect = TextureRect.new()
-		tex_rect.custom_minimum_size = Vector2(32, 32)
-		tex_rect.texture = preview_texture
-		tex_rect.modulate = preview_tint
-		tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		tex_rect.mouse_filter = Control.MOUSE_FILTER_PASS
-		preview_frame.add_child(tex_rect)
+
+		var thumb: Control = Control.new()
+		thumb.custom_minimum_size = Vector2(42, 42)
+		thumb.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		thumb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		thumb.draw.connect(func():
+			var sz: Vector2 = thumb.size
+			var pad: float = 4.0
+			var draw_r: Rect2 = Rect2(Vector2(pad, pad), sz - Vector2(pad * 2.0, pad * 2.0))
+			if item_kind == "outfits":
+				var skinned_tex: Texture2D = CosmeticRendererScript.get_worker_texture(item_id, preview_texture)
+				if skinned_tex:
+					thumb.draw_texture_rect(skinned_tex, draw_r, false, Color.WHITE)
+				CosmeticRendererScript.draw_worker_accessories(thumb, draw_r, Vector2i.DOWN, item_id, 0.0)
+			else:
+				var skinned_tex: Texture2D = CosmeticRendererScript.get_crate_texture(item_id, preview_texture)
+				if skinned_tex:
+					thumb.draw_texture_rect(skinned_tex, draw_r, false, Color.WHITE)
+				CosmeticRendererScript.draw_crate_accessories(thumb, draw_r, item_id, false)
+		)
+		preview_frame.add_child(thumb)
 		hbox.add_child(preview_frame)
 	else:
 		var icon_lbl: Label = Label.new()
@@ -1024,57 +1200,55 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 	var info_vbox: VBoxContainer = VBoxContainer.new()
 	info_vbox.mouse_filter = Control.MOUSE_FILTER_PASS
 	info_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info_vbox.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	info_vbox.add_theme_constant_override("separation", 2)
 	hbox.add_child(info_vbox)
 
+	var is_unlocked: bool = (total_stars >= req_stars)
 	var name_lbl: Label = Label.new()
 	name_lbl.mouse_filter = Control.MOUSE_FILTER_PASS
 	name_lbl.text = item_name
+	name_lbl.add_theme_font_override("font", _get_modern_font(600))
 	name_lbl.add_theme_font_size_override("font_size", 14)
-	name_lbl.add_theme_color_override("font_color", Color(0.95, 0.78, 0.36) if is_equipped else Color(0.94, 0.96, 0.99))
+	name_lbl.add_theme_color_override("font_color", Color(0.96, 0.80, 0.36) if is_equipped else (Color(0.95, 0.97, 1.0) if is_unlocked else Color(0.84, 0.88, 0.94)))
 	name_lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0))
 	info_vbox.add_child(name_lbl)
 
 	var desc_lbl: Label = Label.new()
 	desc_lbl.mouse_filter = Control.MOUSE_FILTER_PASS
-	var is_unlocked: bool = (total_stars >= req_stars)
-	if is_unlocked:
-		desc_lbl.text = desc
-		desc_lbl.add_theme_color_override("font_color", Color(0.64, 0.70, 0.80))
-	else:
-		var req_text: String = loc_mgr.tr_text("LOCKER_LOCKED_STARS", [req_stars]) if loc_mgr else ("%d Stars required" % req_stars)
-		desc_lbl.text = req_text
-		desc_lbl.add_theme_color_override("font_color", Color(0.95, 0.60, 0.48))
+	desc_lbl.text = desc
+	desc_lbl.add_theme_font_override("font", _get_modern_font(400))
+	desc_lbl.add_theme_color_override("font_color", Color(0.64, 0.70, 0.80) if is_unlocked else Color(0.56, 0.62, 0.72))
 	desc_lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0))
 	desc_lbl.add_theme_font_size_override("font_size", 11)
+	desc_lbl.add_theme_constant_override("line_spacing", -4)
 	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info_vbox.add_child(desc_lbl)
 
 	var act_btn: Button = Button.new()
-	act_btn.custom_minimum_size = Vector2(108, 36)
+	act_btn.custom_minimum_size = Vector2(104, 36)
 	act_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	act_btn.clip_contents = true
 
 	var btn_center: HBoxContainer = HBoxContainer.new()
 	btn_center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	btn_center.alignment = BoxContainer.ALIGNMENT_CENTER
-	btn_center.add_theme_constant_override("separation", 6)
+	btn_center.add_theme_constant_override("separation", 5)
 	btn_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	act_btn.add_child(btn_center)
 
 	var btn_lbl: Label = Label.new()
 	btn_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	btn_lbl.add_theme_font_override("font", _get_modern_font(600))
 	btn_lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0))
 
 	if is_equipped:
 		var sb_eq: StyleBoxFlat = StyleBoxFlat.new()
-		sb_eq.bg_color = Color(0.12, 0.52, 0.28, 1.0)
-		sb_eq.border_color = Color(0.45, 0.90, 0.60, 0.45)
+		sb_eq.bg_color = Color(0.11, 0.46, 0.25, 1.0)
+		sb_eq.border_color = Color(0.42, 0.88, 0.58, 0.45)
 		sb_eq.set_border_width_all(1)
 		sb_eq.set_corner_radius_all(10)
-		sb_eq.shadow_color = Color(0, 0, 0, 0.28)
-		sb_eq.shadow_size = 2
 		act_btn.add_theme_stylebox_override("normal", sb_eq)
 		act_btn.add_theme_stylebox_override("hover", sb_eq)
 		act_btn.add_theme_stylebox_override("pressed", sb_eq)
@@ -1085,24 +1259,21 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 		btn_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		btn_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		btn_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		btn_icon.custom_minimum_size = Vector2(16, 16)
+		btn_icon.custom_minimum_size = Vector2(14, 14)
 		btn_icon.texture = icon_check
 		btn_icon.modulate = Color(1.0, 1.0, 1.0, 1.0)
 		btn_center.add_child(btn_icon)
 
-		var eq_text: String = loc_mgr.tr_text("LOCKER_EQUIPPED") if loc_mgr else "EQUIPPED"
-		btn_lbl.text = eq_text
-		btn_lbl.add_theme_font_size_override("font_size", 12)
+		btn_lbl.text = loc_mgr.tr_text("LOCKER_EQUIPPED") if loc_mgr else "EQUIPPED"
+		btn_lbl.add_theme_font_size_override("font_size", 11)
 		btn_lbl.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
 		btn_center.add_child(btn_lbl)
-
 		act_btn.tooltip_text = ""
 		act_btn.mouse_filter = Control.MOUSE_FILTER_PASS
 
 	elif is_unlocked:
 		act_btn.theme_type_variation = &"PrimaryButton"
-		var equip_text: String = loc_mgr.tr_text("LOCKER_EQUIP") if loc_mgr else "EQUIP"
-		btn_lbl.text = equip_text
+		btn_lbl.text = loc_mgr.tr_text("LOCKER_EQUIP") if loc_mgr else "EQUIP"
 		btn_lbl.add_theme_font_size_override("font_size", 13)
 		btn_lbl.add_theme_color_override("font_color", Color(0.067, 0.078, 0.110, 1.0))
 		btn_center.add_child(btn_lbl)
@@ -1122,12 +1293,10 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 
 	else:
 		var sb_lock: StyleBoxFlat = StyleBoxFlat.new()
-		sb_lock.bg_color = Color(0.085, 0.105, 0.145, 0.92)
-		sb_lock.border_color = Color(1.0, 1.0, 1.0, 0.10)
+		sb_lock.bg_color = Color(0.085, 0.105, 0.145, 0.94)
+		sb_lock.border_color = Color(0.95, 0.78, 0.35, 0.36) if is_previewed else Color(1.0, 1.0, 1.0, 0.11)
 		sb_lock.set_border_width_all(1)
 		sb_lock.set_corner_radius_all(10)
-		sb_lock.shadow_color = Color(0, 0, 0, 0.25)
-		sb_lock.shadow_size = 2
 		act_btn.add_theme_stylebox_override("normal", sb_lock)
 		act_btn.add_theme_stylebox_override("hover", sb_lock)
 		act_btn.add_theme_stylebox_override("pressed", sb_lock)
@@ -1138,32 +1307,41 @@ func _create_locker_item_card(_item_id: String, icon: String, item_name: String,
 		btn_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		btn_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		btn_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		btn_icon.custom_minimum_size = Vector2(16, 16)
+		btn_icon.custom_minimum_size = Vector2(14, 14)
 		btn_icon.texture = icon_lock
-		btn_icon.modulate = Color(0.95, 0.95, 1.0, 0.95)
+		btn_icon.modulate = Color(0.96, 0.78, 0.36, 0.96)
 		btn_center.add_child(btn_icon)
 
-		var lock_text: String = loc_mgr.tr_text("LOCKER_LOCKED") if loc_mgr else "LOCKED"
-		btn_lbl.text = lock_text
+		btn_lbl.text = "%d ★" % req_stars if req_stars > 0 else (loc_mgr.tr_text("LOCKER_LOCKED") if loc_mgr else "LOCKED")
 		btn_lbl.add_theme_font_size_override("font_size", 12)
-		btn_lbl.add_theme_color_override("font_color", Color(0.78, 0.84, 0.92, 1.0))
+		btn_lbl.add_theme_color_override("font_color", Color(0.92, 0.86, 0.72, 1.0))
 		btn_center.add_child(btn_lbl)
-
 		act_btn.tooltip_text = ""
 
-		# Tactile feedback when tapping locked item
 		act_btn.pressed.connect(func():
 			if _is_any_scroll_dragging():
 				return
-			var tw: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-			tw.tween_property(desc_lbl, "modulate", Color(1.4, 0.9, 0.3, 1.0), 0.08)
-			tw.tween_property(desc_lbl, "modulate", Color.WHITE, 0.24)
-			if audio_mgr and audio_mgr.has_method("play_ui_click"):
-				audio_mgr.play_ui_click()
-			if haptic_mgr and haptic_mgr.has_method("vibrate_click"):
-				haptic_mgr.vibrate_click()
+			if preview_callable.is_valid():
+				preview_callable.call()
+			else:
+				if audio_mgr:
+					audio_mgr.play_click()
+				if haptic_mgr:
+					haptic_mgr.vibrate_click()
 		)
 		_attach_spring_physics(act_btn)
+
+	if preview_callable.is_valid():
+		panel.gui_input.connect(func(event: InputEvent):
+			if _is_any_scroll_dragging():
+				return
+			var tapped: bool = (
+				(event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed) or
+				(event is InputEventScreenTouch and not event.pressed)
+			)
+			if tapped:
+				preview_callable.call()
+		)
 
 	hbox.add_child(act_btn)
 	return panel

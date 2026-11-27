@@ -368,9 +368,24 @@ func test_porter_locker_modal() -> void:
 	menu._on_equip_worker_skin("safety_vest")
 	assert_equal(menu.save_mgr.selected_worker_skin, "safety_vest", "Equipped safety_vest worker skin via locker")
 
-	# Close modal
+	# 6. Locked try-on preview updates live stage without altering persisted loadout
+	menu._preview_locker_item("outfits", "foreman")
+	assert_equal(menu._preview_worker_skin_id, "foreman", "Try-on preview shows foreman on stage")
+	assert_equal(menu.save_mgr.selected_worker_skin, "safety_vest", "Try-on of locked outfit does not overwrite equipped worker skin")
+	menu._switch_locker_tab("crates")
+	menu._preview_locker_item("crates", "luxury_safe")
+	assert_equal(menu._preview_crate_skin_id, "luxury_safe", "Try-on preview shows luxury_safe crate on stage")
+	assert_equal(menu.save_mgr.selected_crate_skin, "steel_container", "Try-on of locked crate does not overwrite equipped crate skin")
+	menu._process(1.5)
+	assert_true(menu._preview_dir_timer >= 1.5, "4-direction preview walk timer advances smoothly")
+
+	# Close and reopen resets stage preview to equipped skins
 	menu._hide_locker()
 	assert_false(menu.locker_modal.visible, "Locker modal hidden via _hide_locker")
+	menu._show_locker()
+	assert_equal(menu._preview_worker_skin_id, "safety_vest", "Reopening locker resets worker stage preview to equipped skin")
+	assert_equal(menu._preview_crate_skin_id, "steel_container", "Reopening locker resets crate stage preview to equipped skin")
+	menu._hide_locker()
 
 	menu.queue_free()
 

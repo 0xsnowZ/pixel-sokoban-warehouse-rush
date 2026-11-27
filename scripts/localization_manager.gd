@@ -208,6 +208,21 @@ const TRANSLATIONS: Dictionary = {
 		"fr": "%d Étoiles requises",
 		"ar": "%d نجمة مطلوبة"
 	},
+	"LOCKER_ACTIVE_LOADOUT": {
+		"en": "Active Loadout",
+		"fr": "Équipement actif",
+		"ar": "التجهيز النشط"
+	},
+	"LOCKER_TRYON_LOCKED": {
+		"en": "Preview · Unlocks at %d ★",
+		"fr": "Aperçu · Débloqué à %d ★",
+		"ar": "معاينة · يُفتح عند %d ★"
+	},
+	"LOCKER_TRYON_UNLOCKED": {
+		"en": "Preview · Unlocked",
+		"fr": "Aperçu · Débloqué",
+		"ar": "معاينة · مفتوح"
+	},
 	"SKIN_WORKER_CLASSIC": {
 		"en": "Classic Denim",
 		"fr": "Denim Classique",

@@ -832,9 +832,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -235.0
-offset_top = -280.0
+offset_top = -310.0
 offset_right = 235.0
-offset_bottom = 280.0
+offset_bottom = 310.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_type_variation = &"WinModalPanel"
@@ -853,15 +853,17 @@ alignment = 1
 
 [node name="Title" type="Label" parent="LockerModal/Margin/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.98, 0.82, 0.25, 1)
-theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.95, 0.78, 0.36, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_font_sizes/font_size = 19
 text = "SUPPLY DEPOT"
 horizontal_alignment = 1
 
 [node name="StarsBadge" type="Label" parent="LockerModal/Margin/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.85, 0.9, 0.98, 1)
-theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.66, 0.72, 0.82, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_font_sizes/font_size = 12
 text = "0 / 225 Stars Collected"
 horizontal_alignment = 1
 
@@ -871,27 +873,26 @@ theme_override_constants/separation = 8
 alignment = 1
 
 [node name="OutfitsTabBtn" type="Button" parent="LockerModal/Margin/VBox/TabsHBox"]
-custom_minimum_size = Vector2(160, 36)
+custom_minimum_size = Vector2(160, 38)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"PrimaryButton"
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 text = "OUTFITS"
 
 [node name="CratesTabBtn" type="Button" parent="LockerModal/Margin/VBox/TabsHBox"]
-custom_minimum_size = Vector2(160, 36)
+custom_minimum_size = Vector2(160, 38)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 text = "CRATES"
 
 [node name="PreviewFrame" type="PanelContainer" parent="LockerModal/Margin/VBox"]
-custom_minimum_size = Vector2(0, 78)
+custom_minimum_size = Vector2(0, 128)
 layout_mode = 2
-theme_type_variation = &"TopBarPanel"
 
 [node name="PreviewContent" type="Control" parent="LockerModal/Margin/VBox/PreviewFrame"]
-custom_minimum_size = Vector2(0, 78)
+custom_minimum_size = Vector2(0, 128)
 layout_mode = 2
 
 [node name="Scroll" type="ScrollContainer" parent="LockerModal/Margin/VBox"]

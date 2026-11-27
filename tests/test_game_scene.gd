@@ -605,9 +605,25 @@ func test_porter_locker_cosmetics_in_game() -> void:
 	var haz_info: Dictionary = game.save_mgr.get_worker_skin_info("hazmat")
 	assert_eq(haz_info["icon"], "☣️", "Hazmat skin icon is ☣️")
 
-	# 4. Trigger redraw with active cosmetics without errors
+	# 4. Trigger redraw with active cosmetics & verify CosmeticRenderer distinct skin textures
 	game.queue_redraw()
 	assert_true(true, "Board redrawn with equipped cosmetics without error")
+	var cr_script: GDScript = load("res://scripts/cosmetic_renderer.gd") as GDScript
+	var base_w_tex: Texture2D = load("res://assets/player_down.png") as Texture2D
+	var base_c_tex: Texture2D = load("res://assets/crate_normal.png") as Texture2D
+	var w_classic_tex: Texture2D = cr_script.get_worker_texture("classic", base_w_tex)
+	var w_safety_tex: Texture2D = cr_script.get_worker_texture("safety_vest", base_w_tex)
+	var w_hazmat_tex: Texture2D = cr_script.get_worker_texture("hazmat", base_w_tex)
+	var w_gold_tex: Texture2D = cr_script.get_worker_texture("golden_porter", base_w_tex)
+	assert_true(w_classic_tex == base_w_tex, "Classic worker uses base texture cleanly")
+	assert_true(w_safety_tex != base_w_tex and w_hazmat_tex != w_safety_tex and w_gold_tex != w_hazmat_tex, "CosmeticRenderer produces distinct cached textures per worker skin")
+	var c_classic_tex: Texture2D = cr_script.get_crate_texture("classic_wood", base_c_tex)
+	var c_cryo_tex: Texture2D = cr_script.get_crate_texture("cryo_vault", base_c_tex)
+	var c_safe_tex: Texture2D = cr_script.get_crate_texture("luxury_safe", base_c_tex)
+	assert_true(c_classic_tex == base_c_tex, "Classic crate uses base texture cleanly")
+	assert_true(c_cryo_tex != base_c_tex and c_safe_tex != c_cryo_tex, "CosmeticRenderer produces distinct cached textures per crate skin")
+	assert_true("Active Loadout" in loc.tr_text("LOCKER_ACTIVE_LOADOUT"), "EN Active Loadout localization present")
+	assert_true("60" in loc.tr_text("LOCKER_TRYON_LOCKED", [60]), "EN Locked try-on localization formats stars cleanly")
 
 	# 5. Localization of Locker strings & Cosmetics (EN, FR, AR)
 	assert_eq(loc.tr_text("LOCKER_TITLE"), "SUPPLY DEPOT", "EN Locker title is SUPPLY DEPOT")

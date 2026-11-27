@@ -395,10 +395,15 @@ func test_breakout_hit_engine() -> void:
 	var dup_reward: Dictionary = mgr.claim_star_vault(0)
 	assert_true(dup_reward.is_empty(), "Duplicate vault claim prevented")
 
+	# Claim 80-star Hazard Freight Vault (tier 4) -> unlocks and equips hazard_box
 	# Claim 100-star Golden Master Vault (tier 5) -> unlocks and equips golden_porter
 	for i in range(5, 34):
 		mgr.completed_levels[str(i)] = { "stars": 3, "best_moves": 4, "best_pushes": 2 }
-	assert_true(mgr.get_total_stars() >= 100, "Total stars >= 100 for Golden Master Vault")
+	assert_true(mgr.get_total_stars() >= 100, "Total stars >= 100 for tier 4 & tier 5 Vaults")
+	var haz_reward: Dictionary = mgr.claim_star_vault(4)
+	assert_false(haz_reward.is_empty(), "claim_star_vault(4) succeeded at 80+ stars")
+	assert_true(mgr.is_crate_skin_unlocked("hazard_box"), "hazard_box unlocked at 80 stars")
+	assert_equal(mgr.selected_crate_skin, "hazard_box", "hazard_box auto-equipped upon claiming tier 4 Hazard Freight Vault")
 	var gold_reward: Dictionary = mgr.claim_star_vault(5)
 	assert_false(gold_reward.is_empty(), "claim_star_vault(5) succeeded at 100 stars")
 	assert_true(mgr.is_worker_skin_unlocked("golden_porter"), "golden_porter unlocked at 100 stars")

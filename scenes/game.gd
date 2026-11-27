@@ -6,6 +6,7 @@ extends Control
 
 const SaveManagerScript: GDScript = preload("res://scripts/save_manager.gd")
 const SokobanSolverScript: GDScript = preload("res://scripts/sokoban_solver.gd")
+const CosmeticRendererScript: GDScript = preload("res://scripts/cosmetic_renderer.gd")
 const MAIN_MENU_SCENE_PATH: String = "res://scenes/main_menu.tscn"
 const END_SCENE_PATH: String = "res://scenes/end_screen.tscn"
 
@@ -3717,13 +3718,14 @@ func _draw_crate(rect: Rect2, on_goal: bool, logical_pos: Vector2i = Vector2i.ZE
 
 	var ch: Dictionary = get_current_chapter_theme()
 
-	# Crate Skin from Porter Locker
+	# Crate Skin from Supply Depot (rendered via unified CosmeticRenderer)
 	var crate_skin_info: Dictionary = save_mgr.get_crate_skin_info() if (save_mgr and save_mgr.has_method("get_crate_skin_info")) else {}
 	var crate_skin_id: String = crate_skin_info.get("id", "classic_wood")
-	var crate_tint: Color = crate_skin_info.get("tint", Color.WHITE)
 
-	var c_tex: Texture2D = tex_crate_goal if on_goal else tex_crate
-	var c_mod: Color = Color(1.0, 1.0, 1.0) if on_goal else (ch["crate_tint"] * crate_tint)
+	var c_tex: Texture2D = tex_crate_goal if on_goal else CosmeticRendererScript.get_crate_texture(crate_skin_id, tex_crate)
+	var c_mod: Color = Color(1.0, 1.0, 1.0)
+	if not on_goal:
+		c_mod = ch["crate_tint"] if crate_skin_id == "classic_wood" else Color.WHITE.lerp(ch["crate_tint"], 0.22)
 	draw_texture_rect(c_tex, draw_r, false, c_mod)
 
 	# 2. 3D Volume Key-Light & Ambient Occlusion Shading
@@ -3737,55 +3739,7 @@ func _draw_crate(rect: Rect2, on_goal: bool, logical_pos: Vector2i = Vector2i.ZE
 	draw_line(draw_r.position + Vector2(2.0, draw_r.size.y - 1.0), draw_r.end - Vector2(2.0, 1.0), Color(0.0, 0.0, 0.0, 0.45), 2.0)
 	draw_line(Vector2(draw_r.end.x - 1.0, draw_r.position.y + 2.0), draw_r.end - Vector2(1.0, 2.0), Color(0.0, 0.0, 0.0, 0.35), 1.8)
 
-	# Crate custom skin accessories (shown off-goal so docked crates always restore clean gold sprite)
-	if not on_goal:
-		match crate_skin_id:
-			"steel_container":
-				# Cold-rolled metallic corner angle braces
-				var brace_len: float = draw_r.size.x * 0.22
-				var b_col: Color = Color(0.85, 0.92, 1.0, 0.85)
-				draw_line(draw_r.position, draw_r.position + Vector2(brace_len, 0), b_col, 2.0)
-				draw_line(draw_r.position, draw_r.position + Vector2(0, brace_len), b_col, 2.0)
-				draw_line(draw_r.position + Vector2(draw_r.size.x, 0), draw_r.position + Vector2(draw_r.size.x - brace_len, 0), b_col, 2.0)
-				draw_line(draw_r.position + Vector2(draw_r.size.x, 0), draw_r.position + Vector2(draw_r.size.x, brace_len), b_col, 2.0)
-				draw_line(draw_r.position + Vector2(0, draw_r.size.y), draw_r.position + Vector2(brace_len, draw_r.size.y), b_col, 2.0)
-				draw_line(draw_r.position + Vector2(0, draw_r.size.y), draw_r.position + Vector2(0, draw_r.size.y - brace_len), b_col, 2.0)
-				draw_line(draw_r.end, draw_r.end - Vector2(brace_len, 0), b_col, 2.0)
-				draw_line(draw_r.end, draw_r.end - Vector2(0, brace_len), b_col, 2.0)
-			"hazard_box":
-				# Caution diagonal hazard accent in center
-				var h_col: Color = Color(0.12, 0.12, 0.15, 0.75)
-				var c_len: float = draw_r.size.x * 0.35
-				draw_line(c_center - Vector2(c_len * 0.5, c_len * 0.5), c_center + Vector2(c_len * 0.5, c_len * 0.5), h_col, 3.5)
-				draw_line(c_center - Vector2(c_len * 0.5, -c_len * 0.5), c_center + Vector2(c_len * 0.5, -c_len * 0.5), h_col, 3.5)
-			"cryo_vault":
-				# 4 Frost crystalline corner studs
-				var pad: float = draw_r.size.x * 0.18
-				var frost_pts: Array[Vector2] = [
-					draw_r.position + Vector2(pad, pad),
-					draw_r.position + Vector2(draw_r.size.x - pad, pad),
-					draw_r.position + Vector2(pad, draw_r.size.y - pad),
-					draw_r.position + Vector2(draw_r.size.x - pad, draw_r.size.y - pad)
-				]
-				for pt in frost_pts:
-					draw_circle(pt, 2.2, Color(0.85, 0.98, 1.0, 0.88))
-					draw_circle(pt, 1.0, Color(1.0, 1.0, 1.0, 0.98))
-			"luxury_safe":
-				# Central brass vault combination dial
-				draw_circle(c_center, 6.2, Color(0.12, 0.10, 0.08, 0.88))
-				draw_circle(c_center, 5.0, Color(1.0, 0.86, 0.28, 0.96))
-				draw_circle(c_center, 2.0, Color(0.30, 0.20, 0.05, 1.0))
-				# 4 Gold corner rivets
-				var g_pad: float = draw_r.size.x * 0.14
-				var g_corners: Array[Vector2] = [
-					draw_r.position + Vector2(g_pad, g_pad),
-					draw_r.position + Vector2(draw_r.size.x - g_pad, g_pad),
-					draw_r.position + Vector2(g_pad, draw_r.size.y - g_pad),
-					draw_r.position + Vector2(draw_r.size.x - g_pad, draw_r.size.y - g_pad)
-				]
-				for pt in g_corners:
-					draw_circle(pt, 2.4, Color(1.0, 0.85, 0.25, 0.95))
-					draw_circle(pt - Vector2(0.5, 0.5), 0.8, Color(1.0, 1.0, 0.90, 1.0))
+	CosmeticRendererScript.draw_crate_accessories(self, draw_r, crate_skin_id, on_goal)
 
 
 func _draw_player(rect: Rect2) -> void:
@@ -3874,58 +3828,13 @@ func _draw_player(rect: Rect2) -> void:
 	else:
 		p_tex = tex_player_down_w1 if current_walk_frame == 1 else (tex_player_down_w2 if current_walk_frame == 2 else tex_player_down)
 
-	# Equipped Worker Skin from Porter Locker
+	# Equipped Worker Skin from Supply Depot (rendered via unified CosmeticRenderer)
 	var skin_info: Dictionary = save_mgr.get_worker_skin_info() if (save_mgr and save_mgr.has_method("get_worker_skin_info")) else {}
 	var skin_id: String = skin_info.get("id", "classic")
-	var p_modulate: Color = skin_info.get("sprite_tint", Color.WHITE)
+	var styled_p_tex: Texture2D = CosmeticRendererScript.get_worker_texture(skin_id, p_tex)
 
-	draw_texture_rect(p_tex, hopped_rect, false, p_modulate)
-
-	# Skin Accessory & Visual Accent Overlays (matches all 6 Supply Depot outfits in-game)
-	var hw: float = hopped_rect.size.x
-	var hh: float = hopped_rect.size.y
-	match skin_id:
-		"safety_vest":
-			# High-visibility neon orange chest vest + reflective silver bands
-			var torso_y: float = hopped_rect.position.y + hh * 0.54
-			var band_w: float = hw * 0.22
-			draw_rect(Rect2(center.x - band_w, torso_y - 2.0, band_w * 2.0, hh * 0.22), Color(1.0, 0.45, 0.08, 0.55))
-			draw_line(Vector2(center.x - band_w, torso_y + 1.0), Vector2(center.x + band_w, torso_y + 1.0), Color(0.95, 0.98, 1.0, 0.95), maxf(2.0, hh * 0.045))
-			draw_line(Vector2(center.x - band_w * 0.7, torso_y - 3.0), Vector2(center.x - band_w * 0.7, torso_y + hh * 0.16), Color(0.95, 0.98, 1.0, 0.88), maxf(1.6, hw * 0.035))
-			draw_line(Vector2(center.x + band_w * 0.7, torso_y - 3.0), Vector2(center.x + band_w * 0.7, torso_y + hh * 0.16), Color(0.95, 0.98, 1.0, 0.88), maxf(1.6, hw * 0.035))
-		"mechanic":
-			# Reinforced dark utility belt + steel buckle + wrench hanging on hip
-			var belt_y: float = hopped_rect.position.y + hh * 0.64
-			var half_b: float = hw * 0.23
-			draw_line(Vector2(center.x - half_b, belt_y), Vector2(center.x + half_b, belt_y), Color(0.14, 0.16, 0.22, 0.95), maxf(2.5, hh * 0.05))
-			draw_rect(Rect2(center.x - hw * 0.05, belt_y - hh * 0.035, hw * 0.10, hh * 0.07), Color(0.85, 0.90, 0.98, 0.95))
-			draw_line(Vector2(center.x + half_b * 0.7, belt_y), Vector2(center.x + half_b * 0.7, belt_y + hh * 0.10), Color(0.82, 0.88, 0.96, 0.95), maxf(2.0, hw * 0.035))
-		"foreman":
-			# Executive gold hardhat brim + front foreman emblem
-			var brim_y: float = hopped_rect.position.y + hh * 0.27
-			var half_h: float = hw * 0.24
-			draw_line(Vector2(center.x - half_h, brim_y), Vector2(center.x + half_h, brim_y), Color(1.0, 0.86, 0.18, 0.96), maxf(2.4, hh * 0.045))
-			draw_circle(Vector2(center.x, hopped_rect.position.y + hh * 0.18), maxf(2.2, hw * 0.04), Color(1.0, 0.94, 0.45, 0.95))
-		"hazmat":
-			# Luminous cyan bio-containment visor shield across face
-			if player_facing_dir != Vector2i.UP:
-				var visor_y: float = hopped_rect.position.y + hh * 0.34
-				var visor_w: float = hw * 0.17 if player_facing_dir == Vector2i.DOWN else hw * 0.12
-				var visor_x_off: float = 0.0 if player_facing_dir == Vector2i.DOWN else float(player_facing_dir.x) * (hw * 0.08)
-				draw_rect(Rect2(center.x + visor_x_off - visor_w, visor_y - hh * 0.045, visor_w * 2.0, hh * 0.09), Color(0.18, 0.96, 1.0, 0.85))
-				draw_line(Vector2(center.x + visor_x_off - visor_w * 0.7, visor_y - hh * 0.02), Vector2(center.x + visor_x_off + visor_w * 0.4, visor_y - hh * 0.02), Color(0.88, 1.0, 1.0, 0.95), 1.4)
-			else:
-				# Dual breather canisters visible on back pack when facing away
-				var pack_y: float = hopped_rect.position.y + hh * 0.56
-				draw_circle(Vector2(center.x - hw * 0.09, pack_y), maxf(2.2, hw * 0.04), Color(0.25, 0.95, 0.55, 0.90))
-				draw_circle(Vector2(center.x + hw * 0.09, pack_y), maxf(2.2, hw * 0.04), Color(0.25, 0.95, 0.55, 0.90))
-		"golden_porter":
-			# Radiant golden sparkles & prestige shimmer
-			var time_sec: float = float(Time.get_ticks_msec()) / 1000.0
-			var shimmer: float = sin(time_sec * 5.0) * 0.25 + 0.75
-			draw_circle(center + Vector2(0, -rect.size.y * 0.40), 2.5 * shimmer, Color(1.0, 0.95, 0.60, 0.85))
-			draw_circle(center + Vector2(-rect.size.x * 0.32, -rect.size.y * 0.10), 1.8 * (1.2 - shimmer), Color(1.0, 0.85, 0.30, 0.75))
-			draw_circle(center + Vector2(rect.size.x * 0.32, -rect.size.y * 0.15), 1.8 * shimmer, Color(1.0, 0.88, 0.40, 0.75))
+	draw_texture_rect(styled_p_tex, hopped_rect, false, Color.WHITE)
+	CosmeticRendererScript.draw_worker_accessories(self, hopped_rect, player_facing_dir, skin_id)
 
 	# Joyful victory sparkles above worker when level is won
 	if is_level_won:

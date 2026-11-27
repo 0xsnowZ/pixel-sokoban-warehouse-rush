@@ -56,7 +56,7 @@ const STAR_VAULTS: Array[Dictionary] = [
 	{"stars": 25, "name": "Safety Vest Locker", "reward_type": "skin", "skin_id": "safety_vest", "icon": "🦺"},
 	{"stars": 40, "name": "Steel Freight Vault", "reward_type": "skin", "skin_id": "steel_container", "icon": "🗄️"},
 	{"stars": 60, "name": "Foreman's Cache", "reward_type": "skin", "skin_id": "foreman", "icon": "👷"},
-	{"stars": 80, "name": "Cryo Vault Locker", "reward_type": "skin", "skin_id": "cryo_vault", "icon": "❄️"},
+	{"stars": 80, "name": "Hazard Freight Vault", "reward_type": "skin", "skin_id": "hazard_box", "icon": "☣️"},
 	{"stars": 100, "name": "Golden Master Vault", "reward_type": "skin", "skin_id": "golden_porter", "icon": "👑"},
 	{"stars": 140, "name": "Quantum Solenoid Cache", "reward_type": "hints", "amount": 10, "icon": "⚛️"},
 	{"stars": 180, "name": "Plasma Core Vault", "reward_type": "hints", "amount": 15, "icon": "🔮"},
