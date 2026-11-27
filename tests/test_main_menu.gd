@@ -484,6 +484,35 @@ func test_breakout_hit_menu_features() -> void:
 	assert_true(menu._handle_menu_back_request(), "Menu back handler consumes Star Vault modal")
 	assert_false(menu.star_vault_modal.visible, "Star Vault modal dismissed via back handler")
 
+	# Supply Depot skin Star Vaults showcase exact pixel item & Supply Depot metadata
+	var foreman_vault: Dictionary = {
+		"stars": 60,
+		"name": "Foreman's Cache",
+		"reward_type": "skin",
+		"skin_id": "foreman"
+	}
+	menu._show_star_vault_modal(3, foreman_vault)
+	var v_name_lbl: Label = menu.star_vault_modal.find_child("VaultNameLabel", true, false) as Label
+	var v_desc_lbl: Label = menu.star_vault_modal.find_child("VaultDescLabel", true, false) as Label
+	assert_equal(menu._vault_emblem_kind, "worker_skin", "Foreman vault displays worker_skin pixel showcase")
+	assert_equal(menu._vault_emblem_skin_id, "foreman", "Foreman vault stores exact skin_id for CosmeticRenderer")
+	assert_equal(v_name_lbl.text, "Foreman", "Foreman vault displays Supply Depot item name")
+	assert_true("Supply Depot" in reward_lbl.text, "Foreman vault pill identifies Supply Depot reward")
+	assert_true("khaki" in v_desc_lbl.text.to_lower(), "Foreman vault displays Supply Depot item description")
+
+	var hazard_vault: Dictionary = {
+		"stars": 80,
+		"name": "Hazard Freight Vault",
+		"reward_type": "skin",
+		"skin_id": "hazard_box"
+	}
+	menu._show_star_vault_modal(4, hazard_vault)
+	assert_equal(menu._vault_emblem_kind, "crate_skin", "Hazard Freight vault displays crate_skin pixel showcase")
+	assert_equal(menu._vault_emblem_skin_id, "hazard_box", "Hazard Freight vault stores exact skin_id")
+	assert_equal(v_name_lbl.text, "Hazard Crate", "Hazard Freight vault displays Supply Depot crate name")
+	assert_true("Supply Depot" in reward_lbl.text, "Hazard Freight pill identifies Supply Depot reward")
+	menu._hide_star_vault_modal()
+
 	menu.queue_free()
 
 

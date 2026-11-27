@@ -77,6 +77,10 @@ var _font_arabic_fallback: FontFile = preload("res://assets/fonts/NotoSansArabic
 var _ui_fonts: Dictionary = {}
 var _vault_emblem_kind: String = "cube"
 var _vault_emblem_accent: Color = Color(0.92, 0.72, 0.34)
+var _vault_emblem_skin_id: String = ""
+var _vault_emblem_is_skin: bool = false
+var _vault_emblem_canvas: Control = null
+var _star_vault_anim_time: float = 0.0
 
 var _preview_anim_time: float = 0.0
 var _preview_worker_skin_id: String = ""
@@ -852,6 +856,10 @@ func _process(delta: float) -> void:
 		_preview_dir_timer += delta
 		if locker_preview_content != null:
 			locker_preview_content.queue_redraw()
+	if star_vault_modal != null and star_vault_modal.visible:
+		_star_vault_anim_time += delta
+		if _vault_emblem_is_skin and _vault_emblem_canvas != null:
+			_vault_emblem_canvas.queue_redraw()
 
 
 func _get_preview_worker_frame(facing_dir: Vector2i, walk_phase: int) -> Texture2D:
@@ -2667,12 +2675,18 @@ func _on_vault_milestone_card_gui_input(event: InputEvent) -> void:
 func _get_vault_accent_color(vault: Dictionary) -> Color:
 	var req_stars: int = int(vault.get("stars", 15))
 	var s_id: String = str(vault.get("skin_id", ""))
-	if req_stars >= 180 or s_id == "golden_porter":
+	if s_id == "golden_porter" or req_stars >= 180:
 		return Color(0.96, 0.80, 0.36) # Champagne Gold
+	if s_id == "hazard_box":
+		return Color(0.96, 0.72, 0.22) # Hazard Freight Amber
+	if s_id == "safety_vest":
+		return Color(0.98, 0.56, 0.18) # Safety High-Vis Orange
+	if s_id == "foreman":
+		return Color(0.95, 0.76, 0.30) # Foreman Warm Gold
+	if req_stars == 40 or s_id == "steel_container":
+		return Color(0.60, 0.80, 0.98) # Cold-Rolled Steel Ice
 	if req_stars >= 140:
 		return Color(0.72, 0.56, 0.96) # Quantum Lavender
-	if req_stars == 40 or req_stars == 80:
-		return Color(0.38, 0.82, 0.96) # Cryo Glacier
 	return Color(0.92, 0.72, 0.34) # Satin Amber Bronze
 
 
@@ -2688,6 +2702,31 @@ func _get_modern_font(weight: int) -> Font:
 	return fv
 
 
+func _draw_vault_skin_pedestal(canvas: Control, c: Vector2, acc: Color, is_crate: bool) -> void:
+	var plat_r: Rect2 = Rect2(c.x - 56.0, c.y + 18.0, 112.0, 17.0)
+	var sb_plat: StyleBoxFlat = StyleBoxFlat.new()
+	sb_plat.bg_color = Color(0.085, 0.110, 0.160, 0.96)
+	sb_plat.border_color = Color(1.0, 1.0, 1.0, 0.10)
+	sb_plat.set_border_width_all(1)
+	sb_plat.set_corner_radius_all(6)
+	canvas.draw_style_box(sb_plat, plat_r)
+	canvas.draw_line(
+		plat_r.position + Vector2(6.0, 1.0),
+		plat_r.position + Vector2(plat_r.size.x - 6.0, 1.0),
+		Color(acc.r, acc.g, acc.b, 0.62),
+		1.0
+	)
+	if is_crate:
+		var bay_r: Rect2 = Rect2(c.x - 24.0, c.y + 20.0, 48.0, 7.0)
+		var sb_bay: StyleBoxFlat = StyleBoxFlat.new()
+		sb_bay.bg_color = Color(acc.r * 0.28, acc.g * 0.28, acc.b * 0.32, 0.92)
+		sb_bay.border_color = Color(acc.r, acc.g, acc.b, 0.50)
+		sb_bay.set_border_width_all(1)
+		sb_bay.set_corner_radius_all(3)
+		canvas.draw_style_box(sb_bay, bay_r)
+	canvas.draw_circle(c + Vector2(0.0, 21.0), 15.0 if is_crate else 14.0, Color(0.0, 0.0, 0.0, 0.38))
+
+
 func _draw_vault_hero_emblem(canvas: Control) -> void:
 	if canvas == null:
 		return
@@ -2699,41 +2738,30 @@ func _draw_vault_hero_emblem(canvas: Control) -> void:
 	var kind: String = _vault_emblem_kind
 
 	# Delicate overhead halo arc (subtle architectural accent without any boxed border)
-	canvas.draw_arc(c + Vector2(0.0, -2.0), 38.0, -PI * 0.82, -PI * 0.18, 36, Color(1.0, 1.0, 1.0, 0.10), 1.0, true)
+	var arc_r: float = 44.0 if (kind == "worker_skin" or kind == "crate_skin") else 38.0
+	canvas.draw_arc(c + Vector2(0.0, -2.0), arc_r, -PI * 0.82, -PI * 0.18, 36, Color(1.0, 1.0, 1.0, 0.11), 1.0, true)
 
 	match kind:
-		"crown":
-			# Soft contact shadow
-			canvas.draw_colored_polygon(PackedVector2Array([
-				c + Vector2(-24, 24), c + Vector2(24, 24), c + Vector2(18, 29), c + Vector2(-18, 29)
-			]), Color(0.0, 0.0, 0.0, 0.30))
-			var gold_hi: Color = Color(0.99, 0.90, 0.58)
-			var gold_mid: Color = Color(0.92, 0.72, 0.28)
-			var gold_shd: Color = Color(0.64, 0.45, 0.14)
-			var c_top := c + Vector2(0, -20)
-			var l_peak := c + Vector2(-24, -12)
-			var r_peak := c + Vector2(24, -12)
-			var l_val := c + Vector2(-11, -3)
-			var r_val := c + Vector2(11, -3)
-			var l_base := c + Vector2(-19, 13)
-			var r_base := c + Vector2(19, 13)
-			var mid_base := c + Vector2(0, 13)
-			# Lit left + center half
-			canvas.draw_colored_polygon(PackedVector2Array([l_peak, l_val, c_top, mid_base, l_base]), gold_hi.lerp(gold_mid, 0.45))
-			# Shaded right half
-			canvas.draw_colored_polygon(PackedVector2Array([c_top, r_val, r_peak, r_base, mid_base]), gold_mid.lerp(gold_shd, 0.48))
-			# Facet bevel highlight triangle on left side of center spire
-			canvas.draw_colored_polygon(PackedVector2Array([c_top, mid_base, l_val]), gold_hi)
-			# Architectural base plinth band
-			canvas.draw_colored_polygon(PackedVector2Array([l_base + Vector2(0, 2), r_base + Vector2(0, 2), r_base + Vector2(-1, 8), l_base + Vector2(1, 8)]), gold_shd.darkened(0.22))
-			# Center jewel diamond
-			var j_c := c + Vector2(0, 2)
-			canvas.draw_colored_polygon(PackedVector2Array([
-				j_c + Vector2(0, -6), j_c + Vector2(4.5, 0), j_c + Vector2(0, 6), j_c + Vector2(-4.5, 0)
-			]), Color(0.32, 0.85, 1.0))
-			# Crisp specular rim along left slope
-			canvas.draw_line(l_peak, l_val, Color(1.0, 1.0, 1.0, 0.45), 1.3, true)
-			canvas.draw_line(l_val, c_top, Color(1.0, 1.0, 1.0, 0.65), 1.4, true)
+		"worker_skin":
+			_draw_vault_skin_pedestal(canvas, c, acc, false)
+			var dir_cycle: Array[Vector2i] = [Vector2i.DOWN, Vector2i.RIGHT, Vector2i.UP, Vector2i.LEFT]
+			var dir_idx: int = int(_star_vault_anim_time / 1.55) % 4
+			var facing_dir: Vector2i = dir_cycle[dir_idx]
+			var walk_phase: int = int(_star_vault_anim_time * 4.0) % 4
+			var bob_y: float = -1.4 if (walk_phase == 0 or walk_phase == 2) else 0.0
+			var base_p: Texture2D = _get_preview_worker_frame(facing_dir, walk_phase)
+			var w_rect: Rect2 = Rect2(c.x - 28.0, c.y - 34.0 + bob_y, 56.0, 56.0)
+			if base_p:
+				var skinned_w: Texture2D = CosmeticRendererScript.get_worker_texture(_vault_emblem_skin_id, base_p)
+				canvas.draw_texture_rect(skinned_w, w_rect, false, Color.WHITE)
+			CosmeticRendererScript.draw_worker_accessories(canvas, w_rect, facing_dir, _vault_emblem_skin_id, _star_vault_anim_time)
+		"crate_skin":
+			_draw_vault_skin_pedestal(canvas, c, acc, true)
+			var c_rect: Rect2 = Rect2(c.x - 26.0, c.y - 31.0, 52.0, 52.0)
+			if tex_crate:
+				var skinned_c: Texture2D = CosmeticRendererScript.get_crate_texture(_vault_emblem_skin_id, tex_crate)
+				canvas.draw_texture_rect(skinned_c, c_rect, false, Color.WHITE)
+			CosmeticRendererScript.draw_crate_accessories(canvas, c_rect, _vault_emblem_skin_id, false)
 		"prism":
 			# Floating faceted octahedron artifact for high-tier solver caches
 			canvas.draw_colored_polygon(PackedVector2Array([
@@ -2769,29 +2797,6 @@ func _draw_vault_hero_emblem(canvas: Control) -> void:
 			canvas.draw_colored_polygon(PackedVector2Array([c + Vector2(-13, 19), c + Vector2(13, 19), c + Vector2(15, 25), c + Vector2(-15, 25)]), Color(0.18, 0.21, 0.28))
 			canvas.draw_line(cup_tl, cup_tr, Color(1.0, 1.0, 1.0, 0.55), 1.3, true)
 			canvas.draw_line(cup_tm, cup_bm, Color(1.0, 1.0, 1.0, 0.35), 1.2, true)
-		"outfit":
-			# Sleek isometric locker case with diagonal safety/foreman inlay
-			canvas.draw_colored_polygon(PackedVector2Array([
-				c + Vector2(0, 18), c + Vector2(28, 30), c + Vector2(0, 36), c + Vector2(-28, 30)
-			]), Color(0.0, 0.0, 0.0, 0.32))
-			var t_pt := c + Vector2(0, -25)
-			var l_pt := c + Vector2(-24, -12)
-			var r_pt := c + Vector2(24, -12)
-			var m_pt := c + Vector2(0, 1)
-			var lb_pt := c + Vector2(-24, 15)
-			var rb_pt := c + Vector2(24, 15)
-			var b_pt := c + Vector2(0, 28)
-			canvas.draw_colored_polygon(PackedVector2Array([t_pt, r_pt, m_pt, l_pt]), Color(0.95, 0.96, 0.99).lerp(acc, 0.40))
-			canvas.draw_colored_polygon(PackedVector2Array([l_pt, m_pt, b_pt, lb_pt]), acc.lerp(Color(0.16, 0.19, 0.26), 0.35))
-			canvas.draw_colored_polygon(PackedVector2Array([m_pt, r_pt, rb_pt, b_pt]), Color(0.09, 0.11, 0.15).lerp(acc, 0.22))
-			# High-vis stripe across left facade
-			canvas.draw_colored_polygon(PackedVector2Array([
-				l_pt + Vector2(0, 10), m_pt + Vector2(0, 10), m_pt + Vector2(0, 16), l_pt + Vector2(0, 16)
-			]), Color(1.0, 1.0, 1.0, 0.72))
-			canvas.draw_line(t_pt, l_pt, Color(1.0, 1.0, 1.0, 0.45), 1.3, true)
-			canvas.draw_line(l_pt, m_pt, Color(1.0, 1.0, 1.0, 0.55), 1.3, true)
-			canvas.draw_line(m_pt, r_pt, Color(1.0, 1.0, 1.0, 0.35), 1.2, true)
-			canvas.draw_line(m_pt, b_pt, Color(1.0, 1.0, 1.0, 0.30), 1.2, true)
 		_:
 			# Precision isometric sculptural vault cube (default for supply caches & crate skins)
 			canvas.draw_colored_polygon(PackedVector2Array([
@@ -2837,9 +2842,21 @@ func _draw_reward_pill_glyph(canvas: Control) -> void:
 		return
 	var c: Vector2 = canvas.size * 0.5
 	var col: Color = _vault_emblem_accent.lightened(0.32)
-	canvas.draw_colored_polygon(PackedVector2Array([
-		c + Vector2(0, -5.5), c + Vector2(5.0, 0), c + Vector2(0, 5.5), c + Vector2(-5.0, 0)
-	]), col)
+	if _vault_emblem_is_skin:
+		var t: Vector2 = c + Vector2(0, -5.5)
+		var l: Vector2 = c + Vector2(-5.0, -2.4)
+		var r: Vector2 = c + Vector2(5.0, -2.4)
+		var m: Vector2 = c + Vector2(0, 0.5)
+		var lb: Vector2 = c + Vector2(-5.0, 3.1)
+		var rb: Vector2 = c + Vector2(5.0, 3.1)
+		var b: Vector2 = c + Vector2(0, 5.8)
+		canvas.draw_colored_polygon(PackedVector2Array([t, r, m, l]), col.lightened(0.22))
+		canvas.draw_colored_polygon(PackedVector2Array([l, m, b, lb]), col)
+		canvas.draw_colored_polygon(PackedVector2Array([m, r, rb, b]), col.darkened(0.32))
+	else:
+		canvas.draw_colored_polygon(PackedVector2Array([
+			c + Vector2(0, -5.5), c + Vector2(5.0, 0), c + Vector2(0, 5.5), c + Vector2(-5.0, 0)
+		]), col)
 
 
 func _show_vault_claimed_toast(v_name: String, accent: Color) -> void:
@@ -2933,11 +2950,19 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 	var r_amount: int = int(vault.get("amount", 5))
 	var skin_id_v: String = str(vault.get("skin_id", ""))
 	var is_crate_skin: bool = false
-	if r_type != "hints" and save_mgr and save_mgr.has_method("get_all_crate_skins"):
-		for cs in save_mgr.get_all_crate_skins():
-			if cs.get("id", "") == skin_id_v:
-				is_crate_skin = true
-				break
+	var skin_info: Dictionary = {}
+	if r_type != "hints" and not skin_id_v.is_empty() and save_mgr:
+		if save_mgr.has_method("get_all_crate_skins"):
+			for cs in save_mgr.get_all_crate_skins():
+				if cs.get("id", "") == skin_id_v:
+					is_crate_skin = true
+					skin_info = cs
+					break
+		if not is_crate_skin and save_mgr.has_method("get_worker_skin_info"):
+			var ws: Dictionary = save_mgr.get_worker_skin_info(skin_id_v)
+			if ws.get("id", "") == skin_id_v:
+				skin_info = ws
+	var has_skin_item: bool = (r_type != "hints" and not skin_id_v.is_empty())
 
 	var vault_card: PanelContainer = star_vault_modal.find_child("VaultCard", true, false) as PanelContainer
 	var header_banner: PanelContainer = star_vault_modal.find_child("HeaderBanner", true, false) as PanelContainer
@@ -2984,7 +3009,10 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 		title_lbl.text = loc_mgr.tr_text("VAULT_UNLOCKED_TITLE") if loc_mgr else "MILESTONE VAULT UNLOCKED"
 
 	if milestone_lbl:
-		milestone_lbl.text = loc_mgr.tr_text("VAULT_MILESTONE_REACHED", [v_stars]) if loc_mgr else ("MILESTONE  ·  %d ★" % v_stars)
+		if has_skin_item:
+			milestone_lbl.text = loc_mgr.tr_text("VAULT_MILESTONE_ITEM", [v_name.to_upper(), v_stars]) if loc_mgr else ("%s  ·  %d ★" % [v_name.to_upper(), v_stars])
+		else:
+			milestone_lbl.text = loc_mgr.tr_text("VAULT_MILESTONE_REACHED", [v_stars]) if loc_mgr else ("MILESTONE  ·  %d ★" % v_stars)
 		milestone_lbl.add_theme_font_override("font", _get_modern_font(500))
 		milestone_lbl.add_theme_color_override("font_color", Color(accent.r, accent.g, accent.b, 0.88))
 		milestone_lbl.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.0))
@@ -2993,28 +3021,30 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 		medallion.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 
 	_vault_emblem_accent = accent
-	if v_stars >= 210:
+	_vault_emblem_skin_id = skin_id_v
+	_vault_emblem_is_skin = has_skin_item
+	_star_vault_anim_time = 0.0
+	_vault_emblem_canvas = emblem_canvas
+	if has_skin_item:
+		_vault_emblem_kind = "crate_skin" if is_crate_skin else "worker_skin"
+	elif v_stars >= 210:
 		_vault_emblem_kind = "trophy"
-	elif skin_id_v == "golden_porter":
-		_vault_emblem_kind = "crown"
 	elif v_stars >= 140 and r_type == "hints":
 		_vault_emblem_kind = "prism"
-	elif r_type != "hints" and not is_crate_skin:
-		_vault_emblem_kind = "outfit"
 	else:
 		_vault_emblem_kind = "cube"
 
 	if spot_rect:
 		var g_tex := GradientTexture2D.new()
-		g_tex.width = 160
+		g_tex.width = 188
 		g_tex.height = 128
 		g_tex.fill = GradientTexture2D.FILL_RADIAL
-		g_tex.fill_from = Vector2(0.5, 0.52)
+		g_tex.fill_from = Vector2(0.5, 0.50)
 		g_tex.fill_to = Vector2(0.5, 0.02)
 		var grad := Gradient.new()
 		grad.colors = PackedColorArray([
-			Color(accent.r, accent.g, accent.b, 0.22),
-			Color(accent.r, accent.g, accent.b, 0.07),
+			Color(accent.r, accent.g, accent.b, 0.24),
+			Color(accent.r, accent.g, accent.b, 0.08),
 			Color(accent.r, accent.g, accent.b, 0.0)
 		])
 		grad.offsets = PackedFloat32Array([0.0, 0.50, 1.0])
@@ -3022,6 +3052,7 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 		spot_rect.texture = g_tex
 
 	if emblem_canvas:
+		emblem_canvas.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		emblem_canvas.queue_redraw()
 	if icon_rect:
 		icon_rect.visible = false
@@ -3030,7 +3061,14 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 		icon_lbl.visible = false
 
 	if name_lbl:
-		name_lbl.text = loc_mgr.tr_text("VAULT_NAME_FORMAT", [v_name]) if loc_mgr else v_name
+		var display_item_name: String = v_name
+		if has_skin_item and not skin_info.is_empty():
+			var s_name_key: String = str(skin_info.get("name_key", ""))
+			if loc_mgr and not s_name_key.is_empty():
+				display_item_name = loc_mgr.tr_text(s_name_key)
+			elif skin_info.has("name"):
+				display_item_name = str(skin_info.get("name", v_name))
+		name_lbl.text = display_item_name if has_skin_item else (loc_mgr.tr_text("VAULT_NAME_FORMAT", [v_name]) if loc_mgr else v_name)
 		name_lbl.add_theme_font_override("font", _get_modern_font(600))
 		name_lbl.add_theme_color_override("font_color", Color(0.955, 0.965, 0.985))
 		name_lbl.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.0))
@@ -3038,7 +3076,7 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 	if reward_pill:
 		var sb_rp := StyleBoxFlat.new()
 		sb_rp.bg_color = Color(1.0, 1.0, 1.0, 0.048)
-		sb_rp.border_color = Color(1.0, 1.0, 1.0, 0.085)
+		sb_rp.border_color = Color(accent.r, accent.g, accent.b, 0.26) if has_skin_item else Color(1.0, 1.0, 1.0, 0.085)
 		sb_rp.set_border_width_all(1)
 		sb_rp.set_corner_radius_all(999)
 		reward_pill.add_theme_stylebox_override("panel", sb_rp)
@@ -3052,21 +3090,28 @@ func _show_star_vault_modal(vault_idx: int, vault: Dictionary) -> void:
 		if r_type == "hints":
 			reward_lbl.text = loc_mgr.tr_text("VAULT_REWARD_HINTS", [r_amount]) if loc_mgr else ("+%d Solver Hints" % r_amount)
 		elif is_crate_skin:
-			reward_lbl.text = loc_mgr.tr_text("VAULT_REWARD_CRATE") if loc_mgr else "Crate Skin Unlocked"
+			reward_lbl.text = loc_mgr.tr_text("VAULT_REWARD_DEPOT_CRATE") if loc_mgr else "Supply Depot  ·  Crate Skin"
 		else:
-			reward_lbl.text = loc_mgr.tr_text("VAULT_REWARD_OUTFIT") if loc_mgr else "Worker Outfit Unlocked"
+			reward_lbl.text = loc_mgr.tr_text("VAULT_REWARD_DEPOT_OUTFIT") if loc_mgr else "Supply Depot  ·  Worker Outfit"
 		reward_lbl.add_theme_font_override("font", _get_modern_font(500))
 		reward_lbl.add_theme_color_override("font_color", accent.lightened(0.32))
 		reward_lbl.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.0))
 
 	if desc_lbl:
 		var desc_str: String = ""
-		if r_type != "hints":
-			desc_str = (loc_mgr.tr_text("VAULT_DESC_CRATE") if is_crate_skin else loc_mgr.tr_text("VAULT_DESC_OUTFIT")) if loc_mgr else "Equippable in Supply Depot"
+		if has_skin_item:
+			var s_desc_key: String = str(skin_info.get("desc_key", ""))
+			if loc_mgr and not s_desc_key.is_empty():
+				desc_str = loc_mgr.tr_text(s_desc_key)
+			elif skin_info.has("desc"):
+				desc_str = str(skin_info.get("desc", ""))
+			if desc_str.is_empty():
+				desc_str = (loc_mgr.tr_text("VAULT_DESC_CRATE") if is_crate_skin else loc_mgr.tr_text("VAULT_DESC_OUTFIT")) if loc_mgr else "Equippable in Supply Depot"
 		desc_lbl.text = desc_str
 		desc_lbl.visible = not desc_str.is_empty()
 		desc_lbl.add_theme_font_override("font", _get_modern_font(400))
-		desc_lbl.add_theme_color_override("font_color", Color(0.54, 0.60, 0.70))
+		desc_lbl.add_theme_constant_override("line_spacing", -4)
+		desc_lbl.add_theme_color_override("font_color", Color(0.58, 0.65, 0.76))
 		desc_lbl.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.0))
 
 	# Quiet minimalist milestone ladder
@@ -3289,7 +3334,7 @@ func _create_star_vault_modal() -> PanelContainer:
 
 	var medallion := PanelContainer.new()
 	medallion.name = "MedallionFrame"
-	medallion.custom_minimum_size = Vector2(148, 86)
+	medallion.custom_minimum_size = Vector2(176, 102)
 	medallion.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	show_vbox.add_child(medallion)
 
@@ -3298,7 +3343,7 @@ func _create_star_vault_modal() -> PanelContainer:
 
 	var spot_rect := TextureRect.new()
 	spot_rect.name = "HeroSpotlight"
-	spot_rect.custom_minimum_size = Vector2(156, 98)
+	spot_rect.custom_minimum_size = Vector2(188, 114)
 	spot_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	spot_rect.stretch_mode = TextureRect.STRETCH_SCALE
 	spot_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -3306,7 +3351,8 @@ func _create_star_vault_modal() -> PanelContainer:
 
 	var emblem_canvas := Control.new()
 	emblem_canvas.name = "VaultEmblemCanvas"
-	emblem_canvas.custom_minimum_size = Vector2(116, 90)
+	emblem_canvas.custom_minimum_size = Vector2(148, 98)
+	emblem_canvas.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	emblem_canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	emblem_canvas.draw.connect(_draw_vault_hero_emblem.bind(emblem_canvas))
 	med_center.add_child(emblem_canvas)

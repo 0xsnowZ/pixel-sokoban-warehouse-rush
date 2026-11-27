@@ -883,10 +883,25 @@ const TRANSLATIONS: Dictionary = {
 		"fr": "Nouvelle tenue débloquée",
 		"ar": "زي عامل جديد"
 	},
+	"VAULT_REWARD_DEPOT_OUTFIT": {
+		"en": "Supply Depot  ·  Worker Outfit",
+		"fr": "Dépôt Central  ·  Tenue d'ouvrier",
+		"ar": "مستودع الإمدادات  ·  زي العامل"
+	},
+	"VAULT_REWARD_DEPOT_CRATE": {
+		"en": "Supply Depot  ·  Crate Skin",
+		"fr": "Dépôt Central  ·  Modèle de caisse",
+		"ar": "مستودع الإمدادات  ·  مظهر الصندوق"
+	},
 	"VAULT_MILESTONE_REACHED": {
 		"en": "MILESTONE  ·  %d ★",
 		"fr": "PALIER  ·  %d ★",
 		"ar": "إنجاز  ·  %d ★"
+	},
+	"VAULT_MILESTONE_ITEM": {
+		"en": "%s  ·  %d ★",
+		"fr": "%s  ·  %d ★",
+		"ar": "%s  ·  %d ★"
 	},
 	"VAULT_NEXT_TARGET": {
 		"en": "Next %d ★",
